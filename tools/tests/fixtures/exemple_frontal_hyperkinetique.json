@@ -1,0 +1,102 @@
+{
+ "version": 1,
+ "app": "EpiScope",
+ "name": "Exemple — frontal mésial / cingulaire, crise hypermotrice du sommeil",
+ "notes": "Bonini 2014 groupe 2 : tonique axial, chapeau de gendarme, hypermoteur non intégré.",
+ "patient": {
+  "dominant": "L",
+  "eeg_onset": null,
+  "lesion": []
+ },
+ "events": [
+  {
+   "id": 1,
+   "sign_id": "arousal_from_sleep",
+   "t": 0,
+   "dt": 1,
+   "dur": 3,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 2,
+   "sign_id": "fear",
+   "t": 1,
+   "dt": 1,
+   "dur": 6,
+   "side": "",
+   "topography": "",
+   "conf": 0.75,
+   "note": ""
+  },
+  {
+   "id": 3,
+   "sign_id": "chapeau_de_gendarme",
+   "t": 2,
+   "dt": 1,
+   "dur": 5,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 4,
+   "sign_id": "vocalization",
+   "t": 3,
+   "dt": 1,
+   "dur": 4,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 5,
+   "sign_id": "hyperkinetic",
+   "t": 4,
+   "dt": 1,
+   "dur": 25,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 6,
+   "sign_id": "pedaling",
+   "t": 6,
+   "dt": 2,
+   "dur": 15,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 7,
+   "sign_id": "asymmetric_tonic",
+   "t": 22,
+   "dt": 2,
+   "dur": 10,
+   "side": "R",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 8,
+   "sign_id": "fbtcs",
+   "t": 30,
+   "dt": 3,
+   "dur": 60,
+   "side": "",
+   "topography": "",
+   "conf": 0.5,
+   "note": ""
+  }
+ ],
+ "params": {}
+}

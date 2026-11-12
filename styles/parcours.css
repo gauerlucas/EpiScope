@@ -1,0 +1,93 @@
+/* EpiScope — styles/parcours.css : parcours (v3) : barre du haut, étapes, vues (extrait de app.css v4.21, ordre conservé) */
+/* =====================================================================  parcours (v3) : barre du haut, étapes, vues */
+.topbar { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+.tb-row { display: flex; align-items: center; gap: 12px; padding: 7px 14px; min-width: 0; }
+.crumb.home { font-size: 13px; padding: 4px 10px; }
+#crPatient { max-width: 260px; }
+.parcours { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; padding: 2px 4px; flex: 0 1 auto; }
+.parcours:empty { display: none; }
+.pstep { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line2); background: var(--bg2); color: var(--muted); font-size: 12.5px; cursor: pointer; }
+.pstep:hover { color: var(--text); border-color: light-dark(#b0bedc, #45506a); }
+.pstep.on { color: var(--text-hi); background: light-dark(#e6effe, #23314a); border-color: var(--accent2); box-shadow: 0 0 0 1px rgba(76,201,240,.25) inset; }
+.pstep.k-dossier { border-style: dashed; }
+.pstep.k-meeting.on { background: light-dark(#eeecff, #2c2546); border-color: #a78bfa; }
+.pstep.k-seeg.on { background: light-dark(#d5f5fc, #133238); border-color: light-dark(#019585, #2dd4bf); }
+.pstep.k-procedure.on, .pstep.k-followup.on { background: light-dark(#f5efd8, #2f2a18); border-color: var(--accent); }
+.pstep.add { padding: 4px 10px; font-size: 15px; line-height: 1; border-style: dashed; color: var(--accent); }
+.psep { width: 10px; height: 1px; background: var(--line2); flex: none; }
+.pstep .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
+.dot.s-ongoing { background: var(--accent); } .dot.s-planned { background: transparent; box-shadow: 0 0 0 1.5px var(--muted) inset; } .dot.s-done, .dot.s-final { background: var(--ok); } .dot.s-draft { background: #a78bfa; }
+.subbar { display: flex; align-items: center; gap: 10px; padding: 0 14px; border-top: 1px solid var(--line); min-height: 38px; background: light-dark(rgba(255,255,255,0.9), rgba(20,25,34,.7)); flex-wrap: wrap; }
+.subbar:empty { display: none; }
+.sb-title { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; font-size: 13px; padding-right: 6px; border-right: 1px solid var(--line); }
+.sb-title b { font-size: 14px; color: var(--text-hi); } .sb-title .muted { font-size: 12px; }
+.sb-status { font-size: 11.5px; padding: 1px 4px; align-self: center; }
+.sb-tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+.sb-tabs button { background: transparent; border: 1px solid transparent; border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0; padding: 7px 10px 6px; color: var(--muted); font-size: 12.5px; }
+.sb-tabs button:hover { color: var(--text); background: var(--bg3); }
+.sb-tabs button.on { color: var(--text-hi); border-bottom-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 7%, transparent); }
+.sb-tabs button small { display: inline-block; min-width: 15px; margin-right: 5px; font-size: 10px; color: var(--faint); border: 1px solid var(--line2); border-radius: 50%; text-align: center; line-height: 13px; }
+.sb-tabs button.on small { color: var(--accent2); border-color: var(--accent2); }
+.sb-sz { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border: 1px solid var(--line2); border-radius: 999px; font-size: 12.5px; }
+.sb-sz .mini-btn { margin: 0; padding: 0 7px; font-size: 14px; }
+.subbar .mini-btn { margin-left: 0; }
+body.at-patients .subbar, body.at-patients #btnReport { display: none; }
+/* modes de l'espace de travail : les outils SEEG n'ont ni saisie sémiologique ni frise */
+body.wm-tools .layout { grid-template-columns: 1fr var(--right-w-tools, 430px); }
+body.wm-tools .panel.left { display: none; }
+body.wm-tools #timelineWrap, body.wm-tools .view-foot .legend:not(.qlegend):not(.esi-leg), body.wm-tools #caption { display: none !important; }
+body.wm-tools .net-only, body:not(.wm-seeg) .seeg-only { display: none !important; }
+body.wm-tools.right-collapsed .layout { grid-template-columns: 1fr 26px; }
+#tabs.single .tabrow button[data-tab] { pointer-events: none; color: var(--text-hi); }
+#tabs .tabrow { flex-wrap: wrap; }
+/* vues (sections génériques) */
+.view-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.view-head h3 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 22px; letter-spacing: .2px; }
+.view-head .muted { font-size: 12.5px; }
+.ex-form { margin-bottom: 10px; }
+.session .ses-h { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.sz-table tr.click { cursor: pointer; } .sz-table tr.click:hover td { background: color-mix(in srgb, var(--accent2) 5%, transparent); }
+.sz-table td.seq small.onset { display: block; color: light-dark(#0f6c61, #2dd4bf); }
+.syn-grid { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(480px, 1.5fr); gap: 14px; align-items: start; }
+@media (max-width: 1150px) { .syn-grid { grid-template-columns: 1fr; } }
+.eeg-form textarea, .hx-grid textarea { width: 100%; resize: vertical; }
+.eeg-form label, .form label { flex-direction: column; align-items: stretch; gap: 3px; }
+.stage-row { display: grid; grid-template-columns: 150px 1fr auto; gap: 10px; align-items: center; padding: 8px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.stage-row:hover { background: color-mix(in srgb, var(--tint) 2%, transparent); }
+.stage-row .pstep { justify-self: start; }
+.stage-sum { font-size: 12.5px; line-height: 1.45; }
+.gal-strip { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; } .gal-strip img { width: 74px; height: 50px; object-fit: cover; border-radius: 5px; border: 1px solid var(--line2); background: #000; }
+/* histoire clinique, bilans */
+.hx-grid { display: grid; grid-template-columns: repeat(2, minmax(420px, 1fr)); gap: 14px; align-items: start; }
+@media (max-width: 1100px) { .hx-grid { grid-template-columns: 1fr; } }
+table.ant { width: 100%; border-collapse: collapse; font-size: 12.5px; } table.ant td { padding: 3px 4px; border-bottom: 1px solid var(--line); } table.ant td:first-child { color: var(--muted); width: 42%; } table.ant input { width: 100%; }
+.seg.yn button { padding: 2px 9px; font-size: 12px; }
+.seg.yn button.on.no { background: color-mix(in srgb, var(--ok) 18%, transparent); border-color: var(--ok); color: light-dark(#376b44, #d7f5dc); } .seg.yn button.on.yes { background: color-mix(in srgb, var(--danger) 18%, transparent); border-color: var(--danger); color: light-dark(#86494d, #ffd3d4); } .seg.yn button.on.u { background: var(--bg3); }
+table.aed { width: 100%; border-collapse: collapse; font-size: 12px; margin: 4px 0 8px; } table.aed td, table.aed th { padding: 2px 3px; text-align: left; } table.aed th { color: var(--muted); font-weight: 500; } table.aed input { width: 100%; } table.aed .x { cursor: pointer; color: var(--faint); }
+.sub-h { display: flex; align-items: center; gap: 8px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 4px; }
+.ex-filter { margin-bottom: 10px; flex-wrap: wrap; } .ex-filter button { font-size: 12px; padding: 3px 9px; }
+.card.exam .exam-h { display: flex; gap: 8px; align-items: center; } .card.exam .exam-h .title { flex: 1; min-width: 200px; } .card.exam .x { cursor: pointer; color: var(--faint); padding: 0 4px; }
+.exam-sum { font-size: 12.5px; color: var(--muted); margin-top: 6px; white-space: pre-line; }
+.card.exam .form { margin-top: 8px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+/* galerie */
+.gal-drop { border: 1.5px dashed var(--line2); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; font-size: 12.5px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: color-mix(in srgb, var(--tint) 1.5%, transparent); outline: none; }
+.gal-drop:focus, .gal-drop.over { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 6%, transparent); }
+.gal-drop .mini-btn { margin: 0; }
+.gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.gal-grid.compact { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.gal-item { position: relative; border: 1px solid var(--line2); border-radius: 9px; overflow: hidden; background: var(--bg2); cursor: pointer; transition: border-color .12s; }
+.gal-item:hover { border-color: #4b5873; } .gal-item.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.gal-img { aspect-ratio: 16 / 9; background: #000; display: flex; align-items: center; justify-content: center; } .gal-img img { width: 100%; height: 100%; object-fit: contain; }
+.gal-meta { padding: 6px 8px; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 12px; } .gal-meta b { width: 100%; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gal-pick { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.65); border-radius: 6px; padding: 2px 6px; font-size: 11.5px; color: #fff; }
+.badge.k-ictal { border-color: var(--danger); color: light-dark(#8c454a, #ffb1b4); } .badge.k-interictal { border-color: var(--accent2); color: light-dark(#0d687e, #bfefff); } .badge.k-stim { border-color: var(--accent); color: light-dark(#654b03, #ffe2a6); }
+.gal-group { margin-bottom: 14px; }
+.gal-modal .gal-card { width: min(1500px, 96vw); height: min(920px, 92vh); max-width: none; display: flex; flex-direction: column; }
+.gal-body { flex: 1; display: grid; grid-template-columns: 1fr 320px; min-height: 0; }
+.gal-stage { display: flex; align-items: center; justify-content: center; background: var(--bg0); min-height: 0; overflow: hidden; }
+.gal-stage canvas { box-shadow: 0 6px 30px light-dark(rgba(16,30,50,0.21), rgba(0,0,0,.6)); touch-action: none; }
+.gal-side { padding: 10px 12px; border-left: 1px solid var(--line); overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.gal-tools button { font-size: 15px; padding: 3px 12px; }
+.gal-colors { display: flex; gap: 6px; align-items: center; } .gal-colors button[data-col] { width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent; padding: 0; } .gal-colors button.on { border-color: #fff; }
+.gal-side textarea { width: 100%; resize: vertical; }

@@ -1,0 +1,927 @@
+sign_id,family,topography,phase,weight,role,source,notes
+aura_epigastric,Amygdala,,,0.8,onset,Maillard 2004; Semio2Brain,initiale dans les crises mésiales et mésio-latérales
+aura_epigastric,Hippocampus-anterior,,,0.8,onset,Maillard 2004; Semio2Brain,initiale dans les crises mésiales et mésio-latérales
+aura_epigastric,Rhinal-cortex,,,0.6,onset,Maillard 2004; Semio2Brain,initiale dans les crises mésiales et mésio-latérales
+aura_epigastric,Temporal-pole,,,0.5,onset,Maillard 2004; Semio2Brain,initiale dans les crises mésiales et mésio-latérales
+aura_epigastric,Parahippocampal-cortex,,,0.3,onset,Maillard 2004; Semio2Brain,initiale dans les crises mésiales et mésio-latérales
+aura_epigastric,T1-planum-polare,,,0.3,onset,Maillard 2004; Semio2Brain,initiale dans les crises mésiales et mésio-latérales
+aura_epigastric,Insula-gyri-brevi,,,0.7,symptomatogenic,Isnard 2004; Mazzola 2017 (DES),insula antérieure viscérale
+aura_epigastric,Insula-gyri-longi,,,0.4,symptomatogenic,Isnard 2004; Mazzola 2017 (DES),insula antérieure viscérale
+aura_epigastric,Central-operculum,,,0.3,symptomatogenic,Isnard 2004; Mazzola 2017 (DES),insula antérieure viscérale
+aura_epigastric,Orbito-frontal-cortex,,,0.3,symptomatogenic,Isnard 2004; Mazzola 2017 (DES),insula antérieure viscérale
+aura_epigastric,Anterior-cingulate-cortex,,,0.2,symptomatogenic,Isnard 2004; Mazzola 2017 (DES),insula antérieure viscérale
+aura_epigastric,Subcallosal-area,,,0.2,symptomatogenic,Isnard 2004; Mazzola 2017 (DES),insula antérieure viscérale
+aura_epigastric,Thalamus,,,0.1,symptomatogenic,Isnard 2004; Mazzola 2017 (DES),insula antérieure viscérale
+aura_cephalic,F1-mesial-prefrontal,,,0.3,both,expert,
+aura_cephalic,F2-rostral,,,0.3,both,expert,
+aura_cephalic,Anterior-cingulate-cortex,,,0.3,both,expert,
+aura_cephalic,Hippocampus-anterior,,,0.3,both,expert,
+aura_cephalic,Amygdala,,,0.3,both,expert,
+aura_cephalic,Insula-gyri-brevi,,,0.3,both,expert,
+aura_cephalic,Temporal-pole,,,0.2,both,expert,
+aura_cephalic,Supramarginal-anterior,,,0.2,both,expert,
+somatosensory_paresthesia,Postcentral-gyrus,,,1.0,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Postcentral-sulcus,,,0.6,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Parietal-operculum,,,0.7,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Insula-gyri-longi,,,0.6,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Supramarginal-anterior,,,0.4,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Central-operculum,,,0.4,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Superior-parietal-lobule-P1,,,0.3,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Thalamus,,,0.2,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,SMA,,,0.2,symptomatogenic,Penfield; Mazzola 2017 (DES),SII/insula postérieure si bilatéral
+somatosensory_paresthesia,Central-sulcus-head-face,face,,0.8,symptomatogenic,Penfield (DES),
+somatosensory_paresthesia,Precentral-gyrus-head-face,face,,0.4,symptomatogenic,Penfield (DES),
+somatosensory_paresthesia,Central-operculum,face,,0.6,symptomatogenic,Penfield (DES),
+somatosensory_paresthesia,Central-sulcus-upper-limb,UL,,0.8,symptomatogenic,Penfield (DES),
+somatosensory_paresthesia,Precentral-gyrus-upper-limb,UL,,0.4,symptomatogenic,Penfield (DES),
+somatosensory_paresthesia,Paracentral-lobule,LL,,0.9,symptomatogenic,Penfield (DES),
+somatosensory_paresthesia,Marginal-branch-of-the-cingulate-sulcus,LL,,0.4,symptomatogenic,Penfield (DES),
+somatosensory_paresthesia,Paracentral-lobule,trunk,,0.5,symptomatogenic,expert,
+somatosensory_paresthesia,Postcentral-gyrus,trunk,,0.6,symptomatogenic,expert,
+somatosensory_paresthesia,Insula-gyri-longi,trunk,,0.6,symptomatogenic,expert,
+somatosensory_paresthesia,Parietal-operculum,trunk,,0.6,symptomatogenic,expert,
+somatosensory_paresthesia,Insula-gyri-longi,hemibody,,0.8,symptomatogenic,Mazzola 2017 (DES),hémicorps entier : SII / insula postérieure
+somatosensory_paresthesia,Parietal-operculum,hemibody,,0.8,symptomatogenic,Mazzola 2017 (DES),hémicorps entier : SII / insula postérieure
+somatosensory_paresthesia,Postcentral-gyrus,hemibody,,0.6,symptomatogenic,Mazzola 2017 (DES),hémicorps entier : SII / insula postérieure
+somatosensory_pain,Insula-gyri-longi,,,1.0,symptomatogenic,Mazzola 2017 (DES),douleur privilégiée quadrant postéro-supérieur de l insula
+somatosensory_pain,Parietal-operculum,,,0.8,symptomatogenic,Mazzola 2017 (DES),douleur privilégiée quadrant postéro-supérieur de l insula
+somatosensory_pain,Postcentral-gyrus,,,0.5,symptomatogenic,Mazzola 2017 (DES),douleur privilégiée quadrant postéro-supérieur de l insula
+somatosensory_pain,Central-operculum,,,0.5,symptomatogenic,Mazzola 2017 (DES),douleur privilégiée quadrant postéro-supérieur de l insula
+somatosensory_pain,Anterior-cingulate-cortex,,,0.3,symptomatogenic,Mazzola 2017 (DES),douleur privilégiée quadrant postéro-supérieur de l insula
+somatosensory_pain,Insula-gyri-brevi,,,0.4,symptomatogenic,Mazzola 2017 (DES),douleur privilégiée quadrant postéro-supérieur de l insula
+somatosensory_thermal,Insula-gyri-longi,,,0.9,symptomatogenic,Mazzola 2017 (DES),
+somatosensory_thermal,Parietal-operculum,,,0.6,symptomatogenic,Mazzola 2017 (DES),
+somatosensory_thermal,Postcentral-gyrus,,,0.4,symptomatogenic,Mazzola 2017 (DES),
+somatosensory_thermal,Insula-gyri-brevi,,,0.4,symptomatogenic,Mazzola 2017 (DES),
+laryngeal_constriction,Insula-gyri-brevi,,,0.9,symptomatogenic,Isnard 2004,premier temps de la séquence insulaire
+laryngeal_constriction,Insula-gyri-longi,,,0.8,symptomatogenic,Isnard 2004,premier temps de la séquence insulaire
+laryngeal_constriction,Central-operculum,,,0.6,symptomatogenic,Isnard 2004,premier temps de la séquence insulaire
+laryngeal_constriction,Parietal-operculum,,,0.4,symptomatogenic,Isnard 2004,premier temps de la séquence insulaire
+laryngeal_constriction,F3-pars-opercularis,,,0.3,symptomatogenic,Isnard 2004,premier temps de la séquence insulaire
+laryngeal_constriction,Amygdala,,,0.3,onset,expert,propagation temporo-insulaire fréquente (86 % des crises temporales atteignent l insula)
+laryngeal_constriction,Hippocampus-anterior,,,0.2,onset,expert,propagation temporo-insulaire fréquente (86 % des crises temporales atteignent l insula)
+laryngeal_constriction,Temporal-pole,,,0.2,onset,expert,propagation temporo-insulaire fréquente (86 % des crises temporales atteignent l insula)
+visual_elementary,Calcarine-sulcus,,,1.0,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,Occipital-pole,,,0.9,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,Cuneus,,,0.8,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,Lingual-gyrus,,,0.8,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,Lingual-sulcus,,,0.5,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,O1,,,0.5,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,O2,,,0.5,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,O3,,,0.5,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,Parieto-occipital-sulcus,,,0.4,symptomatogenic,Penfield; Salanova (DES),
+visual_elementary,Anterior-occipital-sulcus-and-preoccipital-notch,,,0.3,symptomatogenic,Penfield; Salanova (DES),
+visual_complex,Fusiform-gyrus,,,0.7,symptomatogenic,Penfield; expert,
+visual_complex,T3-posterior,,,0.6,symptomatogenic,Penfield; expert,
+visual_complex,O3,,,0.6,symptomatogenic,Penfield; expert,
+visual_complex,Occipito-temporal-sulcus,,,0.6,symptomatogenic,Penfield; expert,
+visual_complex,O2,,,0.5,symptomatogenic,Penfield; expert,
+visual_complex,T2-posterior,,,0.5,symptomatogenic,Penfield; expert,
+visual_complex,Parahippocampal-cortex,,,0.4,symptomatogenic,Penfield; expert,
+visual_complex,Lingual-gyrus,,,0.4,symptomatogenic,Penfield; expert,
+visual_complex,Hippocampus-posterior,,,0.3,symptomatogenic,Penfield; expert,
+visual_complex,Amygdala,,,0.3,symptomatogenic,Penfield; expert,
+visual_complex,Angular-gyrus,,,0.3,symptomatogenic,Penfield; expert,
+visual_complex,STS-posterior,,,0.3,symptomatogenic,Penfield; expert,
+visual_complex,Temporal-pole,,,0.2,symptomatogenic,Penfield; expert,
+visual_illusion,Angular-gyrus,,,0.6,symptomatogenic,expert,
+visual_illusion,O2,,,0.6,symptomatogenic,expert,
+visual_illusion,Anterior-occipital-sulcus-and-preoccipital-notch,,,0.6,symptomatogenic,expert,
+visual_illusion,T2-posterior,,,0.5,symptomatogenic,expert,
+visual_illusion,STS-posterior,,,0.5,symptomatogenic,expert,
+visual_illusion,Supramarginal-posterior,,,0.4,symptomatogenic,expert,
+visual_illusion,Intraparietal-sulcus,,,0.4,symptomatogenic,expert,
+visual_illusion,Fusiform-gyrus,,,0.4,symptomatogenic,expert,
+visual_illusion,Lingual-gyrus,,,0.3,symptomatogenic,expert,
+visual_loss,Calcarine-sulcus,,,0.9,symptomatogenic,expert,
+visual_loss,Occipital-pole,,,0.8,symptomatogenic,expert,
+visual_loss,Cuneus,,,0.6,symptomatogenic,expert,
+visual_loss,Lingual-gyrus,,,0.6,symptomatogenic,expert,
+visual_loss,O1,,,0.4,symptomatogenic,expert,
+auditory_elementary,Gyrus-of-Heschl,,,1.0,symptomatogenic,Penfield; Mazzola 2017 (DES),
+auditory_elementary,T1-planum-temporale,,,0.8,symptomatogenic,Penfield; Mazzola 2017 (DES),
+auditory_elementary,T1-lateral-posterior,,,0.5,symptomatogenic,Penfield; Mazzola 2017 (DES),
+auditory_elementary,T1-lateral-anterior,,,0.4,symptomatogenic,Penfield; Mazzola 2017 (DES),
+auditory_elementary,Parietal-operculum,,,0.3,symptomatogenic,Penfield; Mazzola 2017 (DES),
+auditory_elementary,Insula-gyri-longi,,,0.3,symptomatogenic,Penfield; Mazzola 2017 (DES),
+auditory_elementary,STS-posterior,,,0.3,symptomatogenic,Penfield; Mazzola 2017 (DES),
+auditory_elementary,T1-lateral-anterior,,,0.3,onset,Maillard 2004,groupe latéral : hallucination auditive initiale
+auditory_elementary,T2-anterior,,,0.2,onset,Maillard 2004,groupe latéral : hallucination auditive initiale
+auditory_complex,T1-lateral-posterior,,,0.7,symptomatogenic,Penfield; expert,
+auditory_complex,T1-planum-temporale,,,0.7,symptomatogenic,Penfield; expert,
+auditory_complex,STS-posterior,,,0.6,symptomatogenic,Penfield; expert,
+auditory_complex,T1-lateral-anterior,,,0.6,symptomatogenic,Penfield; expert,
+auditory_complex,T2-posterior,,,0.5,symptomatogenic,Penfield; expert,
+auditory_complex,Gyrus-of-Heschl,,,0.5,symptomatogenic,Penfield; expert,
+auditory_complex,STS-anterior,,,0.4,symptomatogenic,Penfield; expert,
+auditory_complex,T1-planum-polare,,,0.3,symptomatogenic,Penfield; expert,
+auditory_complex,Hippocampus-anterior,,,0.3,symptomatogenic,Penfield; expert,
+auditory_complex,Amygdala,,,0.3,symptomatogenic,Penfield; expert,
+auditory_complex,Temporal-pole,,,0.3,symptomatogenic,Penfield; expert,
+auditory_illusion,T1-lateral-posterior,,,0.7,symptomatogenic,expert,
+auditory_illusion,T1-planum-temporale,,,0.7,symptomatogenic,expert,
+auditory_illusion,Gyrus-of-Heschl,,,0.5,symptomatogenic,expert,
+auditory_illusion,STS-posterior,,,0.4,symptomatogenic,expert,
+auditory_illusion,Supramarginal-posterior,,,0.3,symptomatogenic,expert,
+olfactory,Amygdala,,,0.9,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+olfactory,Rhinal-cortex,,,0.8,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+olfactory,Orbito-frontal-cortex,,,0.5,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+olfactory,Gyrus-rectus,,,0.4,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+olfactory,Hippocampus-anterior,,,0.5,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+olfactory,Insula-gyri-brevi,,,0.4,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+olfactory,Temporal-pole,,,0.4,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+olfactory,Subcallosal-area,,,0.2,symptomatogenic,Selimbeyoglu 2010 (DES); expert,cortex piriforme ≈ amygdale/rhinal
+gustatory,Insula-gyri-brevi,,,0.9,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+gustatory,Central-operculum,,,0.8,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+gustatory,Parietal-operculum,,,0.6,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+gustatory,Insula-gyri-longi,,,0.5,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+gustatory,Amygdala,,,0.3,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+gustatory,Hippocampus-anterior,,,0.3,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+gustatory,Rhinal-cortex,,,0.2,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+gustatory,Temporal-pole,,,0.2,symptomatogenic,Mazzola 2017 (DES),goût : insula moyenne dorsale exclusivement en stimulation
+vestibular,Insula-gyri-longi,,,0.8,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,Parietal-operculum,,,0.8,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,Supramarginal-anterior,,,0.6,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,Supramarginal-posterior,,,0.5,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,T1-lateral-posterior,,,0.5,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,STS-posterior,,,0.4,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,Angular-gyrus,,,0.3,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,Intraparietal-sulcus,,,0.3,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,Central-operculum,,,0.3,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,F2-caudal,,,0.2,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+vestibular,Precuneus,,,0.2,symptomatogenic,Mazzola 2017 (DES); expert,PIVC
+genital_sensation,Paracentral-lobule,,,0.9,symptomatogenic,expert,
+genital_sensation,Postcentral-gyrus,,,0.4,symptomatogenic,expert,
+genital_sensation,Parietal-operculum,,,0.4,symptomatogenic,expert,
+genital_sensation,Insula-gyri-longi,,,0.3,symptomatogenic,expert,
+genital_sensation,Amygdala,,,0.3,symptomatogenic,expert,
+genital_sensation,Hippocampus-anterior,,,0.3,symptomatogenic,expert,
+genital_sensation,Temporal-pole,,,0.2,symptomatogenic,expert,
+urinary_urge,Amygdala,,,0.5,symptomatogenic,ILAE 2022; expert,
+urinary_urge,Hippocampus-anterior,,,0.5,symptomatogenic,ILAE 2022; expert,
+urinary_urge,Insula-gyri-brevi,,,0.5,symptomatogenic,ILAE 2022; expert,
+urinary_urge,T1-lateral-anterior,,,0.4,symptomatogenic,ILAE 2022; expert,
+urinary_urge,Paracentral-lobule,,,0.3,symptomatogenic,ILAE 2022; expert,
+urinary_urge,Anterior-cingulate-cortex,,,0.3,symptomatogenic,ILAE 2022; expert,
+urinary_urge,Temporal-pole,,,0.3,symptomatogenic,ILAE 2022; expert,
+unspecific_aura,Amygdala,,,0.3,both,expert,
+unspecific_aura,Hippocampus-anterior,,,0.3,both,expert,
+unspecific_aura,Temporal-pole,,,0.2,both,expert,
+unspecific_aura,Insula-gyri-brevi,,,0.3,both,expert,
+unspecific_aura,F1-mesial-prefrontal,,,0.2,both,expert,
+unspecific_aura,Orbito-frontal-cortex,,,0.2,both,expert,
+unspecific_aura,Anterior-cingulate-cortex,,,0.2,both,expert,
+unspecific_aura,F2-rostral,,,0.2,both,expert,
+fear,Amygdala,,,1.0,both,Maillard 2004; Bartolomei 2005,peur initiale : mésial temporal
+fear,Hippocampus-anterior,,,0.5,both,Maillard 2004; Bartolomei 2005,peur initiale : mésial temporal
+fear,Temporal-pole,,,0.5,both,Maillard 2004; Bartolomei 2005,peur initiale : mésial temporal
+fear,Rhinal-cortex,,,0.3,both,Maillard 2004; Bartolomei 2005,peur initiale : mésial temporal
+fear,Insula-gyri-brevi,,,0.5,both,Maillard 2004; Bartolomei 2005,peur initiale : mésial temporal
+fear,Anterior-cingulate-cortex,,,0.6,both,Bonini 2014 (G4),préfrontal ventromédian
+fear,Orbito-frontal-cortex,,,0.6,both,Bonini 2014 (G4),préfrontal ventromédian
+fear,Gyrus-rectus,,,0.5,both,Bonini 2014 (G4),préfrontal ventromédian
+fear,Subcallosal-area,,,0.4,both,Bonini 2014 (G4),préfrontal ventromédian
+fear,F1-mesial-prefrontal,,,0.4,both,Bonini 2014 (G4),préfrontal ventromédian
+deja_vu,Rhinal-cortex,,,1.0,symptomatogenic,Bartolomei 2004 (DES); Barbeau 2005,
+deja_vu,Hippocampus-anterior,,,0.8,symptomatogenic,Bartolomei 2004 (DES); Barbeau 2005,
+deja_vu,Amygdala,,,0.6,symptomatogenic,Bartolomei 2004 (DES); Barbeau 2005,
+deja_vu,Parahippocampal-cortex,,,0.5,symptomatogenic,Bartolomei 2004 (DES); Barbeau 2005,
+deja_vu,Temporal-pole,,,0.5,symptomatogenic,Bartolomei 2004 (DES); Barbeau 2005,
+deja_vu,T2-anterior,,,0.3,symptomatogenic,Bartolomei 2004 (DES); Barbeau 2005,
+deja_vu,Hippocampus-posterior,,,0.3,symptomatogenic,Bartolomei 2004 (DES); Barbeau 2005,
+reminiscence,Hippocampus-anterior,,,0.8,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,Rhinal-cortex,,,0.8,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,Amygdala,,,0.7,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,Temporal-pole,,,0.6,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,Parahippocampal-cortex,,,0.5,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,T1-lateral-anterior,,,0.4,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,T2-anterior,,,0.4,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,Hippocampus-posterior,,,0.4,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+reminiscence,STS-anterior,,,0.3,symptomatogenic,"Vignal 2007 (dreamy state, DES); Barbeau 2005",
+derealization,Rhinal-cortex,,,0.5,symptomatogenic,expert,
+derealization,Hippocampus-anterior,,,0.5,symptomatogenic,expert,
+derealization,Amygdala,,,0.5,symptomatogenic,expert,
+derealization,Temporal-pole,,,0.5,symptomatogenic,expert,
+derealization,Angular-gyrus,,,0.4,symptomatogenic,expert,
+derealization,STS-posterior,,,0.3,symptomatogenic,expert,
+derealization,Insula-gyri-brevi,,,0.3,symptomatogenic,expert,
+derealization,Supramarginal-posterior,,,0.3,symptomatogenic,expert,
+out_of_body,Angular-gyrus,,,0.9,symptomatogenic,Blanke 2002 (DES),
+out_of_body,Supramarginal-posterior,,,0.7,symptomatogenic,Blanke 2002 (DES),
+out_of_body,STS-posterior,,,0.6,symptomatogenic,Blanke 2002 (DES),
+out_of_body,T1-lateral-posterior,,,0.5,symptomatogenic,Blanke 2002 (DES),
+out_of_body,Precuneus,,,0.5,symptomatogenic,Blanke 2002 (DES),
+out_of_body,Parietal-operculum,,,0.4,symptomatogenic,Blanke 2002 (DES),
+out_of_body,Insula-gyri-longi,,,0.3,symptomatogenic,Blanke 2002 (DES),
+out_of_body,Intraparietal-sulcus,,,0.3,symptomatogenic,Blanke 2002 (DES),
+forced_thinking,F1-lateral-prefrontal,,,0.7,symptomatogenic,expert,
+forced_thinking,F2-rostral,,,0.7,symptomatogenic,expert,
+forced_thinking,F1-mesial-prefrontal,,,0.6,symptomatogenic,expert,
+forced_thinking,SFS-rostral,,,0.5,symptomatogenic,expert,
+forced_thinking,Frontal-pole,,,0.5,symptomatogenic,expert,
+forced_thinking,Anterior-cingulate-cortex,,,0.4,symptomatogenic,expert,
+forced_thinking,F3-Pars-triangularis,,,0.4,symptomatogenic,expert,
+forced_thinking,Inferior-frontal-sulcus,,,0.4,symptomatogenic,expert,
+ecstatic,Insula-gyri-brevi,,,1.0,symptomatogenic,Picard 2013; Gschwind 2016,
+ecstatic,Insula-gyri-longi,,,0.3,symptomatogenic,Picard 2013; Gschwind 2016,
+ecstatic,Anterior-cingulate-cortex,,,0.4,symptomatogenic,Picard 2013; Gschwind 2016,
+ecstatic,Temporal-pole,,,0.3,symptomatogenic,Picard 2013; Gschwind 2016,
+ecstatic,Amygdala,,,0.3,symptomatogenic,Picard 2013; Gschwind 2016,
+ecstatic,Hippocampus-anterior,,,0.3,symptomatogenic,Picard 2013; Gschwind 2016,
+sadness,Amygdala,,,0.5,symptomatogenic,expert,
+sadness,Anterior-cingulate-cortex,,,0.5,symptomatogenic,expert,
+sadness,Subcallosal-area,,,0.4,symptomatogenic,expert,
+sadness,Orbito-frontal-cortex,,,0.4,symptomatogenic,expert,
+sadness,Temporal-pole,,,0.3,symptomatogenic,expert,
+sadness,Hippocampus-anterior,,,0.3,symptomatogenic,expert,
+sadness,F1-mesial-prefrontal,,,0.3,symptomatogenic,expert,
+anger,Amygdala,,,0.6,symptomatogenic,expert,
+anger,Orbito-frontal-cortex,,,0.5,symptomatogenic,expert,
+anger,Anterior-cingulate-cortex,,,0.4,symptomatogenic,expert,
+anger,Temporal-pole,,,0.4,symptomatogenic,expert,
+anger,Gyrus-rectus,,,0.3,symptomatogenic,expert,
+sexual_arousal,Amygdala,,,0.5,symptomatogenic,expert,
+sexual_arousal,Hippocampus-anterior,,,0.4,symptomatogenic,expert,
+sexual_arousal,Temporal-pole,,,0.4,symptomatogenic,expert,
+sexual_arousal,Paracentral-lobule,,,0.3,symptomatogenic,expert,
+sexual_arousal,Insula-gyri-brevi,,,0.3,symptomatogenic,expert,
+sexual_arousal,Orbito-frontal-cortex,,,0.3,symptomatogenic,expert,
+loss_of_awareness,Hippocampus-anterior,,,0.5,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,Hippocampus-posterior,,,0.5,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,Amygdala,,,0.4,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,Parahippocampal-cortex,,,0.4,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,Anterior-cingulate-cortex,,,0.4,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,F1-mesial-prefrontal,,,0.4,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,PreSMA,,,0.3,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,Middle-cingulate-cortex-anterior-part,,,0.3,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,Insula-gyri-brevi,,,0.3,both,Bartolomei & Naccache 2011; Arthuis 2009,synchronie temporo-pariéto-frontale (espace de travail global)
+loss_of_awareness,Thalamus,,,0.7,propagation,Blumenfeld; Arthuis 2009,"thalamus et cortex pariétal médian recrutés, jamais origine"
+loss_of_awareness,Posterior-cingulate-cortex-dorsal,,,0.5,propagation,Blumenfeld; Arthuis 2009,"thalamus et cortex pariétal médian recrutés, jamais origine"
+loss_of_awareness,Precuneus,,,0.5,propagation,Blumenfeld; Arthuis 2009,"thalamus et cortex pariétal médian recrutés, jamais origine"
+loss_of_awareness,Angular-gyrus,,,0.3,propagation,Blumenfeld; Arthuis 2009,"thalamus et cortex pariétal médian recrutés, jamais origine"
+loss_of_awareness,Caudate-nucleus,,,0.2,propagation,Blumenfeld; Arthuis 2009,"thalamus et cortex pariétal médian recrutés, jamais origine"
+loss_of_awareness,T1-lateral-anterior,,early,0.5,onset,Maillard 2004,rupture de contact initiale : groupe latéral / néocortical
+loss_of_awareness,T1-lateral-posterior,,early,0.4,onset,Maillard 2004,rupture de contact initiale : groupe latéral / néocortical
+loss_of_awareness,T2-anterior,,early,0.3,onset,Maillard 2004,rupture de contact initiale : groupe latéral / néocortical
+loss_of_awareness,STS-anterior,,early,0.2,onset,Maillard 2004,rupture de contact initiale : groupe latéral / néocortical
+loss_of_awareness,Hippocampus-anterior,,late,0.3,onset,Maillard 2004,rupture de contact retardée : groupe mésial
+loss_of_awareness,Amygdala,,late,0.3,onset,Maillard 2004,rupture de contact retardée : groupe mésial
+loss_of_awareness,Rhinal-cortex,,late,0.2,onset,Maillard 2004,rupture de contact retardée : groupe mésial
+behavioral_arrest,Anterior-cingulate-cortex,,,0.6,both,expert,
+behavioral_arrest,PreSMA,,,0.5,both,expert,
+behavioral_arrest,SMA,,,0.4,both,expert,
+behavioral_arrest,F1-mesial-prefrontal,,,0.5,both,expert,
+behavioral_arrest,Hippocampus-anterior,,,0.4,both,expert,
+behavioral_arrest,Amygdala,,,0.4,both,expert,
+behavioral_arrest,Temporal-pole,,,0.3,both,expert,
+behavioral_arrest,Insula-gyri-brevi,,,0.3,both,expert,
+behavioral_arrest,Thalamus,,,0.4,propagation,expert,
+behavioral_arrest,Precuneus,,,0.3,propagation,expert,
+behavioral_arrest,Posterior-cingulate-cortex-dorsal,,,0.3,propagation,expert,
+behavioral_arrest,Caudate-nucleus,,,0.3,propagation,expert,
+arousal_from_sleep,Anterior-cingulate-cortex,,,0.5,both,Tinuper 2016; expert,
+arousal_from_sleep,Thalamus,,,0.5,both,Tinuper 2016; expert,
+arousal_from_sleep,SMA,,,0.4,both,Tinuper 2016; expert,
+arousal_from_sleep,PreSMA,,,0.4,both,Tinuper 2016; expert,
+arousal_from_sleep,F1-mesial-prefrontal,,,0.4,both,Tinuper 2016; expert,
+arousal_from_sleep,Insula-gyri-brevi,,,0.3,both,Tinuper 2016; expert,
+arousal_from_sleep,Orbito-frontal-cortex,,,0.3,both,Tinuper 2016; expert,
+arousal_from_sleep,Middle-cingulate-cortex-anterior-part,,,0.3,both,Tinuper 2016; expert,
+confusion,Hippocampus-anterior,,,0.4,both,expert,
+confusion,Hippocampus-posterior,,,0.4,both,expert,
+confusion,Thalamus,,,0.4,both,expert,
+confusion,Parahippocampal-cortex,,,0.3,both,expert,
+confusion,Anterior-cingulate-cortex,,,0.3,both,expert,
+confusion,F1-mesial-prefrontal,,,0.3,both,expert,
+confusion,Precuneus,,,0.3,both,expert,
+speech_arrest,F3-pars-opercularis,,,0.9,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,Precentral-gyrus-head-face,,,0.9,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,Central-operculum,,,0.8,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,Precentral-sulcus-inferior-part,,,0.7,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,SMA,,,0.7,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,Insula-gyri-brevi,,,0.6,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,F3-Pars-triangularis,,,0.5,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,PreSMA,,,0.5,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,Central-sulcus-head-face,,,0.5,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+speech_arrest,Inferior-frontal-sulcus,,,0.3,symptomatogenic,Penfield; Lüders (DES),aires motrices négatives
+aphasia_production,F3-pars-opercularis,,,0.8,symptomatogenic,expert,
+aphasia_production,F3-Pars-triangularis,,,0.8,symptomatogenic,expert,
+aphasia_production,Inferior-frontal-sulcus,,,0.5,symptomatogenic,expert,
+aphasia_production,T1-lateral-posterior,,,0.6,symptomatogenic,expert,
+aphasia_production,STS-posterior,,,0.5,symptomatogenic,expert,
+aphasia_production,T2-posterior,,,0.5,symptomatogenic,expert,
+aphasia_production,Supramarginal-anterior,,,0.5,symptomatogenic,expert,
+aphasia_production,Insula-gyri-brevi,,,0.4,symptomatogenic,expert,
+aphasia_production,Precentral-sulcus-inferior-part,,,0.4,symptomatogenic,expert,
+aphasia_production,T3-posterior,,,0.3,symptomatogenic,expert,
+aphasia_production,F2-caudal,,,0.2,symptomatogenic,expert,
+aphasia_production,Caudate-nucleus,,,0.2,symptomatogenic,expert,
+aphasia_comprehension,T1-lateral-posterior,,,1.0,symptomatogenic,expert,
+aphasia_comprehension,T1-planum-temporale,,,0.8,symptomatogenic,expert,
+aphasia_comprehension,STS-posterior,,,0.8,symptomatogenic,expert,
+aphasia_comprehension,T2-posterior,,,0.7,symptomatogenic,expert,
+aphasia_comprehension,Supramarginal-posterior,,,0.5,symptomatogenic,expert,
+aphasia_comprehension,Angular-gyrus,,,0.5,symptomatogenic,expert,
+aphasia_comprehension,Gyrus-of-Heschl,,,0.4,symptomatogenic,expert,
+aphasia_comprehension,T2-anterior,,,0.3,symptomatogenic,expert,
+aphasia_comprehension,T3-posterior,,,0.3,symptomatogenic,expert,
+dysarthria,Precentral-gyrus-head-face,,,0.9,symptomatogenic,Isnard 2004; expert,
+dysarthria,Central-operculum,,,0.8,symptomatogenic,Isnard 2004; expert,
+dysarthria,Insula-gyri-brevi,,,0.6,symptomatogenic,Isnard 2004; expert,
+dysarthria,Insula-gyri-longi,,,0.5,symptomatogenic,Isnard 2004; expert,
+dysarthria,F3-pars-opercularis,,,0.5,symptomatogenic,Isnard 2004; expert,
+dysarthria,Central-sulcus-head-face,,,0.5,symptomatogenic,Isnard 2004; expert,
+dysarthria,Parietal-operculum,,,0.3,symptomatogenic,Isnard 2004; expert,
+dysarthria,Cerebellar-cortex,,,0.2,symptomatogenic,Isnard 2004; expert,
+dysarthria,Putamen,,,0.2,symptomatogenic,Isnard 2004; expert,
+vocalization,SMA,,,0.7,symptomatogenic,expert,
+vocalization,Anterior-cingulate-cortex,,,0.6,symptomatogenic,expert,
+vocalization,PreSMA,,,0.5,symptomatogenic,expert,
+vocalization,Precentral-gyrus-head-face,,,0.5,symptomatogenic,expert,
+vocalization,Central-operculum,,,0.5,symptomatogenic,expert,
+vocalization,F3-pars-opercularis,,,0.4,symptomatogenic,expert,
+vocalization,Insula-gyri-brevi,,,0.4,symptomatogenic,expert,
+vocalization,Amygdala,,,0.3,symptomatogenic,expert,
+vocalization,Orbito-frontal-cortex,,,0.3,symptomatogenic,expert,
+vocalization,Middle-cingulate-cortex-anterior-part,,,0.3,symptomatogenic,expert,
+verbal_automatisms,T1-lateral-anterior,,,0.5,both,ILAE 2022; expert,
+verbal_automatisms,T1-lateral-posterior,,,0.4,both,ILAE 2022; expert,
+verbal_automatisms,T2-anterior,,,0.4,both,ILAE 2022; expert,
+verbal_automatisms,Hippocampus-anterior,,,0.4,both,ILAE 2022; expert,
+verbal_automatisms,Amygdala,,,0.4,both,ILAE 2022; expert,
+verbal_automatisms,Temporal-pole,,,0.4,both,ILAE 2022; expert,
+verbal_automatisms,F1-mesial-prefrontal,,,0.3,both,ILAE 2022; expert,
+verbal_automatisms,Anterior-cingulate-cortex,,,0.3,both,ILAE 2022; expert,
+verbal_automatisms,Orbito-frontal-cortex,,,0.3,both,ILAE 2022; expert,
+vocal_automatisms,Insula-gyri-brevi,,,0.4,both,expert,
+vocal_automatisms,T1-lateral-anterior,,,0.4,both,expert,
+vocal_automatisms,Temporal-pole,,,0.4,both,expert,
+vocal_automatisms,Anterior-cingulate-cortex,,,0.4,both,expert,
+vocal_automatisms,SMA,,,0.3,both,expert,
+vocal_automatisms,F1-mesial-prefrontal,,,0.3,both,expert,
+vocal_automatisms,Amygdala,,,0.3,both,expert,
+vocal_automatisms,Hippocampus-anterior,,,0.3,both,expert,
+clonic,Precentral-sulcus-inferior-part,,,0.4,symptomatogenic,expert,
+clonic,Precentral-sulcus-superior-part,,,0.4,symptomatogenic,expert,
+clonic,Postcentral-gyrus,,,0.4,symptomatogenic,expert,
+clonic,SMA,,,0.3,symptomatogenic,expert,
+clonic,F1-lateral-premotor,,,0.3,symptomatogenic,expert,
+clonic,F2-caudal,,,0.2,symptomatogenic,expert,
+clonic,Precentral-gyrus-head-face,face,,1.0,symptomatogenic,Penfield (DES),
+clonic,Central-sulcus-head-face,face,,0.8,symptomatogenic,Penfield (DES),
+clonic,Central-operculum,face,,0.5,symptomatogenic,Penfield (DES),
+clonic,Precentral-gyrus-upper-limb,UL,,1.0,symptomatogenic,Penfield (DES),
+clonic,Central-sulcus-upper-limb,UL,,0.8,symptomatogenic,Penfield (DES),
+clonic,F1-lateral-premotor,UL,,0.3,symptomatogenic,Penfield (DES),
+clonic,Paracentral-lobule,LL,,1.0,symptomatogenic,Penfield (DES),
+clonic,Marginal-branch-of-the-cingulate-sulcus,LL,,0.3,symptomatogenic,Penfield (DES),
+clonic,SMA,LL,,0.3,symptomatogenic,Penfield (DES),
+clonic,Paracentral-lobule,trunk,,0.6,symptomatogenic,expert,
+clonic,Precentral-gyrus-upper-limb,trunk,,0.5,symptomatogenic,expert,
+clonic,SMA,trunk,,0.4,symptomatogenic,expert,
+clonic,Precentral-gyrus-upper-limb,hemibody,,0.8,symptomatogenic,expert,
+clonic,Precentral-gyrus-head-face,hemibody,,0.7,symptomatogenic,expert,
+clonic,Paracentral-lobule,hemibody,,0.6,symptomatogenic,expert,
+clonic,Central-sulcus-upper-limb,hemibody,,0.6,symptomatogenic,expert,
+clonic,Central-sulcus-head-face,hemibody,,0.5,symptomatogenic,expert,
+tonic,SMA,,,0.9,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,PreSMA,,,0.5,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,F1-lateral-premotor,,,0.7,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,F2-caudal,,,0.5,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,Precentral-sulcus-superior-part,,,0.6,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,Middle-cingulate-cortex-anterior-part,,,0.5,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,Anterior-cingulate-cortex,,,0.3,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,Insula-gyri-longi,,,0.3,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,Putamen,,,0.3,symptomatogenic,Bonini 2014 (G1-G2); expert,
+tonic,Precentral-gyrus-head-face,face,,0.6,symptomatogenic,expert,
+tonic,Central-operculum,face,,0.3,symptomatogenic,expert,
+tonic,Precentral-gyrus-upper-limb,UL,,0.7,symptomatogenic,expert,
+tonic,Paracentral-lobule,LL,,0.6,symptomatogenic,expert,
+asymmetric_tonic,SMA,,,1.0,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,PreSMA,,,0.6,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,Paracentral-lobule,,,0.5,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,F1-lateral-premotor,,,0.7,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,Middle-cingulate-cortex-anterior-part,,,0.5,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,Precentral-gyrus-upper-limb,,,0.5,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,F2-caudal,,,0.4,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,Precentral-sulcus-superior-part,,,0.5,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,Insula-gyri-longi,,,0.3,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,Parietal-operculum,,,0.2,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+asymmetric_tonic,Thalamus,,,0.2,symptomatogenic,ILAE 2022; Chisholm 2025,bras tendu controlatéral
+bilateral_asymmetric_tonic,SMA,,,0.9,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,PreSMA,,,0.6,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,F1-mesial-prefrontal,,,0.5,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,Middle-cingulate-cortex-anterior-part,,,0.5,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,Anterior-cingulate-cortex,,,0.4,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,F1-lateral-premotor,,,0.5,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,Insula-gyri-longi,,,0.4,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,Paracentral-lobule,,,0.4,symptomatogenic,Chisholm 2025; expert,
+bilateral_asymmetric_tonic,Thalamus,,,0.2,symptomatogenic,Chisholm 2025; expert,
+axial_tonic,SMA,,,0.9,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,PreSMA,,,0.7,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,F1-mesial-prefrontal,,,0.6,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,Middle-cingulate-cortex-anterior-part,,,0.6,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,Anterior-cingulate-cortex,,,0.5,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,F1-lateral-premotor,,,0.5,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,Paracentral-lobule,,,0.4,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,Insula-gyri-longi,,,0.3,symptomatogenic,Bonini 2014 (G2),
+axial_tonic,Thalamus,,,0.3,symptomatogenic,Bonini 2014 (G2),
+dystonic_posturing,Putamen,,,0.8,propagation,Dupont 1998; expert,"implication des ganglions de la base : zone de propagation, jamais d origine"
+dystonic_posturing,Caudate-nucleus,,,0.4,propagation,Dupont 1998; expert,"implication des ganglions de la base : zone de propagation, jamais d origine"
+dystonic_posturing,Pallidum,,,0.4,propagation,Dupont 1998; expert,"implication des ganglions de la base : zone de propagation, jamais d origine"
+dystonic_posturing,Thalamus,,,0.3,propagation,Dupont 1998; expert,"implication des ganglions de la base : zone de propagation, jamais d origine"
+dystonic_posturing,SMA,,late,0.4,propagation,expert,
+dystonic_posturing,F1-lateral-premotor,,late,0.3,propagation,expert,
+dystonic_posturing,Anterior-cingulate-cortex,,late,0.3,propagation,expert,
+dystonic_posturing,Precentral-gyrus-upper-limb,,late,0.3,propagation,expert,
+dystonic_posturing,Middle-cingulate-cortex-anterior-part,,late,0.3,propagation,expert,
+dystonic_posturing,Hippocampus-anterior,,,0.6,onset,Kotagal; Dupont 1998; ILAE 2022,"marqueur de crise temporale mésiale, retardé (propagation mésio-striatale)"
+dystonic_posturing,Amygdala,,,0.6,onset,Kotagal; Dupont 1998; ILAE 2022,"marqueur de crise temporale mésiale, retardé (propagation mésio-striatale)"
+dystonic_posturing,Rhinal-cortex,,,0.4,onset,Kotagal; Dupont 1998; ILAE 2022,"marqueur de crise temporale mésiale, retardé (propagation mésio-striatale)"
+dystonic_posturing,Insula-gyri-brevi,,,0.4,onset,Kotagal; Dupont 1998; ILAE 2022,"marqueur de crise temporale mésiale, retardé (propagation mésio-striatale)"
+dystonic_posturing,Temporal-pole,,,0.3,onset,Kotagal; Dupont 1998; ILAE 2022,"marqueur de crise temporale mésiale, retardé (propagation mésio-striatale)"
+myoclonus,Postcentral-gyrus,,,0.5,symptomatogenic,expert,
+myoclonus,Precentral-sulcus-inferior-part,,,0.3,symptomatogenic,expert,
+myoclonus,Precentral-sulcus-superior-part,,,0.3,symptomatogenic,expert,
+myoclonus,SMA,,,0.2,symptomatogenic,expert,
+myoclonus,Thalamus,,,0.2,symptomatogenic,expert,
+myoclonus,Precentral-gyrus-head-face,face,,0.9,symptomatogenic,expert,
+myoclonus,Central-sulcus-head-face,face,,0.8,symptomatogenic,expert,
+myoclonus,Precentral-gyrus-upper-limb,UL,,0.9,symptomatogenic,expert,
+myoclonus,Central-sulcus-upper-limb,UL,,0.8,symptomatogenic,expert,
+myoclonus,Paracentral-lobule,LL,,0.9,symptomatogenic,expert,
+negative_myoclonus,Postcentral-gyrus,,,0.6,symptomatogenic,Lüders (aires motrices négatives),
+negative_myoclonus,Precentral-sulcus-inferior-part,,,0.4,symptomatogenic,Lüders (aires motrices négatives),
+negative_myoclonus,SMA,,,0.5,symptomatogenic,Lüders (aires motrices négatives),
+negative_myoclonus,F3-pars-opercularis,,,0.4,symptomatogenic,Lüders (aires motrices négatives),
+negative_myoclonus,Central-operculum,,,0.4,symptomatogenic,Lüders (aires motrices négatives),
+negative_myoclonus,Precentral-gyrus-upper-limb,UL,,0.7,symptomatogenic,expert,
+negative_myoclonus,Central-sulcus-upper-limb,UL,,0.6,symptomatogenic,expert,
+negative_myoclonus,Paracentral-lobule,LL,,0.7,symptomatogenic,expert,
+ictal_paresis,SMA,,,0.6,symptomatogenic,Lüders; expert,
+ictal_paresis,F3-pars-opercularis,,,0.5,symptomatogenic,Lüders; expert,
+ictal_paresis,Precentral-sulcus-inferior-part,,,0.5,symptomatogenic,Lüders; expert,
+ictal_paresis,Postcentral-gyrus,,,0.4,symptomatogenic,Lüders; expert,
+ictal_paresis,Central-operculum,,,0.4,symptomatogenic,Lüders; expert,
+ictal_paresis,Parietal-operculum,,,0.3,symptomatogenic,Lüders; expert,
+ictal_paresis,Supramarginal-anterior,,,0.3,symptomatogenic,Lüders; expert,
+ictal_paresis,Thalamus,,,0.2,symptomatogenic,Lüders; expert,
+ictal_paresis,Precentral-gyrus-head-face,face,,0.6,symptomatogenic,expert,
+ictal_paresis,Central-sulcus-head-face,face,,0.4,symptomatogenic,expert,
+ictal_paresis,Precentral-gyrus-upper-limb,UL,,0.6,symptomatogenic,expert,
+ictal_paresis,Central-sulcus-upper-limb,UL,,0.4,symptomatogenic,expert,
+ictal_paresis,Paracentral-lobule,LL,,0.6,symptomatogenic,expert,
+ictal_paresis,Precentral-gyrus-upper-limb,hemibody,,0.5,symptomatogenic,expert,
+ictal_paresis,Precentral-gyrus-head-face,hemibody,,0.5,symptomatogenic,expert,
+ictal_paresis,Paracentral-lobule,hemibody,,0.5,symptomatogenic,expert,
+head_version,F2-caudal,,,1.0,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,SFS-caudal,,,0.7,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,F1-lateral-premotor,,,0.7,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,Precentral-sulcus-superior-part,,,0.6,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,SMA,,,0.6,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,PreSMA,,,0.5,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,Precentral-gyrus-head-face,,,0.4,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,Precentral-gyrus-upper-limb,,,0.3,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,Middle-cingulate-cortex-anterior-part,,,0.3,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,Intraparietal-sulcus,,,0.3,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,O2,,,0.2,symptomatogenic,Penfield; Bonini 2014 (G1),FEF ; version précédant une GTC : controlatérale et fiable
+head_version,F2-caudal,,late,0.6,propagation,expert,"version tardive avant généralisation : propagation frontale, quelle que soit l origine"
+head_version,SFS-caudal,,late,0.4,propagation,expert,"version tardive avant généralisation : propagation frontale, quelle que soit l origine"
+head_version,F1-lateral-premotor,,late,0.4,propagation,expert,"version tardive avant généralisation : propagation frontale, quelle que soit l origine"
+head_version,Hippocampus-anterior,,late,0.2,onset,expert,
+head_version,Amygdala,,late,0.2,onset,expert,
+head_version,Insula-gyri-brevi,,late,0.2,onset,expert,
+eye_version,F2-caudal,,,1.0,symptomatogenic,Penfield; expert,
+eye_version,SFS-caudal,,,0.6,symptomatogenic,Penfield; expert,
+eye_version,F1-lateral-premotor,,,0.6,symptomatogenic,Penfield; expert,
+eye_version,Precentral-sulcus-superior-part,,,0.5,symptomatogenic,Penfield; expert,
+eye_version,Intraparietal-sulcus,,,0.5,symptomatogenic,Penfield; expert,
+eye_version,Superior-parietal-lobule-P1,,,0.3,symptomatogenic,Penfield; expert,
+eye_version,O2,,,0.4,symptomatogenic,Penfield; expert,
+eye_version,Occipital-pole,,,0.3,symptomatogenic,Penfield; expert,
+eye_version,Calcarine-sulcus,,,0.3,symptomatogenic,Penfield; expert,
+eye_version,Cuneus,,,0.3,symptomatogenic,Penfield; expert,
+eye_version,SMA,,,0.3,symptomatogenic,Penfield; expert,
+nystagmus,O2,,,0.6,symptomatogenic,expert,
+nystagmus,O1,,,0.5,symptomatogenic,expert,
+nystagmus,Occipital-pole,,,0.5,symptomatogenic,expert,
+nystagmus,Intraparietal-sulcus,,,0.6,symptomatogenic,expert,
+nystagmus,Angular-gyrus,,,0.4,symptomatogenic,expert,
+nystagmus,Superior-parietal-lobule-P1,,,0.4,symptomatogenic,expert,
+nystagmus,F2-caudal,,,0.6,symptomatogenic,expert,
+nystagmus,Parietal-operculum,,,0.3,symptomatogenic,expert,
+nystagmus,Insula-gyri-longi,,,0.3,symptomatogenic,expert,
+nystagmus,Cuneus,,,0.3,symptomatogenic,expert,
+head_turn_nonforced,Amygdala,,,0.5,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+head_turn_nonforced,Hippocampus-anterior,,,0.5,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+head_turn_nonforced,Temporal-pole,,,0.4,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+head_turn_nonforced,T1-lateral-anterior,,,0.3,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+head_turn_nonforced,Insula-gyri-brevi,,,0.3,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+head_turn_nonforced,Orbito-frontal-cortex,,,0.3,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+head_turn_nonforced,F1-mesial-prefrontal,,,0.2,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+head_turn_nonforced,Anterior-cingulate-cortex,,,0.3,onset,ILAE 2022; expert,"ipsilatéral, précoce, temporal"
+blinking,Precentral-gyrus-head-face,,,0.4,both,Chisholm 2025; expert,
+blinking,Central-operculum,,,0.3,both,Chisholm 2025; expert,
+blinking,Insula-gyri-brevi,,,0.4,both,Chisholm 2025; expert,
+blinking,Anterior-cingulate-cortex,,,0.4,both,Chisholm 2025; expert,
+blinking,SMA,,,0.3,both,Chisholm 2025; expert,
+blinking,Occipital-pole,,,0.4,both,Chisholm 2025; expert,
+blinking,Calcarine-sulcus,,,0.3,both,Chisholm 2025; expert,
+blinking,Cuneus,,,0.3,both,Chisholm 2025; expert,
+blinking,Amygdala,,,0.3,both,Chisholm 2025; expert,
+blinking,Hippocampus-anterior,,,0.3,both,Chisholm 2025; expert,
+blinking,Thalamus,,,0.2,both,Chisholm 2025; expert,
+eyelid_myoclonia,Occipital-pole,,,0.5,symptomatogenic,expert,
+eyelid_myoclonia,Calcarine-sulcus,,,0.5,symptomatogenic,expert,
+eyelid_myoclonia,Cuneus,,,0.4,symptomatogenic,expert,
+eyelid_myoclonia,O1,,,0.3,symptomatogenic,expert,
+eyelid_myoclonia,Precentral-gyrus-head-face,,,0.3,symptomatogenic,expert,
+eyelid_myoclonia,Thalamus,,,0.3,symptomatogenic,expert,
+chapeau_de_gendarme,Anterior-cingulate-cortex,,,1.0,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,F1-mesial-prefrontal,,,0.8,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,PreSMA,,,0.7,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,Middle-cingulate-cortex-anterior-part,,,0.6,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,Orbito-frontal-cortex,,,0.5,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,Subcallosal-area,,,0.4,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,SMA,,,0.4,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,Insula-gyri-brevi,,,0.4,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,Gyrus-rectus,,,0.3,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+chapeau_de_gendarme,F2-rostral,,,0.3,symptomatogenic,Souirti 2014; Bonini 2014 (G2),
+facial_contraction,Precentral-gyrus-head-face,,,1.0,symptomatogenic,Penfield (DES),
+facial_contraction,Central-sulcus-head-face,,,0.8,symptomatogenic,Penfield (DES),
+facial_contraction,Central-operculum,,,0.8,symptomatogenic,Penfield (DES),
+facial_contraction,Precentral-sulcus-inferior-part,,,0.6,symptomatogenic,Penfield (DES),
+facial_contraction,Postcentral-gyrus,,,0.4,symptomatogenic,Penfield (DES),
+facial_contraction,Insula-gyri-longi,,,0.4,symptomatogenic,Penfield (DES),
+facial_contraction,F3-pars-opercularis,,,0.4,symptomatogenic,Penfield (DES),
+facial_contraction,SMA,,,0.3,symptomatogenic,Penfield (DES),
+spasm,SMA,,,0.5,both,expert,
+spasm,PreSMA,,,0.4,both,expert,
+spasm,Middle-cingulate-cortex-anterior-part,,,0.4,both,expert,
+spasm,Paracentral-lobule,,,0.4,both,expert,
+spasm,Precentral-gyrus-upper-limb,,,0.4,both,expert,
+spasm,Superior-parietal-lobule-P1,,,0.4,both,expert,
+spasm,Postcentral-gyrus,,,0.3,both,expert,
+spasm,O1,,,0.3,both,expert,
+spasm,Occipital-pole,,,0.3,both,expert,
+spasm,Thalamus,,,0.4,both,expert,
+spasm,F1-mesial-prefrontal,,,0.3,both,expert,
+spasm,T2-posterior,,,0.2,both,expert,
+fbtcs,Precentral-gyrus-upper-limb,,,0.7,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Precentral-gyrus-head-face,,,0.7,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Paracentral-lobule,,,0.6,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,SMA,,,0.7,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Postcentral-gyrus,,,0.5,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Thalamus,,,0.7,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Putamen,,,0.4,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,F1-lateral-premotor,,,0.5,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Middle-cingulate-cortex-anterior-part,,,0.4,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Middle-cingulate-cortex-posterior-part,,,0.3,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Cerebellar-cortex,,,0.3,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Caudate-nucleus,,,0.3,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Pallidum,,,0.3,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Anterior-cingulate-cortex,,,0.4,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Insula-gyri-longi,,,0.3,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Precentral-sulcus-superior-part,,,0.4,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fbtcs,Precentral-sulcus-inferior-part,,,0.4,propagation,expert,"généralisation : réseau de propagation, n informe pas l origine"
+fall,SMA,,,0.4,both,expert,
+fall,Paracentral-lobule,,,0.4,both,expert,
+fall,Precentral-gyrus-upper-limb,,,0.3,both,expert,
+fall,Postcentral-gyrus,,,0.3,both,expert,
+fall,Superior-parietal-lobule-P1,,,0.3,both,expert,
+fall,Supramarginal-anterior,,,0.3,both,expert,
+fall,Thalamus,,,0.4,both,expert,
+fall,Insula-gyri-longi,,,0.3,both,expert,
+fall,Parietal-operculum,,,0.3,both,expert,
+fall,Cerebellar-cortex,,,0.2,both,expert,
+fall,Anterior-cingulate-cortex,,,0.3,both,expert,
+fall,F1-mesial-prefrontal,,,0.3,both,expert,
+oroalimentary_automatisms,Amygdala,,,0.9,onset,Maillard 2004; Kotagal,mésial : automatismes retardés
+oroalimentary_automatisms,Hippocampus-anterior,,,0.9,onset,Maillard 2004; Kotagal,mésial : automatismes retardés
+oroalimentary_automatisms,Rhinal-cortex,,,0.6,onset,Maillard 2004; Kotagal,mésial : automatismes retardés
+oroalimentary_automatisms,Parahippocampal-cortex,,,0.5,onset,Maillard 2004; Kotagal,mésial : automatismes retardés
+oroalimentary_automatisms,Temporal-pole,,,0.6,onset,Maillard 2004; Kotagal,mésial : automatismes retardés
+oroalimentary_automatisms,Hippocampus-posterior,,,0.4,onset,Maillard 2004; Kotagal,mésial : automatismes retardés
+oroalimentary_automatisms,T1-planum-polare,,,0.3,onset,Maillard 2004; Kotagal,mésial : automatismes retardés
+oroalimentary_automatisms,T1-lateral-anterior,,early,0.5,onset,Maillard 2004,"automatismes précoces (< 10 s) : groupe mésio-latéral, implication latérale à 0–3 s"
+oroalimentary_automatisms,T2-anterior,,early,0.4,onset,Maillard 2004,"automatismes précoces (< 10 s) : groupe mésio-latéral, implication latérale à 0–3 s"
+oroalimentary_automatisms,STS-anterior,,early,0.3,onset,Maillard 2004,"automatismes précoces (< 10 s) : groupe mésio-latéral, implication latérale à 0–3 s"
+oroalimentary_automatisms,T1-lateral-posterior,,early,0.3,onset,Maillard 2004,"automatismes précoces (< 10 s) : groupe mésio-latéral, implication latérale à 0–3 s"
+oroalimentary_automatisms,Thalamus,,,0.2,propagation,expert,
+oroalimentary_automatisms,Insula-gyri-brevi,,,0.6,symptomatogenic,Chisholm 2025; expert,mâchonnement/déglutition tardifs dans les crises insulaires antérieures
+oroalimentary_automatisms,Insula-gyri-longi,,,0.4,symptomatogenic,Chisholm 2025; expert,mâchonnement/déglutition tardifs dans les crises insulaires antérieures
+oroalimentary_automatisms,Central-operculum,,,0.5,symptomatogenic,Chisholm 2025; expert,mâchonnement/déglutition tardifs dans les crises insulaires antérieures
+oroalimentary_automatisms,Orbito-frontal-cortex,,,0.4,symptomatogenic,Chisholm 2025; expert,mâchonnement/déglutition tardifs dans les crises insulaires antérieures
+oroalimentary_automatisms,Anterior-cingulate-cortex,,,0.3,symptomatogenic,Chisholm 2025; expert,mâchonnement/déglutition tardifs dans les crises insulaires antérieures
+oroalimentary_automatisms,Subcallosal-area,,,0.2,symptomatogenic,Chisholm 2025; expert,mâchonnement/déglutition tardifs dans les crises insulaires antérieures
+gestural_automatisms_distal,Hippocampus-anterior,,,0.8,onset,Maillard 2004; Kotagal,
+gestural_automatisms_distal,Amygdala,,,0.7,onset,Maillard 2004; Kotagal,
+gestural_automatisms_distal,Temporal-pole,,,0.5,onset,Maillard 2004; Kotagal,
+gestural_automatisms_distal,Rhinal-cortex,,,0.4,onset,Maillard 2004; Kotagal,
+gestural_automatisms_distal,Parahippocampal-cortex,,,0.4,onset,Maillard 2004; Kotagal,
+gestural_automatisms_distal,Hippocampus-posterior,,,0.4,onset,Maillard 2004; Kotagal,
+gestural_automatisms_distal,Insula-gyri-brevi,,,0.4,onset,Maillard 2004; Kotagal,
+gestural_automatisms_distal,T1-lateral-anterior,,early,0.5,onset,Maillard 2004,précoces : mésio-latéral
+gestural_automatisms_distal,T2-anterior,,early,0.4,onset,Maillard 2004,précoces : mésio-latéral
+gestural_automatisms_distal,STS-anterior,,early,0.3,onset,Maillard 2004,précoces : mésio-latéral
+gestural_automatisms_distal,Orbito-frontal-cortex,,,0.5,symptomatogenic,expert,
+gestural_automatisms_distal,Anterior-cingulate-cortex,,,0.5,symptomatogenic,expert,
+gestural_automatisms_distal,F1-mesial-prefrontal,,,0.4,symptomatogenic,expert,
+gestural_automatisms_distal,Caudate-nucleus,,,0.2,symptomatogenic,expert,
+gestural_automatisms_distal,Thalamus,,,0.2,symptomatogenic,expert,
+gestural_automatisms_integrated,Frontal-pole,,,0.6,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,F1-lateral-prefrontal,,,0.7,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,F2-rostral,,,0.7,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,F1-mesial-prefrontal,,,0.7,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Anterior-cingulate-cortex,,,0.6,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Orbito-frontal-cortex,,,0.6,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Gyrus-rectus,,,0.4,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,SFS-rostral,,,0.5,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Middle-frontal-sulcus,,,0.4,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Inferior-frontal-sulcus,,,0.3,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,F3-Pars-triangularis,,,0.3,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Temporal-pole,,,0.3,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Caudate-nucleus,,,0.3,both,Bonini 2014 (G3),
+gestural_automatisms_integrated,Subcallosal-area,,,0.3,both,Bonini 2014 (G3),
+hyperkinetic,PreSMA,,,0.8,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,SMA,,,0.6,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,F1-mesial-prefrontal,,,0.8,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Anterior-cingulate-cortex,,,0.8,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Middle-cingulate-cortex-anterior-part,,,0.6,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Orbito-frontal-cortex,,,0.6,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,F2-rostral,,,0.5,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,F1-lateral-prefrontal,,,0.5,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Gyrus-rectus,,,0.4,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Subcallosal-area,,,0.4,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,F1-lateral-premotor,,,0.4,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Caudate-nucleus,,,0.3,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Thalamus,,,0.3,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Posterior-cingulate-cortex-dorsal,,,0.2,both,Bonini 2014 (G2); Rheims 2008,
+hyperkinetic,Insula-gyri-brevi,,,0.5,onset,Ryvlin 2006; Rheims 2008,"crises hypermotrices d origine insulaire, temporale (via OFC) ou pariétale"
+hyperkinetic,Temporal-pole,,,0.4,onset,Ryvlin 2006; Rheims 2008,"crises hypermotrices d origine insulaire, temporale (via OFC) ou pariétale"
+hyperkinetic,Amygdala,,,0.3,onset,Ryvlin 2006; Rheims 2008,"crises hypermotrices d origine insulaire, temporale (via OFC) ou pariétale"
+hyperkinetic,Parietal-operculum,,,0.2,onset,Ryvlin 2006; Rheims 2008,"crises hypermotrices d origine insulaire, temporale (via OFC) ou pariétale"
+hyperkinetic_proximal,F1-mesial-prefrontal,,,0.8,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,Anterior-cingulate-cortex,,,0.9,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,Orbito-frontal-cortex,,,0.8,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,Gyrus-rectus,,,0.6,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,Subcallosal-area,,,0.5,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,Frontal-pole,,,0.4,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,F2-rostral,,,0.4,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,F1-lateral-prefrontal,,,0.4,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,PreSMA,,,0.5,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,Middle-cingulate-cortex-anterior-part,,,0.4,both,Rheims 2008 (HM1); Bonini 2014 (G2-G3),HM1 : préfrontal ventromésial et orbitofrontal
+hyperkinetic_proximal,Temporal-pole,,,0.5,onset,Rheims 2008; Ryvlin 2006,origines temporo-polaire / insulaire avec propagation orbitofrontale
+hyperkinetic_proximal,Amygdala,,,0.4,onset,Rheims 2008; Ryvlin 2006,origines temporo-polaire / insulaire avec propagation orbitofrontale
+hyperkinetic_proximal,Insula-gyri-brevi,,,0.5,onset,Rheims 2008; Ryvlin 2006,origines temporo-polaire / insulaire avec propagation orbitofrontale
+hyperkinetic_proximal,Hippocampus-anterior,,,0.3,onset,Rheims 2008; Ryvlin 2006,origines temporo-polaire / insulaire avec propagation orbitofrontale
+hyperkinetic_mild,PreSMA,,,0.9,both,Rheims 2008 (HM2),HM2 : prémoteur mésial
+hyperkinetic_mild,SMA,,,0.8,both,Rheims 2008 (HM2),HM2 : prémoteur mésial
+hyperkinetic_mild,Middle-cingulate-cortex-anterior-part,,,0.7,both,Rheims 2008 (HM2),HM2 : prémoteur mésial
+hyperkinetic_mild,F1-mesial-prefrontal,,,0.5,both,Rheims 2008 (HM2),HM2 : prémoteur mésial
+hyperkinetic_mild,F1-lateral-premotor,,,0.5,both,Rheims 2008 (HM2),HM2 : prémoteur mésial
+hyperkinetic_mild,Anterior-cingulate-cortex,,,0.4,both,Rheims 2008 (HM2),HM2 : prémoteur mésial
+hyperkinetic_mild,Paracentral-lobule,,,0.3,both,Rheims 2008 (HM2),HM2 : prémoteur mésial
+hyperkinetic_mild,Insula-gyri-brevi,,,0.3,onset,Rheims 2008,
+hyperkinetic_mild,Parietal-operculum,,,0.2,onset,Rheims 2008,
+stereotypies,F1-lateral-prefrontal,,,0.5,both,Bonini 2014 (G3); expert,
+stereotypies,F2-rostral,,,0.5,both,Bonini 2014 (G3); expert,
+stereotypies,Frontal-pole,,,0.5,both,Bonini 2014 (G3); expert,
+stereotypies,Anterior-cingulate-cortex,,,0.4,both,Bonini 2014 (G3); expert,
+stereotypies,Orbito-frontal-cortex,,,0.4,both,Bonini 2014 (G3); expert,
+stereotypies,Caudate-nucleus,,,0.4,both,Bonini 2014 (G3); expert,
+stereotypies,Putamen,,,0.3,both,Bonini 2014 (G3); expert,
+stereotypies,F1-mesial-prefrontal,,,0.4,both,Bonini 2014 (G3); expert,
+mimic_automatisms,Amygdala,,,0.7,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Anterior-cingulate-cortex,,,0.7,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Orbito-frontal-cortex,,,0.6,both,Bonini 2014 (G3-G4),
+mimic_automatisms,F1-mesial-prefrontal,,,0.5,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Subcallosal-area,,,0.4,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Insula-gyri-brevi,,,0.5,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Gyrus-rectus,,,0.4,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Temporal-pole,,,0.4,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Frontal-pole,,,0.3,both,Bonini 2014 (G3-G4),
+mimic_automatisms,Hippocampus-anterior,,,0.3,both,Bonini 2014 (G3-G4),
+nose_wiping,Amygdala,,,0.6,onset,ILAE 2022,
+nose_wiping,Hippocampus-anterior,,,0.6,onset,ILAE 2022,
+nose_wiping,Temporal-pole,,,0.4,onset,ILAE 2022,
+nose_wiping,Rhinal-cortex,,,0.3,onset,ILAE 2022,
+nose_wiping,Insula-gyri-brevi,,,0.3,onset,ILAE 2022,
+nose_wiping,Orbito-frontal-cortex,,,0.3,onset,ILAE 2022,
+nose_wiping,Hippocampus-posterior,,,0.3,onset,ILAE 2022,
+pedaling,PreSMA,,,0.6,both,expert,
+pedaling,SMA,,,0.6,both,expert,
+pedaling,F1-mesial-prefrontal,,,0.6,both,expert,
+pedaling,Anterior-cingulate-cortex,,,0.6,both,expert,
+pedaling,Middle-cingulate-cortex-anterior-part,,,0.5,both,expert,
+pedaling,Paracentral-lobule,,,0.4,both,expert,
+pedaling,Orbito-frontal-cortex,,,0.4,both,expert,
+pedaling,Insula-gyri-brevi,,,0.3,both,expert,
+pedaling,Temporal-pole,,,0.2,both,expert,
+ictal_grasping,SMA,,,0.6,symptomatogenic,expert,
+ictal_grasping,Middle-cingulate-cortex-anterior-part,,,0.6,symptomatogenic,expert,
+ictal_grasping,Anterior-cingulate-cortex,,,0.5,symptomatogenic,expert,
+ictal_grasping,F1-mesial-prefrontal,,,0.5,symptomatogenic,expert,
+ictal_grasping,Paracentral-lobule,,,0.3,symptomatogenic,expert,
+ictal_grasping,Precentral-gyrus-upper-limb,,,0.3,symptomatogenic,expert,
+ictal_grasping,Caudate-nucleus,,,0.2,symptomatogenic,expert,
+gelastic,Anterior-cingulate-cortex,,,0.6,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Subcallosal-area,,,0.5,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Gyrus-rectus,,,0.5,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Orbito-frontal-cortex,,,0.5,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,F1-mesial-prefrontal,,,0.4,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Temporal-pole,,,0.4,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Amygdala,,,0.4,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Hippocampus-anterior,,,0.4,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Frontal-pole,,,0.3,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Insula-gyri-brevi,,,0.3,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+gelastic,Thalamus,,,0.2,both,expert,hypothalamus (hamartome) absent de l atlas VEP
+dacrystic,Anterior-cingulate-cortex,,,0.5,both,expert,
+dacrystic,Amygdala,,,0.5,both,expert,
+dacrystic,Subcallosal-area,,,0.4,both,expert,
+dacrystic,Orbito-frontal-cortex,,,0.4,both,expert,
+dacrystic,Temporal-pole,,,0.4,both,expert,
+dacrystic,Hippocampus-anterior,,,0.4,both,expert,
+dacrystic,F1-mesial-prefrontal,,,0.3,both,expert,
+undressing,Temporal-pole,,,0.4,both,expert,
+undressing,Amygdala,,,0.4,both,expert,
+undressing,Hippocampus-anterior,,,0.4,both,expert,
+undressing,Orbito-frontal-cortex,,,0.4,both,expert,
+undressing,Anterior-cingulate-cortex,,,0.4,both,expert,
+undressing,F1-mesial-prefrontal,,,0.3,both,expert,
+undressing,Insula-gyri-brevi,,,0.3,both,expert,
+wandering,Hippocampus-anterior,,,0.5,both,expert,
+wandering,Amygdala,,,0.4,both,expert,
+wandering,Temporal-pole,,,0.3,both,expert,
+wandering,F1-mesial-prefrontal,,,0.4,both,expert,
+wandering,Anterior-cingulate-cortex,,,0.4,both,expert,
+wandering,Orbito-frontal-cortex,,,0.4,both,expert,
+wandering,Posterior-cingulate-cortex-dorsal,,,0.2,both,expert,
+wandering,Precuneus,,,0.2,both,expert,
+sexual_automatisms,F1-mesial-prefrontal,,,0.5,both,expert,
+sexual_automatisms,Anterior-cingulate-cortex,,,0.5,both,expert,
+sexual_automatisms,PreSMA,,,0.4,both,expert,
+sexual_automatisms,Orbito-frontal-cortex,,,0.4,both,expert,
+sexual_automatisms,Temporal-pole,,,0.3,both,expert,
+sexual_automatisms,Amygdala,,,0.3,both,expert,
+sexual_automatisms,Paracentral-lobule,,,0.3,both,expert,
+sexual_automatisms,Insula-gyri-brevi,,,0.3,both,expert,
+aggressive_behavior,Amygdala,,,0.5,both,expert,
+aggressive_behavior,Orbito-frontal-cortex,,,0.5,both,expert,
+aggressive_behavior,Anterior-cingulate-cortex,,,0.4,both,expert,
+aggressive_behavior,Temporal-pole,,,0.4,both,expert,
+aggressive_behavior,F1-mesial-prefrontal,,,0.3,both,expert,
+aggressive_behavior,Gyrus-rectus,,,0.3,both,expert,
+spitting,Amygdala,,,0.5,both,ILAE 2022; expert,
+spitting,Hippocampus-anterior,,,0.5,both,ILAE 2022; expert,
+spitting,Insula-gyri-brevi,,,0.5,both,ILAE 2022; expert,
+spitting,Temporal-pole,,,0.4,both,ILAE 2022; expert,
+spitting,Central-operculum,,,0.3,both,ILAE 2022; expert,
+spitting,Anterior-cingulate-cortex,,,0.3,both,ILAE 2022; expert,
+water_drinking,Amygdala,,,0.4,both,expert,
+water_drinking,Hippocampus-anterior,,,0.4,both,expert,
+water_drinking,Temporal-pole,,,0.4,both,expert,
+water_drinking,Insula-gyri-brevi,,,0.4,both,expert,
+water_drinking,Anterior-cingulate-cortex,,,0.3,both,expert,
+tachycardia,Insula-gyri-brevi,,,0.6,both,Chisholm 2025; expert,
+tachycardia,Amygdala,,,0.6,both,Chisholm 2025; expert,
+tachycardia,Hippocampus-anterior,,,0.5,both,Chisholm 2025; expert,
+tachycardia,Anterior-cingulate-cortex,,,0.5,both,Chisholm 2025; expert,
+tachycardia,Temporal-pole,,,0.4,both,Chisholm 2025; expert,
+tachycardia,Orbito-frontal-cortex,,,0.3,both,Chisholm 2025; expert,
+tachycardia,Insula-gyri-longi,,,0.3,both,Chisholm 2025; expert,
+tachycardia,Subcallosal-area,,,0.2,both,Chisholm 2025; expert,
+tachycardia,Hippocampus-posterior,,,0.3,both,Chisholm 2025; expert,
+tachycardia,F1-mesial-prefrontal,,,0.2,both,Chisholm 2025; expert,
+bradycardia,Insula-gyri-brevi,,,0.6,both,expert,
+bradycardia,Insula-gyri-longi,,,0.4,both,expert,
+bradycardia,Amygdala,,,0.5,both,expert,
+bradycardia,Hippocampus-anterior,,,0.4,both,expert,
+bradycardia,Anterior-cingulate-cortex,,,0.4,both,expert,
+bradycardia,Temporal-pole,,,0.4,both,expert,
+bradycardia,Orbito-frontal-cortex,,,0.3,both,expert,
+bradycardia,Subcallosal-area,,,0.3,both,expert,
+apnea,Amygdala,,,0.9,both,Dlouhy 2015 (DES),
+apnea,Hippocampus-anterior,,,0.7,both,Dlouhy 2015 (DES),
+apnea,Insula-gyri-brevi,,,0.5,both,Dlouhy 2015 (DES),
+apnea,Anterior-cingulate-cortex,,,0.5,both,Dlouhy 2015 (DES),
+apnea,Temporal-pole,,,0.4,both,Dlouhy 2015 (DES),
+apnea,Subcallosal-area,,,0.3,both,Dlouhy 2015 (DES),
+apnea,Orbito-frontal-cortex,,,0.3,both,Dlouhy 2015 (DES),
+apnea,Rhinal-cortex,,,0.3,both,Dlouhy 2015 (DES),
+apnea,Insula-gyri-longi,,,0.3,both,Dlouhy 2015 (DES),
+hyperventilation,Insula-gyri-brevi,,,0.5,both,expert,
+hyperventilation,Anterior-cingulate-cortex,,,0.5,both,expert,
+hyperventilation,Amygdala,,,0.5,both,expert,
+hyperventilation,Hippocampus-anterior,,,0.4,both,expert,
+hyperventilation,F1-mesial-prefrontal,,,0.3,both,expert,
+hyperventilation,Temporal-pole,,,0.3,both,expert,
+hyperventilation,Orbito-frontal-cortex,,,0.3,both,expert,
+hyperventilation,SMA,,,0.2,both,expert,
+flushing,Insula-gyri-brevi,,,0.5,both,expert,
+flushing,Amygdala,,,0.5,both,expert,
+flushing,Anterior-cingulate-cortex,,,0.5,both,expert,
+flushing,Hippocampus-anterior,,,0.4,both,expert,
+flushing,Orbito-frontal-cortex,,,0.3,both,expert,
+flushing,Temporal-pole,,,0.3,both,expert,
+flushing,Insula-gyri-longi,,,0.3,both,expert,
+piloerection,Amygdala,,,0.6,both,ILAE 2022; expert,
+piloerection,Hippocampus-anterior,,,0.6,both,ILAE 2022; expert,
+piloerection,Insula-gyri-brevi,,,0.5,both,ILAE 2022; expert,
+piloerection,Temporal-pole,,,0.4,both,ILAE 2022; expert,
+piloerection,Anterior-cingulate-cortex,,,0.3,both,ILAE 2022; expert,
+piloerection,Orbito-frontal-cortex,,,0.3,both,ILAE 2022; expert,
+piloerection,Insula-gyri-longi,,,0.3,both,ILAE 2022; expert,
+piloerection,Rhinal-cortex,,,0.3,both,ILAE 2022; expert,
+hypersalivation,Insula-gyri-brevi,,,0.6,both,expert,
+hypersalivation,Insula-gyri-longi,,,0.5,both,expert,
+hypersalivation,Central-operculum,,,0.6,both,expert,
+hypersalivation,Parietal-operculum,,,0.4,both,expert,
+hypersalivation,Amygdala,,,0.4,both,expert,
+hypersalivation,Hippocampus-anterior,,,0.4,both,expert,
+hypersalivation,Temporal-pole,,,0.3,both,expert,
+hypersalivation,Precentral-gyrus-head-face,,,0.3,both,expert,
+vomiting,Amygdala,,,0.5,both,ILAE 2022; expert,
+vomiting,Hippocampus-anterior,,,0.5,both,ILAE 2022; expert,
+vomiting,Insula-gyri-brevi,,,0.6,both,ILAE 2022; expert,
+vomiting,Insula-gyri-longi,,,0.4,both,ILAE 2022; expert,
+vomiting,Temporal-pole,,,0.4,both,ILAE 2022; expert,
+vomiting,Central-operculum,,,0.3,both,ILAE 2022; expert,
+vomiting,Anterior-cingulate-cortex,,,0.3,both,ILAE 2022; expert,
+vomiting,Orbito-frontal-cortex,,,0.2,both,ILAE 2022; expert,
+vomiting,T1-planum-polare,,,0.2,both,ILAE 2022; expert,
+urination,Anterior-cingulate-cortex,,,0.4,both,expert,
+urination,Paracentral-lobule,,,0.4,both,expert,
+urination,F1-mesial-prefrontal,,,0.4,both,expert,
+urination,Insula-gyri-brevi,,,0.3,both,expert,
+urination,Amygdala,,,0.3,both,expert,
+urination,Hippocampus-anterior,,,0.3,both,expert,
+urination,Thalamus,,,0.2,both,expert,
+urination,Temporal-pole,,,0.2,both,expert,
+mydriasis,Amygdala,,,0.4,both,expert,
+mydriasis,Insula-gyri-brevi,,,0.4,both,expert,
+mydriasis,Anterior-cingulate-cortex,,,0.4,both,expert,
+mydriasis,Hippocampus-anterior,,,0.3,both,expert,
+mydriasis,F2-caudal,,,0.3,both,expert,
+mydriasis,Orbito-frontal-cortex,,,0.3,both,expert,
+mydriasis,Thalamus,,,0.2,both,expert,
+cough,Insula-gyri-brevi,,,0.4,both,expert,
+cough,Insula-gyri-longi,,,0.4,both,expert,
+cough,Central-operculum,,,0.4,both,expert,
+cough,Amygdala,,,0.3,both,expert,
+cough,Hippocampus-anterior,,,0.3,both,expert,
+cough,Temporal-pole,,,0.3,both,expert,
+cough,Parietal-operculum,,,0.2,both,expert,
+sweating,Insula-gyri-brevi,,,0.5,both,expert,
+sweating,Amygdala,,,0.4,both,expert,
+sweating,Anterior-cingulate-cortex,,,0.4,both,expert,
+sweating,Hippocampus-anterior,,,0.3,both,expert,
+sweating,Orbito-frontal-cortex,,,0.3,both,expert,
+postictal_aphasia,T1-lateral-posterior,,,0.7,both,ILAE 2022; expert,
+postictal_aphasia,STS-posterior,,,0.5,both,ILAE 2022; expert,
+postictal_aphasia,T2-posterior,,,0.5,both,ILAE 2022; expert,
+postictal_aphasia,F3-pars-opercularis,,,0.5,both,ILAE 2022; expert,
+postictal_aphasia,F3-Pars-triangularis,,,0.5,both,ILAE 2022; expert,
+postictal_aphasia,Hippocampus-anterior,,,0.5,both,ILAE 2022; expert,
+postictal_aphasia,Amygdala,,,0.4,both,ILAE 2022; expert,
+postictal_aphasia,T1-lateral-anterior,,,0.4,both,ILAE 2022; expert,
+postictal_aphasia,Supramarginal-anterior,,,0.3,both,ILAE 2022; expert,
+postictal_aphasia,Temporal-pole,,,0.3,both,ILAE 2022; expert,
+postictal_aphasia,T1-planum-temporale,,,0.3,both,ILAE 2022; expert,
+postictal_hemiparesis,SMA,,,0.5,both,expert,
+postictal_hemiparesis,Postcentral-gyrus,,,0.4,both,expert,
+postictal_hemiparesis,F1-lateral-premotor,,,0.4,both,expert,
+postictal_hemiparesis,Precentral-sulcus-superior-part,,,0.4,both,expert,
+postictal_hemiparesis,Precentral-sulcus-inferior-part,,,0.4,both,expert,
+postictal_hemiparesis,Putamen,,,0.2,both,expert,
+postictal_hemiparesis,Thalamus,,,0.2,both,expert,
+postictal_hemiparesis,Precentral-gyrus-head-face,face,,0.8,symptomatogenic,expert,
+postictal_hemiparesis,Central-sulcus-head-face,face,,0.6,symptomatogenic,expert,
+postictal_hemiparesis,Precentral-gyrus-upper-limb,UL,,0.8,symptomatogenic,expert,
+postictal_hemiparesis,Central-sulcus-upper-limb,UL,,0.6,symptomatogenic,expert,
+postictal_hemiparesis,Paracentral-lobule,LL,,0.8,symptomatogenic,expert,
+postictal_hemiparesis,Precentral-gyrus-upper-limb,hemibody,,0.7,symptomatogenic,expert,
+postictal_hemiparesis,Precentral-gyrus-head-face,hemibody,,0.6,symptomatogenic,expert,
+postictal_hemiparesis,Paracentral-lobule,hemibody,,0.6,symptomatogenic,expert,
+postictal_confusion,Hippocampus-anterior,,,0.5,both,expert,
+postictal_confusion,Hippocampus-posterior,,,0.5,both,expert,
+postictal_confusion,Amygdala,,,0.4,both,expert,
+postictal_confusion,Thalamus,,,0.4,both,expert,
+postictal_confusion,Parahippocampal-cortex,,,0.4,both,expert,
+postictal_confusion,Temporal-pole,,,0.3,both,expert,
+postictal_confusion,Precuneus,,,0.3,both,expert,
+postictal_confusion,Posterior-cingulate-cortex-dorsal,,,0.3,both,expert,
+postictal_confusion,F1-mesial-prefrontal,,,0.3,both,expert,
+postictal_confusion,Anterior-cingulate-cortex,,,0.3,both,expert,
+postictal_amnesia,Hippocampus-anterior,,,0.7,both,expert,
+postictal_amnesia,Hippocampus-posterior,,,0.6,both,expert,
+postictal_amnesia,Rhinal-cortex,,,0.5,both,expert,
+postictal_amnesia,Parahippocampal-cortex,,,0.5,both,expert,
+postictal_amnesia,Amygdala,,,0.4,both,expert,
+postictal_amnesia,Thalamus,,,0.3,both,expert,
+postictal_nose_wiping,Amygdala,,,0.6,onset,ILAE 2022,
+postictal_nose_wiping,Hippocampus-anterior,,,0.6,onset,ILAE 2022,
+postictal_nose_wiping,Temporal-pole,,,0.4,onset,ILAE 2022,
+postictal_nose_wiping,Rhinal-cortex,,,0.3,onset,ILAE 2022,
+postictal_nose_wiping,Insula-gyri-brevi,,,0.3,onset,ILAE 2022,
+postictal_nose_wiping,Hippocampus-posterior,,,0.3,onset,ILAE 2022,

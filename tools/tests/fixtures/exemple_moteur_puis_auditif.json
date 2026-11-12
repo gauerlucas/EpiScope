@@ -1,0 +1,47 @@
+{
+ "version": 1,
+ "app": "EpiScope",
+ "name": "Exemple — moteur puis auditif à 3 s (propagation par relais)",
+ "notes": "Illustre le calcul des relais : précentral D → postcentral → opercule pariétal → insula postérieure → Heschl.",
+ "patient": {
+  "dominant": "L",
+  "eeg_onset": null,
+  "lesion": []
+ },
+ "events": [
+  {
+   "id": 1,
+   "sign_id": "clonic",
+   "t": 0,
+   "dt": 1,
+   "dur": 10,
+   "side": "L",
+   "topography": "UL",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 2,
+   "sign_id": "auditory_elementary",
+   "t": 3,
+   "dt": 1,
+   "dur": 10,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 3,
+   "sign_id": "aphasia_comprehension",
+   "t": 9,
+   "dt": 2,
+   "dur": 20,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  }
+ ],
+ "params": {}
+}

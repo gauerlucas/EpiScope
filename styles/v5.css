@@ -1,0 +1,433 @@
+/* EpiScope — styles/v5.css : revue v5 — densité (portable / grand écran / projection), copie riche, portée des vues,
+ *  corrections d'affichage. Chargé en dernier : prime sur les feuilles précédentes à spécificité égale. */
+
+/* ---------- densité et échelle : html[data-density] = compact (portable 1366 px) | normal | large ; body.present = projection */
+:root { --ui-scale: 1; --fs: 13.5px; --pad: 10px; }
+html[data-density="compact"] { --fs: 12.5px; --pad: 7px; --left-w: 280px; --right-w: 320px; --radius: 8px; }
+html[data-density="large"] { --fs: 15px; --pad: 12px; --left-w: 360px; --right-w: 420px; }
+body { font-size: var(--fs); }
+@media (max-height: 800px) and (max-width: 1440px) { html:not([data-density]) { --fs: 12.5px; --left-w: 290px; --right-w: 330px; } html:not([data-density]) body { font-size: var(--fs); } }
+
+/* ---------- projection (mode présentation de la 3D et diaporama du staff) : lisible à 4 m */
+body.present { --fs: 17px; font-size: var(--fs); }
+body.present .caption .cap { font-size: 24px; }
+body.present #scopeLeg { display: none; }
+body.proj #presentation { --fs: 19px; font-size: 19px; }
+body.proj #presentation h1 { font-size: 44px; } body.proj #presentation h2 { font-size: 34px; } body.proj #presentation table { font-size: 17px; }
+#presentation .pr-foot .proj-btn.on { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- copie riche (presse-papiers) : bouton ⧉ discret en haut à droite des tableaux et cartes */
+.copyable { position: relative; }
+.copy-btn { position: absolute; top: 4px; right: 4px; z-index: 5; width: 24px; height: 24px; padding: 0; line-height: 22px; text-align: center; font-size: 13px; border-radius: 6px; background: var(--bg3); border: 1px solid var(--line2); color: var(--muted); opacity: 0; transition: opacity .15s; }
+.copyable:hover > .copy-btn, .copy-btn:focus-visible { opacity: .9; }
+.copy-btn:hover { color: var(--text); border-color: var(--accent2); }
+.copy-btn.done { opacity: 1; color: var(--ok); border-color: var(--ok); }
+table.copyable > .copy-btn { top: -22px; right: 0; width: 22px; height: 20px; line-height: 18px; font-size: 12px; }
+@media print { .copy-btn { display: none !important; } }
+
+/* ---------- portée des vues : indicateur dans le pied de la vue 3D */
+.scope-leg { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+.scope-leg .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); display: inline-block; }
+.scope-leg .warn { color: var(--accent); }
+.seeg-menu .scope-row { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); font-size: 11.5px; }
+
+/* ---------- corrections d'affichage relevées à la revue v5 */
+/* sous-titres des signes en cours : chips en ligne, qui ne poussent plus la légende */
+.view-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.view-foot .caption { flex: 1 1 320px; display: flex; flex-wrap: wrap; gap: 4px 6px; min-height: 0; }
+.view-foot .legend { flex: 0 0 auto; }
+.view-foot .caption .cap { display: inline-block; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; padding: 2px 8px; }
+body.present .view-foot .caption .cap { max-width: none; font-size: 22px; padding: 8px 14px; }
+/* synthèse des crises : la séquence écrite ne déborde plus de sa carte */
+
+.card { overflow-wrap: anywhere; }
+/* diaporama : l'entrée du plan suit la diapositive affichée */
+
+/* ---------- PEI v5 : fenêtres écartées, voies hors substance grise */
+.ie-tab tr.wm td { color: var(--faint); } .ie-tab tr.wm .ie-bar b { opacity: .45; }
+.ie-art { color: var(--accent); font-size: 11px; cursor: help; }
+.ie-n0.small { font-size: 11px; color: var(--muted); line-height: 1.35; margin: 2px 0 4px; }
+
+/* ---------- localisation : électrode d'une autre marque que l'implantation */
+.lc-row select.n.other-maker { border-color: var(--accent); color: var(--accent); }
+/* synthèse des crises : la séquence écrite passe à la ligne au lieu de déborder */
+.sz-table { width: 100%; table-layout: fixed; } .sz-table td { white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+.sz-table td:first-child { width: 90px; } .sz-table td.muted { width: 120px; }
+
+/* ---------- diaporama : vues du réseau H1 sur la diapositive de chaque crise */
+.pr-szshots { grid-template-columns: 1fr; margin-top: 12px; }
+.pr-szshots .pr-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pr-szshots figcaption { font-size: 13px; color: var(--muted); text-align: center; margin-top: 4px; }
+
+/* ---------- portable (hauteur ≤ 820 px) : la saisie reste utilisable — chrono compact, frise plus basse, palette qui défile */
+@media (max-height: 820px) {
+  .timeline-wrap { height: var(--tl-h, 170px); max-height: 40vh; }
+  .chrono { padding: 6px 12px; } .chrono-time { font-size: 26px; padding: 2px 0; } .chrono .hint { display: none; } .chrono-body { gap: 5px; margin-top: 6px; }
+  .palette { flex: 1 1 45%; min-height: 96px; overflow: auto; } .palette .chips { overflow: auto; }
+  .sequence { flex: 1 1 35%; min-height: 90px; }
+  .sz-head .sz-row:nth-child(2) label { font-size: 12px; }
+}
+
+/* ---------- tracé SEEG : plusieurs crises par enregistrement (crise active, « ＋ crise » au curseur) */
+.ie-szbar { display: inline-flex; align-items: center; gap: 6px; }
+.ie-szbar label { display: inline-flex; align-items: center; gap: 4px; }
+.ie-szbar .ie-szsel { max-width: 200px; } .ie-szbar .mini-btn { margin: 0; }
+
+/* ---------- localisation : côté d'implantation (géométrique) et convention des noms */
+.lc-row select.side { width: 44px; padding: 2px 3px; font-size: 11px; }
+.lc-row .lc-side { font-size: 11px; } .lc-row .badge.lc-side { padding: 0 5px; }
+.ce-maker label + label { margin-left: 10px; }
+
+/* ---------- barre de la vue 3D sur une rangée : la deuxième rangée vit dans « Affichage ▾ » (ses éléments restent dans le DOM) */
+body.v5bar .viewbar .vrow.sub { display: none !important; }
+body.v5bar .viewbar .vrow { gap: 8px; }
+body.cplan #btnDisp, body.cv2 #btnDisp { display: none !important; }
+#btnDisp.on { border-color: var(--accent2); color: var(--accent2); }
+.viewbar .vrow > label.chip.link { margin: 0; font-size: 12px; }
+
+/* ---------- frise : l'aide en infobulle (« ? ») plutôt qu'en phrase permanente */
+.transport .hint.tl-help { width: 20px; height: 20px; border: 1px solid var(--line2); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; cursor: help; color: var(--muted); }
+/* ---------- pied de la vue 3D : signes à l'instant t sur une ligne, légendes sur la suivante */
+.view-foot { gap: 3px 14px; }
+.view-foot .caption { flex: 1 1 100%; } .view-foot .caption:empty { display: none; }
+.view-foot .legend { font-size: 11px; } .view-foot .scope-leg { flex: 1 1 auto; }
+/* ---------- crise SEEG, onglet Électrique : grille des plots compacte (une électrode par ligne) */
+.sz-elecs { gap: 2px; max-height: 50vh; }
+.sz-el { gap: 6px; align-items: center; } .sz-el > b { min-width: 32px; padding-top: 0; font-size: 12px; }
+.sz-el .pchips { gap: 2px; display: flex; flex-wrap: wrap; }
+.sz-el .pchip.sm { min-width: 20px; width: 20px; padding: 0; height: 18px; line-height: 16px; font-size: 10.5px; border-radius: 5px; }
+.sz-roles { margin-bottom: 6px; }
+/* ---------- galerie du staff : emplacement de la capture dans le diaporama */
+.gal-item .gal-slot { width: 100%; font-size: 11px; padding: 2px 4px; margin-top: 3px; }
+/* ---------- diaporama : texte à gauche, captures en grand à droite (intercritique) */
+/* intercritique sans capture : la carte du compte rendu occupe la largeur (deux colonnes si grapho-éléments) */
+
+/* ================================================================ v5.1 */
+/* volet des consignes (en haut, vert ; rouge pour une erreur) : clic pour fermer, « ne plus afficher » */
+.sv-notice { position: fixed; z-index: 90; top: 46px; left: 50%; transform: translateX(-50%); max-width: min(920px, 92vw); display: flex; align-items: center; gap: 12px; padding: 7px 10px 7px 14px; border-radius: 0 0 10px 10px; background: light-dark(#ddf6e5, #1f5134); border: 1px solid #2f7a4f; border-top: 0; color: light-dark(#2e6c4a, #e8fff0); font-size: 13px; line-height: 1.35; box-shadow: 0 8px 24px light-dark(rgba(16,30,50,0.122), rgba(0,0,0,.35)); cursor: pointer; animation: svDrop .15s ease-out; }
+.sv-notice.err { background: light-dark(#fee9e9, #5a1f24); border-color: light-dark(#eda9aa, #8a2f37); color: light-dark(#864851, #ffe8ea); }
+.sv-notice-t { flex: 1; } .sv-notice-off { font-size: 11.5px; opacity: .85; white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }
+.sv-notice-x { background: transparent; border: 0; color: inherit; font-size: 14px; padding: 0 4px; }
+@keyframes svDrop { from { transform: translate(-50%, -8px); opacity: 0; } to { transform: translateX(-50%); opacity: 1; } }
+/* zones de texte extensibles : une ligne au repos, sans poignée */
+textarea.grow { resize: none; min-height: 30px; line-height: 1.4; }
+/* questionnaire d'Edinburgh */
+.modal-card.ehi { width: min(720px, 96vw); } .ehi-t { width: 100%; border-collapse: collapse; } .ehi-t td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.ehi-t tr.opt td { opacity: .85; } .ehi-t .seg button { min-width: 64px; } .ehi-res { margin-top: 10px; font-size: 14px; }
+.dev-upd { display: inline-flex; align-items: center; gap: 4px; } .dev-upd input { width: 90px; padding: 2px 6px; font-size: 12px; }
+/* visionneuse des pièces jointes (PDF, images) */
+.modal.fviewer .fv-card { width: min(1100px, 96vw); height: 92vh; display: flex; flex-direction: column; padding: 0; }
+.fv-card .modal-head { gap: 6px; padding: 8px 12px; } .fv-card .modal-head a.mini-btn { text-decoration: none; }
+.fv-body { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: var(--sel); }
+.fv-body iframe { width: 100%; height: 100%; border: 0; background: #fff; } .fv-body img { max-width: 100%; max-height: 100%; object-fit: contain; }
+/* annuaire, participants des staffs */
+.modal-card.people { width: min(900px, 96vw); } .ppl-t { width: 100%; border-collapse: collapse; margin-bottom: 8px; } .ppl-t th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; } .ppl-t td { padding: 3px 4px; } .ppl-t input:not([type]) { width: 100%; } .ppl-role { display: flex; gap: 4px; }
+.st-ppl { display: flex; align-items: flex-start; gap: 10px; margin-top: 8px; } .st-ppl > .lbl { font-size: 12px; color: var(--muted); padding-top: 5px; min-width: 80px; }
+.ppl-chips { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; flex: 1; }
+.pchip-p { display: inline-flex; flex-direction: column; align-items: flex-start; padding: 3px 9px; border-radius: 8px; border: 1px solid var(--line2); background: transparent; color: var(--muted); font-size: 12.5px; line-height: 1.15; opacity: .7; }
+.pchip-p small { font-size: 10.5px; color: var(--faint); } .pchip-p.on { opacity: 1; color: var(--text); border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 12%, transparent); }
+.ppl-chips .ppl-extra { flex: 1 1 200px; min-width: 180px; }
+.card-sub { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
+.card-h > span:first-child:not(.muted):not(.spacer) { min-width: 0; }
+/* arbre : menu d'un individu */
+/* staff : crises prises en compte, une à une */
+.scope { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; } .scope-ex { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 2px 6px 2px 2px; border: 1px dashed var(--line2); border-radius: 10px; }
+.scope-sz { display: inline-flex; flex-wrap: wrap; gap: 3px; } .scope-sz .chip.sm { font-size: 11.5px; padding: 1px 7px; opacity: .55; } .scope-sz .chip.sm.on { opacity: 1; }
+/* imagerie : images repliables (titre sur une ligne), alerte de recalage levée d'un clic */
+.im-item { padding: 4px 6px; margin-bottom: 4px; } .im-item.open { padding: 6px 8px 8px; }
+.im-h { flex-wrap: nowrap; min-width: 0; } .im-h > b { white-space: nowrap; } .im-h > .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-size: 12px; }
+.im-h .badge { white-space: nowrap; font-size: 10.5px; padding: 0 6px; flex: none; } .im-h .badge[data-a=chk] { cursor: pointer; }
+.im-fold { background: transparent; border: 0; color: var(--muted); padding: 0 2px; font-size: 12px; width: 16px; flex: none; }
+.im-item .im-m { overflow-wrap: anywhere; }
+/* coupes : Multimodalité, options */
+.cell-panel.ip-multi { width: 440px; } .ipm-sec { border-top: 1px solid var(--line); padding: 6px 0 4px; display: flex; flex-direction: column; gap: 5px; } .ipm-sec:first-of-type { border-top: 0; }
+.ipm-h { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); } .ip-multi .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .ip-multi input[type=range] { flex: 1; min-width: 100px; }
+.cell-panel.ip-opts { width: 340px; } .ip-opts .row { display: flex; gap: 8px; align-items: center; margin: 4px 0; } .ipl-foot { margin-top: 6px; }
+/* outil AC-PC */
+.ip-host { position: relative; } .acpc-tool { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; background: light-dark(rgba(255,255,255,0.96), rgba(16,20,27,.94)); border: 1px solid var(--accent2); border-radius: 10px; font-size: 12px; }
+.acpc-tool .mini-btn { margin: 0; }
+/* phase 1 / SEEG : crises, synthèse */
+.session.one { padding-top: 6px; } .sz-table small.media { display: block; color: var(--accent2); font-size: 11px; }
+.syn-ty { margin-left: 12px; } .eeg-grid.ictal, .eeg-grid.synth { margin-top: 6px; }
+.eeg-act .ea-row textarea.grow, .eeg-evt .ea-row textarea.grow { flex: 1 1 220px; min-width: 180px; }
+/* barre 3D : ◐ dans « Affichage ▾ » ; légende des signes à l'instant t retirée de l'espace de travail (la frise la donne) */
+body.v5bar .viewbar #btn3dWL { display: none; }
+body:not(.present) #scr-work .view-foot .caption, body:not(.present) .view-foot #caption { display: none !important; }
+.ie-szmedia { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; } .ie-szmedia .mini-btn { margin: 0; font-size: 11px; }
+
+/* v5.1 — montages du tracé SEEG (ieeg_montage.js) */
+.ie-top .ie-lay.on { border-color: var(--accent); color: var(--accent); }
+.ie-laym { width: 450px; }
+.ie-laym .ie-lsec { margin: 10px 0 4px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.ie-laym .ie-lo { display: flex; align-items: center; gap: 6px; padding: 3px 0; cursor: pointer; }
+.ie-laym .ie-gm { display: flex; flex-wrap: wrap; }
+.ie-laym .ie-gm button { font-size: 11.5px; }
+.ie-laym .row { display: flex; gap: 6px; align-items: center; }
+.ie-laym .ie-lname { flex: 1; }
+.ie-grpname { position: fixed; z-index: 3000; width: 160px; font-size: 12px; padding: 3px 6px; }
+
+/* v5.1 — diaporama du staff lisible sur un vidéoprojecteur ou une TV : fond clair par défaut, police sans empattement,
+ * pleine largeur, une colonne, pages au lieu d'ascenseurs (staff_present.js : presentPaginate) */
+.presentation { --serif: var(--font); font-size: 17px; }
+.presentation .pr-t { font-weight: 600; font-size: 30px; letter-spacing: 0; }
+.presentation .pr-name { font-weight: 600; font-size: 52px; }
+.presentation .pr-brand b { font-weight: 600; font-size: 19px; }
+.presentation .pr-doc h3 { font-weight: 600; font-size: 21px; }
+.presentation .pr-hero, .presentation .pr-lead { max-width: none; }
+ .presentation .pr-split, .presentation .pr-split.rev, .presentation .pr-cards { grid-template-columns: minmax(0, 1fr); }
+.presentation .pr-doc.cols { columns: auto; }
+.presentation .pr-dl dt { font-size: 15px; } .presentation .pr-tab, .presentation .pr-doc table { font-size: 16px; }
+.presentation .pr-sec button { font-size: 14px; }
+.presentation .pr-foot button { font-size: 15px; padding: 5px 12px; }
+.presentation .hint { font-size: 14px; }
+.pr-body.paged { overflow: hidden; }
+.pr-body .pg-off, .pr-body .pg-hid { display: none !important; }
+.presentation .pr-btn { font-size: 16px; padding: 7px 14px; border-radius: 9px; }
+.pr-concl-slide .pr-lead.big { font-size: 26px; line-height: 1.5; margin: 6px 0 18px; }
+.pr-concl-slide .pr-vact { margin: 4px 0 16px; gap: 10px; }
+.pr-decrow { display: block; width: 100%; text-align: left; cursor: pointer; font-size: 17px; white-space: normal; }
+.pr-dtext:empty { display: none; }
+/* plan : captures glissées d'une diapositive à l'autre */
+.pr-nav .gal[draggable] { cursor: grab; }
+.pr-nav.dragging [data-key]:not([data-gid]) { outline: 1px dashed var(--line2); outline-offset: -1px; }
+.pr-nav [data-key].drop { outline: 2px solid var(--accent2) !important; background: color-mix(in srgb, var(--accent2) 12%, transparent); }
+.pr-sec button.sub { padding-left: 18px; font-size: 13px; }
+/* « Revoir » une crise depuis le diaporama (body.present) : la 3D, la frise, la vidéo et le tracé, sans les barres d'outils */
+body.present .topbar, body.present .subbar, body.present #caption { display: none !important; }
+body.present .view-foot { min-height: 0; }
+body.present .viewbar #layoutSel, body.present .viewbar #anatSwitch, body.present .viewbar #btn3dWL, body.present .viewbar #btnDock, body.present .viewbar #btnPng, body.present .viewbar #btnDisp, body.present .viewbar #seegChip { display: none !important; }
+
+/* ================================================================ v5.2 — diaporama : deux colonnes, galeries, visionneuses
+ * (staff_present.js, present_seeg.js) ; coupes de l'intervention (surgery.js) */
+.pr-2c { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.pr-2c.rev { grid-template-columns: minmax(0, 2.6fr) minmax(230px, 0.9fr); }
+.pr-2c > .pr-card, .pr-decs .pr-card { margin: 0; }
+.pr-decs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; align-items: start; margin-top: 10px; }
+.pr-decs > .l { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.pr-decs .pr-svh img { max-height: 24vh; } .pr-2c.rev .pr-dviews .pr-sviews img { max-height: 29vh; } .pr-2c.rev > .pr-card:last-child { max-height: calc(100vh - 240px); overflow: auto; }
+.pr-ip.pr-ssl { display: flex; flex-direction: column; height: calc(100vh - 230px); min-height: 380px; padding: 6px; }
+.pr-impsl { display: grid; grid-template-columns: minmax(250px, 0.8fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.pr-impsl .pr-ip { height: calc(100vh - 190px); }
+.pr-ellist { margin: 0; max-height: calc(100vh - 190px); overflow: auto; }
+.pr-tab.click tr[data-eid] { cursor: pointer; } .pr-tab.click tr[data-eid]:hover td { background: color-mix(in srgb, var(--accent2) 8%, transparent); }
+.pr-tab tr[data-eid].on td { background: color-mix(in srgb, var(--accent) 30%, transparent); } .pr-tab tr[data-eid].on td:first-child { box-shadow: inset 3px 0 0 var(--accent); } .pr-tab tr.click { cursor: pointer; }
+div.pr-vact.v3 { justify-content: flex-end; margin-top: 8px; }
+.pr-tabs { margin: 0 0 10px; flex-wrap: wrap; } .presentation .pr-tabs button { font-size: 15px; padding: 5px 12px; }
+.pr-model { margin-top: 2px; } .pr-model .pr-2c { gap: 22px; }
+.pr-szv .pr-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .pr-szv img { width: 100%; max-height: 30vh; object-fit: contain; border-radius: 8px; display: block; }
+.pr-szcap, .pr-syn-info { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.pr-synr .pr-syn-imgs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .pr-synr figure { margin: 0; } .pr-synr img { width: 100%; max-height: 30vh; object-fit: contain; border-radius: 8px; display: block; }
+.pr-synr figcaption { font-size: 12px; color: var(--muted); text-align: center; }
+.pr-szl { display: flex; flex-wrap: wrap; gap: 6px; } .pr-szb { text-align: left; font-size: 14px; white-space: normal; }
+.pr-szmedia { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 12px; } .pr-szmedia .pr-lbl { margin: 8px 0 0; white-space: nowrap; }
+.pr-thumbs.sm { gap: 8px; } .pr-thumbs.sm .pr-thumb { width: 132px; } .pr-thumbs.sm figcaption { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pr-thumb .th { position: relative; min-height: 40px; background: var(--bg); border-radius: 8px; } .pr-thumb .th img { width: 100%; border-radius: 8px; border: 1px solid var(--line2); display: block; }
+.pr-tot { margin-bottom: 8px; } .pr-tab .pr-chip { white-space: nowrap; } .presentation .pr-2c .pr-tab { font-size: 15px; } .presentation .pr-2c .pr-tab td { padding: 5px 7px; } .pr-stl { max-height: calc(100vh - 250px); } .pr-chip.big { font-size: 15px; padding: 3px 13px; } .pr-chip.im { border-color: var(--accent2); }
+/* frise de l'exploration */
+.pr-tl { border: 1px solid var(--line); border-radius: 12px; background: var(--bg2); padding: 6px 10px 4px; margin-bottom: 12px; }
+.pr-tl svg { width: 100%; height: auto; display: block; max-height: 150px; color: var(--text); }
+.pr-tl .tl-g { stroke: var(--line); stroke-width: 1; } .pr-tl .tl-d { font: 11px var(--font); fill: var(--muted); } .pr-tl .tl-r { font: 600 12px var(--font); fill: var(--muted); }
+.pr-tl .tl-n { font: 600 11px var(--font); fill: currentColor; text-anchor: middle; } .pr-tl .tl-st { stroke: #8aa0b8; stroke-width: 1.4; } .pr-tl .tl-st.sz { stroke: var(--danger); stroke-width: 2.2; } .pr-tl .tl-st.ad { stroke: light-dark(#b76b21, #f2994a); stroke-width: 1.8; }
+.pr-tl .tl-tc { fill: #e12d37; } .pr-tl .tl-tt { fill: var(--ok); stroke: #3f8f53; }
+.pr-tl-leg { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); padding: 2px 4px; }
+.pr-tl-leg span { display: inline-flex; align-items: center; gap: 5px; } .pr-tl-leg i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #8aa0b8; display: inline-block; } .pr-tl-leg i.f { background: #8aa0b8; } .pr-tl-leg i.h { border-width: 3px; }
+.pr-tl-leg b.st { width: 3px; height: 12px; display: inline-block; } .pr-tl-leg b.st.sz { background: var(--danger); } .pr-tl-leg b.st.ad { background: #f2994a; }
+/* patient : personnes présentes, développement, antécédents */
+.pr-ppl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -8px 0 18px; } .pr-ppl .pchip-p { cursor: default; } .pr-ppl .pr-edit { margin-left: 2px; } .pr-pext { color: var(--muted); font-size: 15px; }
+.pr-dev { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 22px; align-items: start; font-size: 15px; } .pr-dev.one { grid-template-columns: minmax(0, 1fr); }
+.pr-dev h4:first-child { margin-top: 0; } .presentation .pr-dev table { font-size: 14px; }
+.pr-devc { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .pr-devc figure { margin: 0; } .pr-devc figure.ms { grid-column: 1 / -1; }
+.pr-devc figcaption { font-size: 12.5px; color: var(--muted); margin-bottom: 2px; } .pr-devc svg { width: 100%; height: auto; max-height: 34vh; display: block; }
+.pr-ant h3:first-child { margin-top: 0; } .ant-pos { margin: 4px 0 8px; padding-left: 22px; } .ant-pos li { margin: 2px 0; }
+.ant-neg { margin: 4px 0; color: var(--muted); } .ant-neg span { color: var(--ok); font-weight: 600; } .presentation.light .ant-neg span { color: #2f8f4e; }
+.pr-doc .ped-rep { display: flex; justify-content: center; } .pr-doc .ped-rep svg { width: 100%; height: auto; max-height: 46vh; }
+.ped-notes { border-collapse: collapse; margin: 6px 0; } .ped-notes td { padding: 3px 12px 3px 0; vertical-align: top; } .ped-notes td:first-child { font-weight: 600; white-space: nowrap; }
+.ped-st { color: var(--danger); font-size: .9em; margin-left: 4px; }
+/* bilans : pièces jointes, comptes rendus d'imagerie cliquables */
+.pr-atts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .pr-att { font-size: 13px; padding: 3px 10px; border-radius: 999px; }
+.pr-imx.click { cursor: pointer; border-radius: 8px; } .pr-imx.click:hover { background: color-mix(in srgb, var(--accent2) 8%, transparent); } .pr-imx.on { background: color-mix(in srgb, var(--accent2) 14%, transparent); box-shadow: inset 3px 0 0 var(--accent2); }
+.pr-imx .pr-thumbs.sm { margin-top: 6px; }
+/* visionneuse des captures, fenêtres du diaporama */
+.pr-zoom.lb { display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: default; padding: 20px 70px; }
+.pr-zoom.lb .lb-stage { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+.pr-zoom.lb .lb-stage img, .pr-zoom.lb .lb-stage video { max-width: 100%; max-height: calc(100vh - 140px); object-fit: contain; }
+.pr-zoom.lb .pr-zcap { color: var(--text); text-align: center; margin-top: 8px; }
+.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 64px; font-size: 30px; border-radius: 10px; background: rgba(20,25,34,.8); color: #fff; border-color: #3a4556; }
+.lb-nav.prev { left: 12px; } .lb-nav.next { right: 12px; } .lb-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; background: rgba(20,25,34,.8); color: #fff; }
+.pr-pop { position: absolute; inset: 0; z-index: 6; background: light-dark(rgba(255,255,255,0.75), rgba(5,7,10,.55)); display: flex; align-items: center; justify-content: center; }
+.pr-pop-card { width: min(760px, 92%); max-height: 88vh; overflow: auto; background: var(--bg2); border: 1px solid var(--line2); border-radius: 12px; padding: 16px 18px; box-shadow: 0 18px 50px light-dark(rgba(16,30,50,0.122), rgba(0,0,0,.35)); }
+.pr-pop-card.wide { width: min(1180px, 94%); } .pr-pop-card .btnrow { display: flex; margin-top: 12px; }
+/* présentation claire : boutons actifs lisibles ; coupes IRM et visionneuse 3D restent sombres */
+.presentation.light button.on, .presentation.light .seg button.on { background: #d9ecf8; border-color: #2a9fd0; color: #07324b; }
+.presentation.light .pr-ip, .pop3d { --bg: #0d1016; --bg2: #141922; --bg3: #1b212c; --line: #262e3a; --line2: #313a48; --text: #e8ebf0; --muted: #8f99a8; --faint: #5c6675; color: var(--text); }
+.presentation.light .pr-ip button, .presentation.light .pop3d button { color: var(--text); }
+.presentation.light .pr-ip button:hover, .presentation.light .pop3d button:hover { background: #222a37; }
+.presentation.light .pr-ip button.on, .presentation.light .pr-ip .seg button.on, .presentation.light .pop3d button.on, .presentation.light .pop3d .seg button.on { background: #2a3444; border-color: var(--accent2); color: #dff6ff; }
+.presentation.light .pr-ip select, .presentation.light .pr-ip input { background: var(--bg); color: var(--text); border-color: var(--line2); }
+.pop3d-card { color: var(--text); }
+/* coupes de l'intervention */
+.surg-slices { height: 560px; display: flex; flex-direction: column; background: var(--bg0); border-radius: 10px; padding: 6px; }
+.ssl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 2px 4px 6px; font-size: 13px; color: var(--muted); }
+.ssl-bar select { max-width: 300px; } .ssl-leg { display: inline-flex; flex-wrap: wrap; gap: 4px 10px; } .ssl-leg span { display: inline-flex; align-items: center; gap: 4px; } .ssl-leg i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.ssl-warn { padding: 2px 6px 6px; } .ssl-ip { flex: 1; min-height: 0; }
+@media (max-width: 900px) { .pr-2c, .pr-2c.rev, .pr-decs, .pr-impsl, .pr-dev { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- v5.3 : imagerie de source (esi_ui.js) */
+.esi-cl { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.esi-c { display: flex; align-items: center; gap: 8px; padding: 4px 9px 4px 4px; text-align: left; border-radius: 8px; white-space: normal; line-height: 1.3; }
+.esi-c img { width: 54px; height: 54px; flex: none; }
+.esi-c small { color: var(--muted); }
+.esi-c.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.esi-wave { display: block; width: 100%; max-width: 360px; border-radius: 6px; border: 1px solid var(--line); margin: 4px 0 6px; }
+.esi-topos { display: flex; gap: 12px; flex-wrap: wrap; margin: 2px 0 4px; }
+.esi-topos figure { margin: 0; text-align: center; } .esi-topos img { width: 116px; height: 116px; display: block; }
+.esi-topos figcaption { font-size: 11px; color: var(--muted); }
+.esi-res { display: flex; flex-direction: column; gap: 3px; font-size: 12px; line-height: 1.4; margin: 6px 0; padding: 6px 9px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 7%, transparent); border-radius: 0 6px 6px 0; }
+.esi-r1 { display: flex; align-items: center; gap: 6px; } .esi-r1 .esi-more { padding: 0 7px; }
+.esi-leg { gap: 4px 10px; flex-wrap: wrap; } .view-foot .esi-leg { flex: 1 1 100%; min-width: 0; } .esi-leg a { cursor: pointer; margin-left: 4px; color: var(--muted); }
+/* imagerie de source au staff : une ligne par résultat — extrait de tracé à 20 s/page, topographie et résultats, vues 3D */
+.pr-esi { display: flex; flex-direction: column; gap: 10px; }
+.esl-h { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; margin-bottom: 6px; } .esl-h b { font-size: 1.06em; } .esl-sm { color: var(--muted); font-size: .9em; }
+.esl-row { display: flex; align-items: center; gap: 14px; min-height: max(140px, var(--esi-rowh, 30vh)); }   /* le texte peut agrandir la ligne */
+.esl-row > img.esl-trace { height: max(140px, var(--esi-rowh, 30vh)); width: auto; max-width: 36%; object-fit: contain; flex: none; border-radius: 6px; border: 1px solid var(--line); background: #fff; } .esl-row > img.esl-trace.old { max-width: 26%; }
+.esl-txt { flex: 1 1 340px; min-width: 320px; display: flex; gap: 12px; align-items: center; line-height: 1.4; font-size: .9em; } .esl-topo { width: min(112px, calc(var(--esi-rowh, 30vh) * .7)); height: auto; flex: none; }
+.esl-v { flex: 0 1 auto; min-width: 0; height: max(140px, var(--esi-rowh, 30vh)); display: flex; gap: 8px; justify-content: flex-end; } .esl-v img { height: 100%; width: auto; min-width: 0; flex: 0 1 auto; object-fit: contain; border-radius: 6px; }
+/* ---------- v5.4 : modèle de tête réaliste, concordance des méthodes, électrodes de scalp en 3D */
+.esi-conc { font-size: 12px; padding: 1px 0 1px 8px; border-left: 3px solid var(--muted); }
+.esi-conc.ok { border-left-color: var(--ok); } .esi-conc.mid { border-left-color: var(--sand); } .esi-conc.ko { border-left-color: var(--danger); }
+.esi-leg .esi-conc { border-left-width: 3px; }
+.esi-lb { display: inline-flex; gap: 4px; flex-wrap: wrap; } .esi-lb button { padding: 1px 8px; font-size: 11.5px; }
+.esi-opts .chip { font-size: 11.5px; padding: 1px 8px; } .esi-opts input { margin: 0 3px 0 0; vertical-align: -1px; }
+.esi-lb button.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text-hi); }
+.esi-res .btnrow { margin-top: 3px; } .esi-res .btnrow button { padding: 2px 9px; font-size: 12px; }
+.esi-head-dlg { width: min(560px, 94vw); display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px; } .esi-head-dlg > :not(.modal-head) { margin-left: 18px; margin-right: 18px; }
+.esi-opt { display: block; line-height: 1.4; cursor: pointer; } .esi-opt .muted { display: block; margin-left: 22px; font-size: 12px; }
+.esi-ptab { border-collapse: collapse; font-size: 12.5px; } .esi-ptab td { padding: 2px 12px 2px 0; } .esi-ptab td:first-child { color: var(--muted); }
+ .drag-elec .sv-cell { cursor: grabbing; }
+.rc-elec.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--text-hi); }
+
+/* ---- v5.5 : signets du tracé, comparaison des sources ---- */
+.ie-mlist { width: 330px; }
+.ie-ml { display: flex; flex-direction: column; gap: 1px; max-height: 52vh; overflow: auto; }
+.ie-mi { display: grid; grid-template-columns: 52px 8px 1fr auto; align-items: center; gap: 6px; text-align: left; font-size: 12px; padding: 3px 6px; border-radius: 6px; background: transparent; border: 0; color: inherit; cursor: pointer; }
+.ie-mi:hover, .ie-mi.on { background: light-dark(rgba(25,81,142,0.1), rgba(255,255,255,0.07)); }
+.ie-mi i { width: 8px; height: 8px; border-radius: 50%; background: #f2b84b; }
+.ie-mi.k-onset i { background: #ff5a5f; } .ie-mi.k-end i { background: #4cc9f0; } .ie-mi.k-user i { background: #7bd389; } .ie-mi.k-sleep i { background: #9b8cf2; } .ie-mi.k-spike i { background: #ffd60a; }
+.ie-mi.other { opacity: 0.75; } .ie-mi .l { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ie-mi .muted { font-size: 11px; }
+.esi-cmp { display: flex; align-items: center; gap: 6px; } .esi-cmp i, .esi-sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; }
+.esi-cmp a { cursor: pointer; opacity: 0.7; } .esi-cmp a:hover { opacity: 1; }
+.esi-row .esi-sw { margin-right: 6px; }
+.esi-c .esi-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--clc, #ffd60a); margin-right: 5px; vertical-align: 0; }
+.esi-c.cur { box-shadow: inset 0 0 0 2px var(--clc, var(--accent)); }
+.esi-clact { margin-top: 6px; gap: 8px; }
+/* sommeil (sleep_ui.js) */
+.slp-hyp { display: block; height: 96px; margin: 4px 0 6px; }
+.slp-tab { width: 100%; font-size: 12px; border-collapse: collapse; } .slp-tab td { padding: 2px 4px; } .slp-tab td:nth-child(odd) { color: var(--muted); }
+.slp-bars { display: flex; flex-direction: column; gap: 3px; margin: 6px 0; font-size: 12px; }
+.slp-bars span { position: relative; padding: 2px 6px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--c) 10%, transparent); }
+.slp-bars span i { position: absolute; left: 0; top: 0; bottom: 0; background: color-mix(in srgb, var(--c) 35%, transparent); z-index: 0; } .slp-bars span b, .slp-bars span { z-index: 1; } .slp-bars span > * { position: relative; }
+.esi-st { font-size: 11.5px; border-collapse: collapse; margin-top: 6px; } .esi-st th, .esi-st td { padding: 1px 6px; text-align: right; } .esi-st th { font-weight: 600; color: var(--muted); } .esi-st td:first-child { text-align: left; }
+/* fiche de crise (seizure_info.js) */
+.sz-info { width: min(640px, 94vw); display: flex; flex-direction: column; gap: 10px; }
+.sz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; } .sz-info label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); } .sz-info label.w2 { grid-column: 1 / -1; }
+.sz-info input, .sz-info select, .sz-info textarea { font-size: 13px; color: var(--ink); } .sz-recs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .sz-recs .chip { flex-direction: row; align-items: center; color: var(--ink); }
+#szInfoBtn { white-space: nowrap; }
+/* visionneuse : panneau d'analyse ouvert d'emblée, repliable, largeur réglable ; onglets sur plusieurs lignes */
+.ie-side { width: var(--sidew, 396px); }
+.ie-sgrip { position: absolute; bottom: 64px; right: calc(var(--sidew, 396px) - 3px); width: 6px; cursor: ew-resize; z-index: 6; }
+.ie-sgrip:hover { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+.ie-sidetab { position: absolute; right: 0; top: 46%; z-index: 6; writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px 4px; border-radius: 0 7px 7px 0; font-size: 12px; }
+.ie-mt { flex-wrap: wrap; row-gap: 3px; padding-bottom: 6px; }
+.ie-mt button { flex: 0 0 auto; border-radius: 7px; border: 1px solid transparent; padding: 4px 9px; }
+.ie-mt button.on { margin-bottom: 0; border-color: var(--line); }
+.ie-mt .ie-mtx { margin-left: auto; color: var(--muted); padding: 4px 8px; }
+/* liste des tracés de scalp : titre entier, détails en infobulle */
+.esi-pr-sum .pr-tab td, .esi-pr-sum .pr-tab th { padding: 3px 8px; } .esi-pr .esi-dot, .esi-pr-sum .esi-dot, .esl-h .esi-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.ie-mi.k-inter i { background: #b07cf2; }
+.ie-top .ie-warn { max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
+
+/* v5.7 — onglet Analyses : une carte par tracé, ses post-traitements dessous (rec_cards.js) */
+.rc-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 2px; } .rc-f button { padding: 3px 9px; font-size: 12px; } .rc-f .m { color: var(--faint); font-size: 11px; margin-left: 2px; }
+.rc-day { margin: 12px 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.rc { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px 5px; margin: 6px 0; background: var(--bg); display: flex; flex-direction: column; gap: 4px; }
+.rc-h { display: flex; align-items: center; gap: 5px; } .rc-h button { padding: 3px 8px; font-size: 12px; } .rc-h .rc-fold { padding: 0 4px; border: 0; background: none; color: var(--muted); }
+.rc-t { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; } .rc-t b { font-weight: 600; overflow-wrap: anywhere; line-height: 1.25; } .rc-m { font-size: 11.5px; color: var(--muted); }
+.rc-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rc-k { padding: 1px 7px; border-radius: 9px; background: var(--bg3); color: var(--muted); font-size: 11px; } .rc-k.ict { background: color-mix(in srgb, #d9480f 16%, transparent); color: light-dark(#a33a0c, #ffb58a); } .rc-k.vig { background: color-mix(in srgb, #4263eb 14%, transparent); color: light-dark(#364fc7, #a5b4fc); }
+.rc-sz { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; } .rc-sz button { border: 0; border-radius: 0; padding: 1px 7px; font-size: 11.5px; background: transparent; } .rc-sz button + button { border-left: 1px solid var(--line); } .rc-szgo { color: var(--accent); font-weight: 600; } .rc-sz button:hover { background: var(--hover); }
+.rc-szadd { padding: 1px 8px; font-size: 11.5px; border-radius: 10px; border: 1px dashed light-dark(#c2410c, #f0a35e); color: light-dark(#9a3412, #f0a35e); background: transparent; }
+.rc-warn { color: light-dark(#9a3412, #f0a35e); cursor: help; }
+.rc-post { display: flex; flex-direction: column; gap: 2px; border-left: 2px solid var(--line); padding-left: 7px; margin-left: 4px; }
+.rc-p { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; align-items: center; gap: 6px; font-size: 12px; padding: 2px 4px; border-radius: 5px; } .rc-p.click { cursor: pointer; } .rc-p.click:hover, .rc-post .esi-row:hover { background: var(--hover); }
+.rc-pk { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: var(--faint); } .rc-pv { min-width: 0; }
+.rc-cl { display: inline-flex; gap: 2px; } .rc-cl i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.rc-hyp { min-width: 0; } .rc-hyp svg { display: block; height: 30px; } .rc-p:has(.rc-hyp) { grid-template-columns: 62px minmax(0, 1fr) auto; }
+.rc-caps { display: flex; flex-wrap: wrap; gap: 3px; grid-column: 2 / 4; } .rc-cap { padding: 0 6px; font-size: 11px; font-variant-numeric: tabular-nums; border-radius: 8px; }
+.rc-none { font-size: 11.5px; color: var(--faint); font-style: italic; padding: 1px 4px; }
+.rc-post .esi-row { padding: 3px 4px; border-radius: 5px; cursor: pointer; font-size: 12px; } .rc-post .esi-row .small { font-size: 11px; color: var(--muted); }
+.rc-post .esi-row.on { background: color-mix(in srgb, var(--accent) 10%, transparent); box-shadow: inset 3px 0 var(--accent); }
+.esi-keep { border: 0; background: none; padding: 0 3px; font-size: 14px; line-height: 1; color: var(--faint); } .esi-keep.on { color: #e0a800; }
+.rc-post .ie-sets { margin: 0; }
+/* v5.7 — staff : tableaux des stimulations et thermocoagulations condensés (une ligne par paire), accès au tracé brut */
+.pr-tab.st.cmp td, .presentation .pr-2c .pr-tab.st.cmp td { padding: 3px 6px; font-size: 13px; line-height: 1.3; vertical-align: top; } .pr-tab.st.cmp td.mono { white-space: nowrap; }
+.pr-cl2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pr-md { font-size: .82em; color: var(--muted); font-weight: 400; } .pr-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin: 0 4px 0 0; vertical-align: 1px; }
+.pr-raw { margin-left: auto; padding: 2px 11px; font-size: .82em; border-radius: 999px; border: 1px solid var(--accent2); color: var(--accent2); background: transparent; cursor: pointer; } .pr-raw:hover { background: color-mix(in srgb, var(--accent2) 12%, transparent); }
+.pr-tab.st.cmp td:nth-child(2) { width: 34%; }
+/* v5.8 — relecture : pointes une à une, sommeil époque par époque */
+.esi-rev .esi-cur { font-size: 12px; } .esi-rev .ctrl-row button { padding: 2px 9px; }
+.esi-man { color: var(--accent); font-weight: 600; } .esi-c small.esi-man { font-size: 10.5px; }
+.esi-ed summary { cursor: pointer; list-style: none; } .esi-ed summary::-webkit-details-marker { display: none; } .esi-ed summary::before { content: '▸ '; color: var(--muted); } .esi-ed[open] summary::before { content: '▾ '; }
+.esi-edtab { display: flex; gap: 4px; margin: 4px 0; } .esi-edtab button { flex: 1; padding: 3px 6px; } .esi-edtab button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); border-color: var(--accent); }
+.esi-edl { max-height: 190px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.esi-edr { display: grid; grid-template-columns: 64px 1fr auto auto; gap: 6px; align-items: center; font-size: 12px; padding: 2px 4px; border-radius: 4px; } .esi-edr.cur { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.esi-edr select { font-size: 11.5px; padding: 1px 2px; } .esi-edr button { padding: 1px 7px; }
+.slp-rev.on { border-color: var(--accent); } .slp-ep { font-size: 12px; margin: 2px 0 4px; }
+.slp-keys { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; } .slp-keys button[data-st] { min-width: 42px; padding: 3px 6px; border-color: var(--c); display: inline-flex; flex-direction: column; align-items: center; line-height: 1.1; font-weight: 600; }
+.slp-keys button[data-st] small { font-size: 9.5px; color: var(--muted); font-weight: 400; } .slp-keys button[data-st].on { background: color-mix(in srgb, var(--c) 30%, transparent); }
+.slp-hypw { cursor: pointer; }
+
+/* ---------- v5.9 : manuel d'utilisation (fenêtre compagnon) et bouton d'aide */
+.help-btn { width: 30px; padding: 4px 0; font-weight: 700; font-family: var(--serif); font-size: 15px; line-height: 1; }
+.sv-man { position: fixed; z-index: 900; right: 18px; bottom: 18px; width: 460px; height: min(640px, calc(100vh - 90px)); min-width: 320px; min-height: 260px; display: flex; flex-direction: column;
+  background: var(--bg2); border: 1px solid var(--line2); border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.35); overflow: hidden; resize: both; }
+.sv-man[data-mode=dock] { top: 56px; right: 0; bottom: 0; height: auto; width: min(520px, 42vw); border-radius: 12px 0 0 0; resize: horizontal; }
+.sv-man[data-mode=full] { inset: 3vh 3vw; width: auto; height: auto; resize: none; }
+.sv-man-h { display: flex; align-items: center; gap: 4px; padding: 6px 8px 6px 14px; background: var(--navy); color: #fff; cursor: grab; user-select: none; color-scheme: dark; }
+:root[data-theme=dark] .sv-man-h { background: #0e1a2b; border-bottom: 1px solid #c3b38e33; }
+.sv-man.drag .sv-man-h { cursor: grabbing; } .sv-man.drag iframe { pointer-events: none; }
+.sv-man-h b { font-family: var(--serif); font-weight: 600; font-size: 14.5px; letter-spacing: .1px; }
+.sv-man-h button { background: transparent; border: 1px solid transparent; color: #e6edf6; padding: 3px 7px; border-radius: 7px; font-size: 13px; }
+.sv-man-h button:hover { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.25); }
+.sv-man-h button[data-a=here] { font-size: 12px; border-color: rgba(255,255,255,.28); margin-right: 6px; }
+.sv-man[data-mode=float] .sv-man-h button[data-a=float], .sv-man[data-mode=dock] .sv-man-h button[data-a=dock], .sv-man[data-mode=full] .sv-man-h button[data-a=full] { background: rgba(255,255,255,.2); }
+.sv-man iframe { flex: 1; width: 100%; border: 0; background: #f6f4ef; }
+.sv-man-hint { position: fixed; z-index: 890; right: 18px; bottom: 18px; width: 330px; padding: 14px 16px 12px; background: var(--bg2); border: 1px solid var(--line2); border-left: 4px solid var(--accent); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.28); animation: svHint .35s ease-out; }
+.sv-man-hint b { font-family: var(--serif); font-size: 15px; } .sv-man-hint p { margin: 6px 0 10px; color: var(--text2); font-size: 13px; line-height: 1.45; }
+.sv-man-hint kbd { font: 600 11.5px var(--font); border: 1px solid var(--line2); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; }
+.sv-man-hint .btnrow { display: flex; gap: 8px; }
+@keyframes svHint { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+/* v5.9 : « Patients » et le nom du patient restent lisibles ; c'est le parcours qui défile s'il manque de place */
+.crumbs, .crumb.home { flex-shrink: 0; }
+.crumb.pat { max-width: 190px; }
+
+/* ---------- mentions légales (legal.js) */
+.modal-card.lg-card { width: min(780px, 96vw); max-height: 90vh; }
+.lg-body { overflow: auto; padding: 4px 20px 14px; flex: 1 1 auto; min-height: 0; font-size: 13px; line-height: 1.55; }
+.lg-body h3 { font-size: 13.5px; margin: 16px 0 4px; color: var(--text-hi); }
+.lg-body p, .lg-body ul { margin: 0 0 8px; color: var(--text); }
+.lg-body ul { padding-left: 20px; } .lg-body li { margin: 3px 0; }
+.lg-body a { color: var(--accent); }
+.lg-cite { margin: 6px 0; padding: 8px 12px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); border-radius: 0 8px 8px 0; font-size: 12.5px; }
+
+/* ---------- arbre généalogique : dessin direct (pedigree.js, clinical_ui.js) */
+.cell-panel.ped-pop { width: 420px; min-width: 0; }
+.ped-bar { display: flex; align-items: center; gap: 6px; margin: 2px 0 6px; } .ped-help { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+.ped-wrap:focus { outline: none; } .ped-edit { user-select: none; touch-action: none; }
+.ped-edit .ped-n.target { color: var(--accent); } .ped-edit .ped-hit:hover { stroke: color-mix(in srgb, var(--accent) 28%, transparent); }
+.ped-prev .ped-pl { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 4 3; fill: none; } .ped-prev .ped-pl.link { stroke-dasharray: none; stroke-width: 2; }
+.ped-prev .ped-pg { fill: color-mix(in srgb, var(--accent) 14%, transparent); stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 3 3; }
+.ped-prev .ped-pt { font: 600 11px system-ui, sans-serif; fill: var(--accent); } .ped-prev .bad { stroke: var(--danger); fill: var(--danger); }
+.ped-cons { color: var(--text); } .ped-links { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+.ped-lrow { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12.5px; } .ped-lrow .chip { font-size: 11.5px; }
+.ped-rel { margin-bottom: 6px; } .ped-rel button { white-space: normal; }

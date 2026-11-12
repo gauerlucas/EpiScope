@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EpiScope — Visualize seizures</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link id="brandFont" rel="preload" as="font" type="font/woff2" href="assets/BodoniModa-500.woff2" crossorigin>
+<link id="uiSerifFont" rel="preload" as="font" type="font/woff2" href="assets/Aleo-var.woff2" crossorigin>
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/workspace.css">
+<link rel="stylesheet" href="styles/dossier.css">
+<link rel="stylesheet" href="styles/staff.css">
+<link rel="stylesheet" href="styles/imaging.css">
+<link rel="stylesheet" href="styles/parcours.css">
+<link rel="stylesheet" href="styles/seeg.css">
+<link rel="stylesheet" href="styles/v4.css">
+<link rel="stylesheet" href="styles/v5.css">
+<link rel="stylesheet" href="styles/brand.css">
+<script>
+/* ---- Identité de l'application (modifiable ici) : nom, sous-titre, crédit et année affichés sur l'écran
+ *      d'accueil, dans l'en-tête et dans les rapports. L'année vaut par défaut l'année courante. ---- */
+window.EPISCOPE_BRAND = { name: 'EpiScope', tagline: 'Visualize seizures', credit: 'Lucas Gauer', author: 'Lucas Gauer', orcid: '0000-0001-8250-1455', version: '1.0.0', year: new Date().getFullYear(), splash: true,
+  status: 'Prototype recherche, non validé pour un usage clinique.' };
+/* thème (v5.3) : clair, sombre ou automatique (celui du système), appliqué avant le premier affichage */
+(function () { let t = 'auto'; try { t = localStorage.getItem('sv_theme') || 'auto'; } catch (e) { }
+  const dark = t === 'dark' || (t === 'auto' && !(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches));
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light'; document.documentElement.dataset.themePref = t; })();
+</script>
+</head>
+<body>
+<!-- écran d'accueil (logo), fondu automatique ; un clic ou une touche l'écarte -->
+<div id="splash" aria-hidden="true"><div class="brainwrap"><div class="glow"></div><img class="brain" src="assets/logo_brain.webp" alt=""></div><div class="word"><div class="name">EpiScope</div><div class="tagline">Visualize seizures</div><div class="credit">Lucas Gauer</div></div></div>
+<header class="topbar">
+  <div class="tb-row">
+    <div class="brand"><img class="logo" alt=""><span class="name">EpiScope</span></div>
+    <nav class="crumbs" id="crumbs">
+      <button id="crPatients" class="crumb home" title="Liste des patients (F9)">Patients</button><span class="csep">›</span>
+      <button id="crPatient" class="crumb pat" title="Patient ouvert : exporter, changer de patient">—</button>
+    </nav>
+    <nav class="parcours" id="parcours" aria-label="Parcours du patient"></nav>
+    <span class="spacer"></span>
+    <nav class="actions">
+      <button id="btnReport" title="Rapport de l’étape ouverte (HTML imprimable → PDF)">Rapport</button>
+      <span id="saveState" class="save-state" title="État de l’enregistrement">●</span>
+      <button id="btnTheme" class="theme-btn" title="Thème clair / sombre (⋯ › Thème : automatique)">◐</button>
+      <button id="btnHelp" class="help-btn" title="Manuel d’utilisation : aide sur cet écran (F1)">?</button><button id="btnMore" title="Exporter le dossier, importer, base de référence, aide">⋯</button>
+      <span hidden><button id="btnOpen"></button><button id="btnSave"></button><button id="btnDB"></button><button id="btnPresent"></button></span>
+    </nav>
+  </div>
+  <div class="subbar" id="subbar"></div>
+</header>
+
+<main class="layout">
+  <aside class="panel left">
+    <button class="collapse-btn reopen" data-collapse="left" title="Afficher la saisie">›</button>
+    <section class="sz-head" id="seizureCtl">
+      <div class="sz-row"><input id="caseName" class="case-name" placeholder="Crise (libellé)" spellcheck="false" title="Libellé de la crise">
+        <select id="szHabitual" title="Crise habituelle (identique aux crises spontanées décrites par le patient et son entourage)"><option value="?">habituelle ?</option><option value="yes">habituelle</option><option value="no">non habituelle</option></select></div>
+      <div class="sz-row">
+        <label title="Temps du début électrique (SEEG/EEG) par rapport au premier signe clinique (t = 0). Négatif si l'EEG précède : la latence clinique favorise une origine silencieuse.">EEG <input id="eegOnset" type="number" step="0.5" placeholder="s"></label>
+        <label title="Fin clinique de la crise (s)">fin <input id="seizureEnd" type="number" step="1" placeholder="s"></label>
+        <select id="vigilance" title="État de vigilance au début de la crise"><option value="">veille/sommeil ?</option><option value="wake">veille</option><option value="sleep">sommeil</option></select>
+        <label hidden>Dominance <select id="dominant"><option value="L">hémisphère G</option><option value="R">hémisphère D</option></select></label>
+      </div>
+    </section>
+    <section class="chrono">
+      <div class="chrono-head">
+        <div class="mode-switch" id="modeSwitch">
+          <button data-mode="chrono" class="on" title="Chrono synchronisé avec la vidéo lue à côté (Espace = lecture/pause)">Chrono</button>
+          <button data-mode="sequence" title="Ordre seul : les temps sont estimés par pas réguliers, ajustables ensuite">Séquence</button>
+          <button data-mode="manual" title="Temps saisis à la main (depuis le compte rendu)">Manuel</button>
+        </div>
+        <button class="collapse-btn" data-collapse="left" title="Réduire la saisie">‹</button>
+      </div>
+      <div class="chrono-body" id="chronoBody">
+        <div class="chrono-time" id="chronoTime">0.0 s</div>
+        <div class="chrono-btns">
+          <button id="chronoToggle" class="primary" title="Espace">▶ Lecture</button>
+          <button id="chronoReset" title="Remettre à zéro (le premier signe clinique = t 0)">⟲ 0</button>
+          <button id="chronoMinus" title="− 1 s">−1 s</button>
+          <button id="chronoPlus" title="+ 1 s">+1 s</button>
+        </div>
+        <div class="hint">Lancez le chrono quand la vidéo démarre au premier signe ; mettez en pause avec la vidéo. Chaque signe cliqué est horodaté.</div>
+      </div>
+      <div class="chrono-body" id="seqBody" hidden>
+        <label>Pas entre signes <input id="seqStep" type="number" value="5" min="1" step="1"> s</label>
+        <div class="hint">Les temps sont approximatifs (incertitude ± 3 s) ; glissez les barres de la frise pour les ajuster.</div>
+      </div>
+      <div class="chrono-body" id="manBody" hidden>
+        <label>Temps du prochain signe <input id="manT" type="number" value="0" step="0.5"> s</label>
+        <div class="hint">Saisissez le temps, puis cliquez le signe.</div>
+      </div>
+      <div class="side-row">
+        <span>Côté du signe</span>
+        <div class="seg" id="sideSeg">
+          <button data-side="L" title="1">Gauche</button><button data-side="R" title="2">Droite</button><button data-side="B" title="3">Bilat.</button><button data-side="" class="on" title="4">?</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="palette">
+      <input id="search" class="search" placeholder="Taper un signe… (Entrée = ajouter)" autocomplete="off" spellcheck="false">
+      <div id="palette" class="chips"></div>
+    </section>
+
+    <section class="sequence">
+      <div class="sec-head"><span>Séquence</span><span class="sec-tools"><button id="btnShift" title="Décaler toute la séquence">Décaler</button><button id="btnClear" title="Effacer la séquence">Effacer</button></span></div>
+      <ol id="seqList" class="seq-list"></ol>
+    </section>
+  </aside>
+
+  <section class="center">
+    <div class="viewbar">
+      <div class="vrow">
+        <select id="layoutSel" title="Disposition des vues"><option value="single">1 vue</option><option value="duo">2 vues</option><option value="quad">4 faces</option><option value="mosaic">Mosaïque</option><option value="stim">Stimulation (2 vues)</option></select>
+        <div class="seg views" id="viewSeg" title="Orientation de la vue active">
+          <button data-view="latL">Lat. G</button><button data-view="medL">Méd. G</button><button data-view="latR">Lat. D</button><button data-view="medR">Méd. D</button><button data-view="sup">Sup.</button><button data-view="inf">Inf.</button><button data-view="ant">Ant.</button><button data-view="post">Post.</button>
+        </div>
+        <span class="spacer"></span>
+        <div class="anat-switch seg" id="anatSwitch" title="Anatomie de la vue 3D : gabarit (fsaverage) ou anatomie du patient (après traitement de son IRM)">
+          <button data-anat="template" class="on">Gabarit</button><button data-anat="patient">Patient</button>
+        </div>
+        <button id="btn3dWL" title="Contraste et luminosité des coupes IRM affichées dans la 3D : glisser ↔ contraste, ↕ luminosité (la vue ne tourne plus tant que le bouton est actif)"><svg width="14" height="14" viewBox="0 0 16 16" style="vertical-align:-2px"><circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.7a6.3 6.3 0 0 1 0 12.6z" fill="currentColor"/></svg></button>
+        <button id="btnDock" title="Coupes de l’IRM du patient à côté de la vue 3D : calques, contraste à la souris, vérification d’une électrode (mêmes outils que l’écran Imagerie)">Coupes IRM</button>
+        <button id="btnPng" title="Image PNG de la vue">PNG</button>
+      </div>
+      <div class="vrow sub">
+        <label class="slider" title="Surface piale ↔ gonflée (vue active)">gonflé <input type="range" id="inflRange" min="0" max="100" step="5" value="0"></label>
+        <label class="slider" title="Opacité du cortex (vue active)">opacité <input type="range" id="opacRange" min="5" max="100" step="5" value="100"></label>
+        <label class="chip" title="Cortex transparent réduit à sa couche la plus proche (glass brain sans le fond : les plis et l’hémisphère situés derrière ne s’additionnent pas)"><input type="checkbox" data-k="frontGlass" id="chkFrontGlass" checked> sans le fond</label>
+        <span class="vsep"></span>
+        <div class="chips" id="dispChips" title="Éléments affichés dans la vue active">
+          <label class="chip"><input type="checkbox" data-k="sub" checked> profond</label><button class="chip seeg sub-chip" id="subChip" title="Structures profondes de la vue active : opacité, côté, cervelet, sélection">▾</button>
+          <label class="chip net-only"><input type="checkbox" data-k="fibers" checked> trajets</label>
+          <label class="chip net-only"><input type="checkbox" data-k="nodes" checked> nœuds</label>
+          <label class="chip net-only"><input type="checkbox" data-k="sync" checked> liens</label>
+          <label class="chip"><input type="checkbox" data-k="borders"> limites</label>
+          <label class="chip"><input type="checkbox" data-k="electrodes" checked> électrodes</label>
+          <label class="chip"><input type="checkbox" data-k="labels" checked> noms</label>
+          <label class="chip net-only" title="Étiquettes ◆ des régions centrales (hubs) du réseau"><input type="checkbox" data-k="hubLabels"> hubs</label>
+          <button class="chip seeg seeg-only" id="seegChip" title="Thermocoagulations, stimulations, réseau CCEP et quantification dans la vue active">SEEG ▾</button>
+        </div>
+        <label class="chip link" title="Les réglages d’affichage et les réseaux d’hypothèses s’appliquent à toutes les vues"><input type="checkbox" id="chkLink"> vues liées</label>
+        <button id="btnAllCells" class="ghost" title="Copier les réglages d’affichage de la vue active vers toutes les vues">→ toutes</button>
+      </div>
+    </div>
+    <div class="view-split" id="viewSplit">
+      <div id="view3d" class="view3d">
+        <div id="tip" class="tip" hidden></div>
+        <div id="glWarn" class="gl-warn" hidden>Rendu 3D logiciel (WebGL indisponible) : qualité réduite, fonctions identiques.</div>
+      </div>
+      <div class="dock-handle" id="dockHandle" hidden title="glisser pour élargir ou réduire les coupes"></div>
+      <div id="sliceDock" class="slice-dock" hidden></div>
+    </div>
+    <div class="view-foot">
+      <div id="caption" class="caption"></div>
+      <div class="legend hyp-legend" id="hypLegend"><em>graphe global neutre</em></div>
+      <div class="legend scope-leg" id="scopeLeg" hidden></div>
+      <div class="legend"><span>faible</span><div class="legend-bar"></div><span>forte</span><em>plausibilité d'activation</em></div>
+      <div class="legend qlegend" id="quantLegend" hidden></div>
+    </div>
+  </section>
+
+  <aside class="panel right">
+    <button class="collapse-btn reopen" data-collapse="right" title="Afficher les panneaux d’analyse">‹</button>
+    <div class="tabs" id="tabs">
+      <div class="tabrow"><button class="collapse-btn" data-collapse="right" title="Réduire le panneau">›</button><button data-tab="seegsz" title="Crise SEEG : contacts de début et de propagation, aspect électrique">Électrique</button><button data-tab="network" class="on" title="Régions plausiblement actives à l’instant t">Réseau à t</button><button data-tab="onset" title="Latéralisation, hypothèses, régions d’origine candidates">Origine</button><button data-tab="targets" title="Structures à échantillonner en SEEG">Cibles</button><button data-tab="model" title="Réglages du modèle et connectome du patient">Modèle</button><button data-tab="electrodes">Schéma d’implantation</button><button data-tab="stims">Stimulations</button><button data-tab="thermo">Thermocoagulations</button><button data-tab="quant">Analyses</button></div>
+    </div>
+    <div class="tab-body" id="tab-network"></div>
+    <div class="tab-body" id="tab-onset" hidden></div>
+    <div class="tab-body" id="tab-targets" hidden></div>
+    <div class="tab-body" id="tab-electrodes" hidden></div>
+    <div class="tab-body" id="tab-model" hidden><div id="tab-params"></div><div id="tab-connectome"></div></div>
+    <div class="tab-body" id="tab-seegsz" hidden></div>
+    <div class="tab-body" id="tab-stims" hidden></div>
+    <div class="tab-body" id="tab-thermo" hidden></div>
+    <div class="tab-body" id="tab-quant" hidden></div>
+  </aside>
+</main>
+
+<!-- écrans du dossier (au-dessus de l'espace de travail « crise ») -->
+<section class="screen" id="scr-patients" hidden></section>
+<section class="screen" id="scr-dossier" hidden></section>
+<section class="screen" id="scr-staff" hidden></section>
+<section class="screen" id="scr-imaging" hidden></section>
+<section class="screen" id="scr-view" hidden></section>
+<div id="presentation" class="presentation" hidden></div>
+
+<footer class="timeline-wrap" id="timelineWrap">
+  <div class="tl-resizer" id="tlResizer" title="Glisser pour redimensionner la frise · double-clic = hauteur par défaut"></div>
+  <div class="transport"><button class="collapse-btn tl" data-collapse="bottom" title="Réduire la frise">⌄</button>
+    <button id="playBtn" class="primary" title="Lecture de la crise (Maj+Espace)">▶</button>
+    <select id="speed"><option value="0.5">×0,5</option><option value="1" selected>×1</option><option value="2">×2</option><option value="4">×4</option></select>
+    <span class="tcur" id="tCur">0,0 s</span>
+    <span class="hint tl-help" title="Cliquer ou glisser sur la frise pour naviguer · double-clic sur un signe pour l’éditer · glisser ses bords pour la durée">?</span>
+  </div>
+  <div id="timeline" class="timeline" title="Cliquer ou glisser pour naviguer · double-clic sur un signe pour l’éditer · glisser ses bords pour la durée"></div>
+</footer>
+
+<!-- éditeur d'événement -->
+<div id="evDialog" class="modal" hidden>
+  <div class="modal-card small">
+    <div class="modal-head"><span id="evTitle">Signe</span><button class="close" data-close="evDialog">✕</button></div>
+    <div class="form">
+      <label>Signe <select id="evSign"></select></label>
+      <div class="row3">
+        <label>Début (s) <input id="evT" type="number" step="0.5"></label>
+        <label>± (s) <input id="evDt" type="number" step="0.5" min="0"></label>
+        <label>Durée (s) <input id="evDur" type="number" step="0.5" min="0.5"></label>
+      </div>
+      <label>Côté <div class="seg" id="evSide"><button data-side="L">Gauche</button><button data-side="R">Droite</button><button data-side="B">Bilat.</button><button data-side="">?</button></div></label>
+      <label id="evTopoRow">Topographie <div class="seg" id="evTopo"></div></label>
+      <label>Certitude <div class="seg" id="evConf"><button data-conf="1">certain</button><button data-conf="0.75">probable</button><button data-conf="0.5">douteux</button></div></label>
+      <label>Note <input id="evNote" type="text" placeholder="libre"></label>
+    </div>
+    <div class="modal-foot"><button id="evDelete" class="danger">Supprimer</button><span class="spacer"></span><button id="evOk" class="primary">OK</button></div>
+  </div>
+</div>
+
+<!-- éditeur de base -->
+<div id="dbDialog" class="modal" hidden>
+  <div class="modal-card wide">
+    <div class="modal-head"><span>Base de référence — signes, priors signe → région VEP, liens réseau</span><button class="close" data-close="dbDialog">✕</button></div>
+    <div class="db-layout">
+      <div class="db-left">
+        <input id="dbSearch" class="search" placeholder="Filtrer les signes…">
+        <ul id="dbSignList" class="db-signs"></ul>
+        <div class="db-left-foot"><button id="dbNewSign">+ Signe</button><button id="dbEdges">Liens réseau</button></div>
+      </div>
+      <div class="db-right" id="dbRight"></div>
+    </div>
+    <div class="modal-foot wrap">
+      <button id="dbExportApp" class="primary" title="Télécharge une copie de EpiScope.html contenant la base modifiée">Exporter l'app avec cette base</button>
+      <button id="dbExportCsv">Exporter CSV (signes, priors, liens, régions)</button>
+      <button id="dbImportCsv">Importer CSV…</button>
+      <button id="dbExportJson">Exporter JSON</button>
+      <span class="spacer"></span>
+      <button id="dbReset" class="danger">Réinitialiser (base livrée)</button>
+    </div>
+  </div>
+</div>
+
+<!-- aide -->
+<div id="toast" class="toast" hidden></div>
+<input type="file" id="fileOpen" accept=".json,.episcope,.zip" hidden>
+<input type="file" id="fileNifti" accept=".nii,.gz,.nii.gz,.dcm,.DCM,.ima,.IMA,application/dicom" hidden multiple>
+<input type="file" id="fileDicomDir" hidden multiple webkitdirectory directory>
+<input type="file" id="fileCsv" accept=".csv,.txt" hidden multiple>
+<input type="file" id="fileSC" accept=".txt,.csv,.tsv" hidden multiple>
+<input type="file" id="fileFC" accept=".txt,.csv,.tsv" hidden multiple>
+
+<script src="vendor/three.iife.js"></script>
+<script src="data/bundle.js"></script>
+<script src="src/i18n.js"></script>
+<script src="src/core.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="nifti"</script>
+<script src="src/nifti.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="work"</script>
+<script src="src/work.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="stats"</script>
+<script src="src/stats.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="coreg"</script>
+<script src="src/imaging/coreg.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="meshnet"</script>
+<script src="src/imaging/meshnet.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="volops"</script>
+<script src="src/imaging/volops.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="pvc"</script>
+<script src="src/imaging/pvc.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="mesh"</script>
+<script src="src/imaging/mesh.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="zip"</script>
+<script src="src/zip.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ctelec"</script>
+<script src="src/imaging/ctelec.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="anat"</script>
+<script src="src/imaging/anat.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="segatlas"</script>
+<script src="src/imaging/segatlas.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="store"</script>
+<script src="src/store.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="library"</script>
+<script src="src/library.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="csv"</script>
+<script src="src/csv.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="db"</script>
+<script src="src/db.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="atlas"</script>
+<script src="src/atlas.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="model"</script>
+<script src="src/model.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="electrodes"</script>
+<script src="src/electrodes.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="seeg"</script>
+<script src="src/seeg.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="viewer3d"</script>
+<script src="src/viewer3d.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="slices"</script>
+<script src="src/slices.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="viewer_slices3d"</script>
+<script src="src/viewer_slices3d.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="timeline"</script>
+<script src="src/timeline.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="report"</script>
+<script src="src/report.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="app"</script>
+<script src="src/app.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="seeg_ui"</script>
+<script src="src/seeg_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="patient_ui"</script>
+<script src="src/patient_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="staff_ui"</script>
+<script src="src/staff_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="synth_views"</script>
+<script src="src/synth_views.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="pres3d"</script>
+<script src="src/pres3d.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="imaging_ui"</script>
+<script src="src/imaging_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="imaging_panel"</script>
+<script src="src/imaging_panel.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="elec_real"</script>
+<script src="src/elec_real.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="anat_ui"</script>
+<script src="src/anat_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="slice_space"</script>
+<script src="src/slice_space.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="imaging_post"</script>
+<script src="src/imaging_post.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="coreg_ui"</script>
+<script src="src/coreg_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="dicom"</script>
+<script src="src/dicom.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="implant_ui"</script>
+<script src="src/implant_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="surgery"</script>
+<script src="src/surgery.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="report_ui"</script>
+<script src="src/report_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="views"</script>
+<script src="src/views.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="pedigree"</script>
+<script src="src/pedigree.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="clinical_ui"</script>
+<script src="src/clinical_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="growth_data"</script>
+<script src="src/growth_data.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="growth"</script>
+<script src="src/growth.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="dev_ui"</script>
+<script src="src/dev_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="webm-muxer"</script>
+<script src="src/vendor/webm-muxer.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="video_conv"</script>
+<script src="src/video_conv.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="gallery"</script>
+<script src="src/gallery.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="nav"</script>
+<script src="src/nav.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="credits"</script>
+<script src="src/credits.js"></script>
+<script src="src/legal.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="manual"</script>
+<script src="src/manual.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="seeg_flow"</script>
+<script src="src/seeg_flow.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="stim3d"</script>
+<script src="src/stim3d.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="implant_layers"</script>
+<script src="src/implant_layers.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="eeg_cr"</script>
+<script src="src/eeg_cr.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="thermo_flow"</script>
+<script src="src/thermo_flow.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="view2_ui"</script>
+<script src="src/view2_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="plan_ui"</script>
+<script src="src/plan_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="implant_projects"</script>
+<script src="src/implant_projects.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="loc_edit"</script>
+<script src="src/loc_edit.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="loc3d"</script>
+<script src="src/loc3d.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="seeg_report"</script>
+<script src="src/seeg_report.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="staff_present"</script>
+<script src="src/staff_present.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="present_seeg"</script>
+<script src="src/present_seeg.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="video_annot"</script>
+<script src="src/video_annot.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="plan_traj"</script>
+<script src="src/plan_traj.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="plan_panel"</script>
+<script src="src/plan_panel.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg"</script>
+<script src="src/ieeg.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="esi"</script>
+<script src="src/esi.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="esi_bem"</script>
+<script src="src/esi_bem.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg_methods"</script>
+<script src="src/ieeg_methods.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg_ui"</script>
+<script src="src/ieeg_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg_methods_ui"</script>
+<script src="src/ieeg_methods_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="quant_view"</script>
+<script src="src/quant_view.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg_conn_ui"</script>
+<script src="src/ieeg_conn_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg_ez_ui"</script>
+<script src="src/ieeg_ez_ui.js"></script>
+  <script>if(window.SV&&SV.Hooks)SV.Hooks.current="quant_trace"</script>
+<script src="src/quant_trace.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg_seizures"</script>
+<script src="src/ieeg_seizures.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="ieeg_montage"</script>
+<script src="src/ieeg_montage.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="esi_ui"</script>
+<script src="src/spikenet.js"></script>
+<script src="src/esi_ui.js"></script>
+<script src="src/sleep.js"></script>
+<script src="src/sleep_ui.js"></script>
+<script src="src/seizure_info.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="rec_cards"</script>
+<script src="src/rec_cards.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="people"</script>
+<script src="src/people.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="viewbar"</script>
+<script src="src/viewbar.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="scroll_keep"</script>
+<script src="src/scroll_keep.js"></script>
+</body>
+</html>

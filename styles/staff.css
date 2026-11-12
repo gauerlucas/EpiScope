@@ -1,0 +1,34 @@
+/* EpiScope — styles/staff.css : staff : préparer (extrait de app.css v4.21, ordre conservé) */
+/* =====================================================================  staff */
+.staff .stform { margin-bottom: 6px; }
+.scope { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; }
+.scope .chip { display: inline-flex; gap: 5px; }
+.st-grid { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(560px, 1.6fr); gap: 14px; align-items: start; }
+@media (max-width: 1200px) { .st-grid { grid-template-columns: 1fr; } }
+.syn-p { margin-bottom: 8px; } .syn-ex { padding: 5px 0; border-bottom: 1px solid var(--line); } .syn-ex .small, .small { font-size: 11.5px; color: var(--muted); } .syn-l { padding: 5px 0; font-size: 12.5px; }
+table.conc { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.conc th { font-weight: 500; color: var(--muted); font-size: 11.5px; text-align: center; padding: 4px; border-bottom: 1px solid var(--line2); }
+table.conc th i { font-size: 10px; color: var(--accent2); font-style: normal; } table.conc th .rmcol { cursor: pointer; color: var(--faint); font-weight: 400; }
+table.conc td { border-bottom: 1px solid var(--line); padding: 3px 4px; }
+table.conc td.sys { white-space: nowrap; } table.conc td.sys b { color: var(--muted); font-weight: 500; }
+table.conc td.cc { text-align: center; cursor: pointer; font-weight: 700; min-width: 46px; border-left: 1px solid var(--line); }
+table.conc td.cc:hover { outline: 1px solid var(--accent2); }
+table.conc td.cc.aut { font-style: italic; }
+table.conc td.cc sup { color: var(--accent); font-weight: 400; }
+td.vpp { background: color-mix(in srgb, var(--ok) 32%, transparent); color: light-dark(#336b47, #d9ffe3); } td.vp { background: color-mix(in srgb, var(--ok) 14%, transparent); color: light-dark(#356b46, #c4f2cf); } td.vz { color: var(--faint); } td.vm { background: color-mix(in srgb, var(--danger) 22%, transparent); color: light-dark(#86494e, #ffd0d2); } td.vq { background: color-mix(in srgb, var(--accent) 16%, transparent); color: light-dark(#654b03, #ffe2a6); }
+table.conc tr.hyp-row td.sys { color: light-dark(#286488, #a9dcff); }
+table.conc td.score { white-space: nowrap; font-size: 12px; color: var(--muted); } table.conc td.score .bar { display: inline-block; width: 60px; height: 6px; background: var(--bg3); border-radius: 4px; overflow: hidden; vertical-align: middle; } table.conc td.score .bar i { display: block; height: 100%; background: var(--ok); }
+.conc-pop { min-width: 320px; } .conc-pop .seg button { min-width: 38px; font-weight: 700; }
+.lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-right: 4px; }
+.hypc { border: 1px solid var(--line); border-left: 4px solid var(--hue); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; background: color-mix(in srgb, var(--tint) 1.5%, transparent); }
+.hypc.st-refuted, .hypc.st-abandoned { opacity: .55; } .hypc.st-confirmed { box-shadow: inset 0 0 0 1px rgba(123,211,137,.35); }
+.hypc-h { display: flex; align-items: center; gap: 6px; } .hypc-h .hn { color: var(--hue); } .hypc-h input.title { flex: 1; font-size: 14px; }
+.hypc-sum { margin: 6px 0 2px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; } .rchip.ez { background: light-dark(#fdeadf, #3a2417); border-color: #a8653a; color: light-dark(#72421d, #ffd9c0); }
+.hypc-body .form.row4 { margin-top: 8px; }
+.hyp-regs, .hyp-args { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0; }
+.arg { display: flex; gap: 4px; align-items: center; margin: 3px 0; } .arg input { flex: 1; } .arg b { cursor: pointer; color: var(--faint); font-weight: 400; }
+.hyp-hist { margin: 6px 0; font-size: 12px; } .hv { color: var(--muted); } .hv.cur { color: var(--text-hi); font-weight: 600; }
+.hyp-shots img { height: 170px; border-radius: 8px; margin: 6px 6px 0 0; background: var(--bg); }
+.subcard.dec .dec-h { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.smx-wrap { overflow-x: auto; } table.smx { border-collapse: collapse; font-size: 11.5px; } table.smx th { font-weight: 500; color: var(--muted); padding: 2px 5px; } table.smx th.hab { color: var(--accent); }
+table.smx td { padding: 2px 5px; border-bottom: 1px solid var(--line); white-space: nowrap; } table.smx td:not(:first-child) { text-align: center; color: var(--text); } table.smx td b { color: var(--text-hi); }

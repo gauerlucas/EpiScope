@@ -1,0 +1,12 @@
+# evidence_semio2brain.csv — dérivation
+
+- Source : Semio2Brain Database v1.2.x (Alim-Marvasti A et al., *Probabilistic landscape of seizure semiology localizing values*, Brain Communications 2022;4(3):fcac130, doi:10.1093/braincomms/fcac130). Données : Zenodo doi:10.5281/zenodo.4606589, GitHub thenineteen/Semio2Brain-Database, licence MIT (conserver la mention). 2 809 lignes (article × signe rapporté), 11 230 points de localisation, 4 643 patients, 309 articles.
+- Script : `tools/extract_semio2brain.py` (reproductible ; il relit le xlsx et le `semiology_dictionary.yaml` du Semiology Visualisation Tool, MIT).
+- Chaque ligne du xlsx est classée dans les 43 catégories SemioDict par les regex du SVT (colonne « Semiology Category », puis « Reported Semiology »). Une ligne peut compter dans plusieurs catégories ; 66 lignes restent « Unclassified ».
+- Les ~100 colonnes de localisation (lobe → sous-lobe → gyrus, nomenclature Neuromorphometrics/GIF) sont converties en familles de régions VEP (noms sans hémisphère) par la table `CROSSWALK` du script ; l'effectif d'une colonne est réparti entre ses familles au prorata des poids.
+- Colonnes : `category`, `family`, `filter`, `count` (patients pondérés), `score` (= count / max de la catégorie, la famille dominante vaut 1), `prob` (= count / total de la catégorie), `n_rows`, `n_patients_category` (somme de « Localising »).
+- Quatre filtres : `all` ; `seizure_free` (vérité terrain = libre de crises après chirurgie) ; `spontaneous` (études de sémiologie spontanée, flag SS, moins biaisées par la sélection topographique) ; `sublobar` (toutes les lignes, mais les colonnes lobaires et multi-lobaires TL/FL/PL/OL/CING/INSULA/FT/TO/… sont ignorées).
+- `evidence_semio2brain_lateralisation.csv` : sommes CL (controlatéral), IL (ipsilatéral), BL, DomH, NonDomH par catégorie et filtre.
+- **Réserve 1** : Semio2Brain localise la zone d'origine (EZ/SOZ) des patients présentant le signe le plus précoce rapporté ; ce n'est pas la zone symptomatogène. Une clonie compte par exemple pour le pôle temporal quand elle est rapportée dans une série temporo-polaire.
+- **Réserve 2** : les lignes au niveau lobaire sont étalées sur toutes les familles du lobe, ce qui relève un peu chaque famille (préférer `sublobar` pour un signal plus spécifique, `spontaneous` pour limiter le biais de publication temporal).
+- « Hypothalamus » n'a pas d'équivalent VEP : la famille est conservée dans le CSV pour information (41 lignes) et ignorée par l'application.

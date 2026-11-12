@@ -1,0 +1,111 @@
+/* EpiScope — styles/imaging.css : imagerie : coupes, post-traitements (extrait de app.css v4.21, ordre conservé) */
+/* =====================================================================  imagerie */
+
+@media (max-width: 1100px) {  }
+.im-item { border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; margin-bottom: 7px; }
+.im-item.sel { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 5%, transparent); }
+.im-h { display: flex; align-items: center; gap: 6px; } .im-f { display: flex; gap: 4px; margin: 5px 0; flex-wrap: wrap; } .im-f select, .im-f input { font-size: 12px; padding: 2px 4px; } .im-m { font-size: 11px; }
+.im-view { padding: 6px; }  
+
+.sv-slices { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; }
+.sl-pane { position: relative; background: #000; border-radius: 6px; overflow: hidden; min-height: 0; }
+.sl-pane:first-child { grid-row: 1 / span 2; }
+.sv-slices.tall { grid-template-columns: 1fr 1fr; grid-template-rows: 3fr 2fr; }
+.sv-slices.tall .sl-pane:first-child { grid-row: auto; grid-column: 1 / span 2; }
+.sv-slices.has-max .sl-pane:not(.max) { display: none; }
+.sv-slices.has-max .sl-pane.max { grid-row: 1 / -1; grid-column: 1 / -1; }
+.sv-slices:focus { outline: none; }
+.sv-slices.mode-wl .sl-pane canvas { cursor: ns-resize; cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='8' fill='%23000' stroke='%23fff' stroke-width='1.5'/%3E%3Cpath d='M11 3a8 8 0 0 1 0 16z' fill='%23fff'/%3E%3C/svg%3E") 11 11, ns-resize; }
+.sv-slices.mode-pan .sl-pane canvas { cursor: grab; }
+.sv-slices.oblique .sl-pane { box-shadow: inset 0 0 0 1px rgba(255,207,74,.35); }
+.sl-max { position: absolute; right: 6px; bottom: 6px; z-index: 2; padding: 0 6px; font-size: 13px; line-height: 20px; background: light-dark(rgba(255,255,255,0.75), rgba(0,0,0,.55)); border: 1px solid color-mix(in srgb, var(--tint) 18%, transparent); color: var(--text); border-radius: 6px; opacity: .55; }
+.sl-max:hover { opacity: 1; }
+.sl-inset { position: absolute; left: 8px; top: 8px; z-index: 3; border-radius: 8px; border: 1px solid rgba(255,207,74,.35); box-shadow: 0 6px 20px light-dark(rgba(16,30,50,0.175), rgba(0,0,0,.5)); cursor: pointer; }
+.sl-inset.small { width: 44px !important; height: 36px !important; opacity: .7; }
+/* panneau de coupes (écran Imagerie et volet de la vue des crises) */
+.ip-host { display: flex; flex-direction: column; min-height: 0; }
+.ip-bar { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; padding: 2px 2px 6px; font-size: 12px; }
+.ip-bar .mini-btn { margin-left: 0; } .ip-bar .mini-btn.on { border-color: light-dark(#9c7c1f, #ffcf4a); color: light-dark(#614d00, #ffe7a0); }
+.ip-bar .seg button { padding: 2px 8px; font-size: 13px; line-height: 16px; } .wl-ic { vertical-align: -2px; } .ip-bar .seg button.on { background: color-mix(in srgb, var(--accent2) 20%, transparent); border-color: var(--accent2); color: var(--text-hi); }
+.ip-bar select { font-size: 12px; padding: 2px 4px; max-width: 170px; }
+.ip-elec { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border: 1px solid rgba(255,207,74,.4); border-radius: 999px; background: rgba(255,207,74,.07); }
+.ip-elec b { color: light-dark(#614d00, #ffe7a0); }
+.ip-slices { position: relative; flex: 1; min-height: 0; }
+.im-view .ip-slices { height: calc(100vh - var(--top-h, 50px) - 150px); min-height: 420px; flex: none; }
+.ip-layers { min-width: 520px; }
+.ipl-row { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 3px 0; border-bottom: 1px solid var(--line); }
+.ipl-row .nm { flex: 1; min-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ipl-row select { font-size: 11.5px; padding: 1px 3px; } .ipl-row .op { width: 70px; } .ipl-row .lop { width: 120px; }
+.ipl-row .mini-btn { margin-left: 0; padding: 0 5px; } .ipl-row .x { cursor: pointer; color: var(--faint); } .ipl-row .x:hover { color: var(--danger); }
+.ipl-row.base b { min-width: 34px; } .ipl-row .ipl-base { flex: 1; }
+.ipl-radio { display: inline-flex; align-items: center; gap: 2px; color: var(--muted); cursor: pointer; } .ipl-radio input { margin: 0; }
+/* volet « Coupes IRM » de la vue des crises */
+.view-split { position: relative; flex: 1; min-height: 0; display: flex; }
+.view-split > .view3d { flex: 1; min-width: 0; }
+.slice-dock { width: 40%; min-width: 280px; max-width: 72%; display: flex; flex-direction: column; padding: 4px 6px 6px; background: var(--bg0); border-left: 1px solid var(--line); }
+.slice-dock .ip-bar { font-size: 11.5px; }
+.dock-handle { width: 5px; cursor: col-resize; background: var(--line); flex: none; } .dock-handle:hover { background: var(--accent2); }
+.view3d.drag-wl .sv-cell { cursor: ns-resize; }
+#btnDock.on, #btn3dWL.on { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 15%, transparent); color: var(--text-hi); }
+.sl-pane canvas { position: absolute; inset: 0; cursor: crosshair; }
+.sl-lab { position: absolute; left: 8px; bottom: 6px; font-size: 11px; color: color-mix(in srgb, var(--tint) 65%, transparent); pointer-events: none; }
+.sl-info { position: absolute; right: 8px; top: 6px; font: 11px var(--mono); color: light-dark(#196d59, #cfe); background: light-dark(rgba(255,255,255,0.75), rgba(0,0,0,.55)); padding: 2px 6px; border-radius: 6px; pointer-events: none; max-width: 60%; }
+.job-bar { position: fixed; right: 14px; bottom: 14px; z-index: 70; display: flex; flex-direction: column; gap: 6px; width: 360px; }
+.job { background: light-dark(#e7efff, #1b2230); border: 1px solid var(--line2); border-radius: 10px; padding: 8px 10px; box-shadow: 0 10px 30px light-dark(rgba(16,30,50,0.14), rgba(0,0,0,.4)); font-size: 12px; display: grid; grid-template-columns: 1fr; gap: 4px; }
+.job .jp { height: 5px; background: var(--bg); border-radius: 4px; overflow: hidden; } .job .jp i { display: block; height: 100%; width: 0; background: var(--accent2); transition: width .3s; }
+.job.ok .jp i { background: var(--ok); } .job.err .jp i { background: var(--danger); width: 100%; } .job .jm { color: var(--muted); }
+.step { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; } .step .st-ic { width: 16px; text-align: center; }
+.step.done .st-ic { color: var(--ok); } .step.todo .st-ic { color: var(--faint); }
+.ce-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; } .ce-table th { color: var(--muted); font-weight: 500; text-align: left; padding: 3px; border-bottom: 1px solid var(--line2); }
+.ce-table td { padding: 3px; border-bottom: 1px solid var(--line); white-space: nowrap; } .ce-table tr.sel td { background: rgba(255,230,120,.07); } .ce-table input.nm { width: 62px; padding: 2px 4px; } .ce-table select { padding: 1px 2px; font-size: 12px; } .ce-table small { color: var(--faint); margin-left: 3px; } .ce-table .x { cursor: pointer; color: var(--faint); margin-left: 4px; }
+.note.pickmsg { border: 1px solid var(--accent); color: light-dark(#654b03, #ffe2a6); }
+.ce-table td.acts .mini-btn { margin-left: 2px; padding: 1px 5px; }
+
+.chip.dim { opacity: .55; }
+
+/* devenir : recul calculé, aide-mémoire */
+.inrow { display: flex; gap: 4px; align-items: center; }
+.inrow > input, .inrow > select { flex: 1; min-width: 0; }
+input.months.auto { font-style: italic; color: var(--muted, light-dark(#435d8d, #8b95a7)); }
+.memo-pop { max-width: 460px; }
+table.memo { border-collapse: collapse; font-size: 12px; width: 100%; }
+table.memo td { padding: 2px 6px; vertical-align: top; border-bottom: 1px solid rgba(127,127,127,.15); }
+table.memo tr.cl td { padding-top: 6px; }
+
+/* implantations : proposé → prévu → réel */
+.impl-st { display: inline-block; font-size: 11px; border-radius: 999px; padding: 1px 8px; margin-right: 6px; border: 1px solid currentColor; }
+.impl-st.st-proposed { color: light-dark(#624d05, #c9a227); } .impl-st.st-planned { color: light-dark(#0c60a4, #4ea8ff); } .impl-st.st-real { color: light-dark(#057043, #3fbf7f); }
+.impl-row { padding: 6px 0; border-bottom: 1px solid var(--line, rgba(127,127,127,.18)); display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.impl-row > .small { flex-basis: 100%; }
+.warn-t { color: light-dark(#70450f, #d98b2b); }
+.implant-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; margin: -2px 0 8px; border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 8px; }
+.implant-head .ih-l { flex: 1; min-width: 200px; }
+.implant-head .ih-banner { flex-basis: 100%; font-size: 12px; padding: 4px 0 0; }
+.implant-chooser { max-width: 720px; width: min(720px, 94vw); }
+.ic-opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 8px; margin-bottom: 6px; cursor: pointer; }
+.ic-opt:has(input:checked) { border-color: #4ea8ff; background: rgba(78,168,255,.07); }
+.ic-opt .mono { word-break: break-word; }
+.ic-sub { display: block; margin: -2px 0 10px 30px; font-size: 12px; }
+.cov { display: inline-block; font-size: 11px; border-radius: 4px; padding: 0 5px; margin: 2px 3px 0 0; }
+.cov.ok { background: rgba(63,191,127,.15); } .cov.miss { background: rgba(217,139,43,.18); }
+
+/* proposition chirurgicale */
+.surg-ed { margin-top: 4px; }
+.surg-wrap { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(300px, 1.4fr); gap: 10px; align-items: start; }
+.surg-viz { display: flex; gap: 6px; flex-wrap: wrap; min-height: 90px; }
+.surg-viz img { height: 120px; border-radius: 6px; background: var(--bg); }
+.surg-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 3px 0 8px; vertical-align: middle; }
+.ok-t { color: light-dark(#057043, #3fbf7f); }
+@media (max-width: 1100px) { .surg-wrap { grid-template-columns: 1fr; } }
+
+/* fenêtre du rapport */
+.report-dlg { width: min(860px, 95vw); max-width: 860px; }
+.rd-body { padding: 12px 16px; max-height: 70vh; overflow: auto; }
+.rd-scope { display: block; margin: 2px 0 6px; }
+.rd-tree { margin: 6px 0 10px 4px; display: grid; gap: 4px; }
+.rd-tree.off { opacity: .4; pointer-events: none; }
+.rd-ex { border: 1px solid var(--line, rgba(127,127,127,.25)); border-radius: 8px; padding: 6px 8px; }
+.rd-ex .rd-h { display: block; }
+.rd-sub { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 4px 0 0 22px; font-size: 12.5px; align-items: center; }
+.rd-szs { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.rd-opts { border-top: 1px solid var(--line, rgba(127,127,127,.25)); padding-top: 8px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; }

@@ -1,0 +1,43 @@
+semio2brain_category,sign_ids,blend
+Epigastric,aura_epigastric,1
+Fear-Anxiety,fear,1
+Psychic,deja_vu|reminiscence|derealization,1
+Autonomic,tachycardia|bradycardia|flushing|piloerection|hypersalivation|vomiting|sweating|hyperventilation|apnea|mydriasis|urinary_urge,1
+Olfactory,olfactory,1
+Gustatory,gustatory,1
+Auditory,auditory_elementary|auditory_complex|auditory_illusion,1
+Visual,visual_elementary|visual_complex|visual_illusion|visual_loss,1
+Somatosensory,somatosensory_paresthesia|somatosensory_pain|somatosensory_thermal,1
+Vestibular,vestibular,1
+Non-Specific Aura,unspecific_aura|aura_cephalic,1
+Head or Body Turn,head_turn_nonforced,1
+Head Version,head_version,1
+Eye Movements,eye_version|nystagmus,1
+Tonic,tonic|axial_tonic,1
+Asymmetric Tonic,asymmetric_tonic|bilateral_asymmetric_tonic,1
+Dystonic,dystonic_posturing,1
+Clonic,clonic|facial_contraction,1
+Tonic-Clonic,fbtcs,1
+Myoclonic,myoclonus|eyelid_myoclonia,1
+Hypermotor,hyperkinetic|hyperkinetic_proximal|hyperkinetic_mild|pedaling,1
+Complex Behavioural,gestural_automatisms_integrated|stereotypies|aggressive_behavior|undressing|wandering|sexual_automatisms,1
+Atonic,ictal_paresis,1
+Ictal Limb Paresis,ictal_paresis,1
+Astatic,fall,1
+Hypomotor,behavioral_arrest,1
+Spasms,spasm,1
+Postictal Hemiparesis or Hemiplegia,postictal_hemiparesis,1
+Postictal Nose-wiping,postictal_nose_wiping,1
+Postictal Oral or Manual Automatisms,oroalimentary_automatisms|gestural_automatisms_distal,0.5
+Postictal Dysphasia,postictal_aphasia,1
+Postictal Aphasia,postictal_aphasia,1
+Postictal Cough,cough,1
+Postictal Aggressive,aggressive_behavior,0.5
+Automatisms - Oral & Manual,oroalimentary_automatisms|gestural_automatisms_distal|nose_wiping,1
+Automatisms - Other,blinking|spitting|water_drinking,0.7
+Ictal Pout,chapeau_de_gendarme,1
+Mimetic Automatisms,mimic_automatisms,1
+Vocalisation - Unintelligible Noises,vocalization|vocal_automatisms,1
+Aphasia,aphasia_production|aphasia_comprehension|speech_arrest,1
+Dysphasia - Ictal Speech,aphasia_production|verbal_automatisms|dysarthria,0.7
+Dialeptic-LOA-LOC,loss_of_awareness|behavioral_arrest|confusion,1

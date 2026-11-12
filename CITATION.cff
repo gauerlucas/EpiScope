@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use EpiScope in your work, please cite it as below."
+title: "EpiScope: an offline, single-file workbench for epilepsy surgery meetings (semiology, SEEG planning, imaging, ictal quantification)"
+type: software
+authors:
+  - family-names: Gauer
+    given-names: Lucas
+    orcid: "https://orcid.org/0000-0001-8250-1455"
+version: "1.0.0"
+date-released: "2026-11-11"
+license: MIT
+repository-code: "https://github.com/gauerlucas/EpiScope"
+keywords:
+  - epilepsy
+  - SEEG
+  - neuroimaging
+  - epilepsy surgery
+  - seizure semiology

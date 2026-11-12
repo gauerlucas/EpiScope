@@ -1,0 +1,53 @@
+/* EpiScope — styles/brand.css (v5.3) : charte graphique (bleu #19518E, beige #AFA186, Aleo, Bodoni Moda) et thèmes clair / sombre.
+   Bleu institutionnel #19518E, beige #AFA186 ; Aleo pour les titres, Arial pour le texte (usage numérique de la charte).
+   Les jetons de couleur sont dans base.css (light-dark) ; ici : barre supérieure, logos, titres, composants dont l'aspect change d'un thème à l'autre. */
+
+/* ---------- titres en Aleo (partie nominative du logo) */
+.scr-head h2, .view-head h3, .pr-t, .pr-name, .pr-doc h3, .pr-brand b { font-family: var(--serif); font-weight: 600; letter-spacing: 0; }
+.scr-head h2 { font-size: 25px; } .view-head h3 { font-size: 21px; }
+:root[data-theme=light] .scr-head h2, :root[data-theme=light] .view-head h3 { color: var(--navy); }
+
+/* ---------- barre supérieure : bandeau bleu institutionnel (clair) ou bleu nuit (sombre) ; ses contrôles restent en jetons sombres */
+.topbar { background: var(--bg2); border-bottom: 1px solid var(--line); }
+.tb-row { color-scheme: dark; color: var(--text); background: #0e1a2b; border-bottom: 1px solid #c3b38e33; }
+:root[data-theme=light] .tb-row { background: var(--navy); border-bottom-color: #0f3d6e;
+  --bg2: rgba(255,255,255,.07); --bg3: rgba(255,255,255,.1); --hover: rgba(255,255,255,.17); --sel: rgba(255,255,255,.2);
+  --line: rgba(255,255,255,.16); --line2: rgba(255,255,255,.3); --muted: #cad7e7; --faint: #a4b8d0; --accent2: #ffffff; --accent: #e3d6b5; --accent-ink: #14233a; }
+:root[data-theme=light] .tb-row .pstep { background: rgba(255,255,255,.06); }
+:root[data-theme=light] .tb-row .pstep.on { background: #ffffff; color: var(--navy); border-color: #ffffff; box-shadow: none; }
+:root[data-theme=light] .tb-row .pstep.on .dot { box-shadow: 0 0 0 1px rgba(25,81,142,.25); }
+.brand .logo { filter: drop-shadow(0 0 6px rgba(255,170,90,.3)); }
+.theme-btn { width: 30px; padding: 4px 0; font-size: 15px; line-height: 1; }
+.subbar { background: var(--bg2); border-top: 0; }
+.sb-tabs button.on { border-bottom-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, transparent); }
+.sb-tabs button.on small { color: var(--accent); border-color: var(--accent); }
+
+/* ---------- écran d'accueil en thème clair */
+:root[data-theme=light] #splash .glow { background: radial-gradient(circle, rgba(175,161,134,.30) 0%, rgba(25,81,142,.10) 45%, transparent 70%); }
+:root[data-theme=light] #splash .name { color: var(--navy); }
+:root[data-theme=light] #splash .tagline { color: var(--sand); }
+.app-foot { display: flex; align-items: center; gap: 18px; margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.55; }
+.app-foot b { color: var(--text); font-weight: 600; }
+.app-foot a:not(.orcid) { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 2px; }
+.app-foot a:not(.orcid):hover { color: var(--text); text-decoration-color: currentColor; }
+.app-foot .orcid { display: inline-block; vertical-align: -3px; margin: 0 1px 0 2px; }
+.app-foot .orcid svg { display: block; }
+.app-foot .of-links button { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 2px; }
+.app-foot .of-links button:hover { color: var(--text); text-decoration-color: currentColor; }
+
+/* ---------- diaporama du staff et lecteur de tracés : thème propre (bouton ☀/☾), jetons clairs de la charte */
+.presentation, .ie-view { color-scheme: dark; }
+.presentation.light, .ie-view.light, .trace-dock.light .td-stage { color-scheme: light; }
+.presentation.light .pr-meet, .presentation.light .pr-doc h3 { color: var(--navy); }
+.presentation.light .pr-sec-h, .presentation.light .pr-sec-t, .presentation.light .pr-q span, .presentation.light .pr-tab tr.sep td { color: var(--sand); }
+.presentation.light .pr-sec button.on, .presentation.light .pr-sec .pr-sub button.on { background: var(--sel); color: var(--sel-ink); border-left-color: var(--navy); }
+.presentation.light .pr-q { background: color-mix(in srgb, #afa186 14%, transparent); }
+.presentation.light .pr-name, .presentation.light .pr-t { color: var(--navy); }
+
+/* ---------- panneaux et tableaux en thème clair : ombres légères, en-têtes beige */
+:root[data-theme=light] .panel, :root[data-theme=light] .card{ box-shadow: 0 1px 2px rgba(20,35,60,.05); }
+:root[data-theme=light] .ptable th{ color: var(--sand); }
+
+/* ---------- scène 3D du thème clair : fond clair dégradé, hampes d'électrodes sombres (stageStyle) */
+:root[data-theme=light] .view3d { background: radial-gradient(1100px 700px at 55% 35%, #fdfdfc 0%, #e4e8ed 100%); }
+

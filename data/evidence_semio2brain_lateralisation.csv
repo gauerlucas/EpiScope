@@ -1,0 +1,173 @@
+category,filter,CL,IL,BL,DomH,NonDomH,n_lateralising
+Aphasia,all,0.0,0.0,0.0,169.0,13.0,182.0
+Astatic,all,0.0,0.0,0.0,0.0,0.0,0.0
+Asymmetric Tonic,all,66.0,9.0,1.0,0.0,0.0,116.0
+Atonic,all,6.0,1.0,1.0,0.0,0.0,7.0
+Auditory,all,28.0,5.0,19.0,0.0,0.0,33.0
+Automatisms - Oral & Manual,all,26.0,64.0,93.0,7.0,13.0,174.0
+Automatisms - Other,all,9.0,51.0,3.0,0.0,0.0,62.0
+Autonomic,all,2.0,6.0,0.0,0.0,3.0,11.0
+Clonic,all,64.0,13.0,6.0,0.0,0.0,106.0
+Complex Behavioural,all,1.0,0.0,1.0,3.0,0.0,4.0
+Dialeptic-LOA-LOC,all,4.0,0.0,0.0,1.0,2.0,7.0
+Dysphasia - Ictal Speech,all,0.0,0.0,0.0,59.0,315.0,373.0
+Dystonic,all,245.0,15.0,23.0,0.0,0.0,301.0
+Epigastric,all,0.0,0.0,1.0,0.0,0.0,0.0
+Eye Movements,all,68.0,47.0,1.0,0.0,2.0,124.0
+Fear-Anxiety,all,1.0,1.0,0.0,0.0,0.0,2.0
+Gustatory,all,0.0,0.0,0.0,0.0,0.0,0.0
+Head Version,all,165.0,53.0,1.0,0.0,0.0,329.0
+Head or Body Turn,all,31.0,66.0,3.0,0.0,0.0,133.0
+Hypermotor,all,6.0,9.0,8.0,1.0,0.0,16.0
+Hypomotor,all,0.0,0.0,0.0,0.0,0.0,0.0
+Ictal Limb Paresis,all,24.0,0.0,10.0,0.0,0.0,37.0
+Ictal Pout,all,0.0,0.0,0.0,1.0,0.0,1.0
+Mimetic Automatisms,all,1.0,0.0,5.0,1.0,0.0,2.0
+Myoclonic,all,8.0,4.0,2.0,0.0,0.0,28.0
+No Semiology - Only Stimulation Studies,all,0.0,0.0,0.0,0.0,0.0,0.0
+Non-Specific Aura,all,0.0,1.0,0.0,1.0,1.0,3.0
+Olfactory,all,88.0,9.0,20.0,0.0,2.0,117.0
+Postictal Aggressive,all,0.0,0.0,0.0,0.0,0.0,0.0
+Postictal Aphasia,all,0.0,0.0,0.0,34.0,0.0,34.0
+Postictal Cough,all,0.0,0.0,0.0,0.0,0.0,0.0
+Postictal Dysphasia,all,0.0,0.0,0.0,32.0,7.0,39.0
+Postictal Hemiparesis or Hemiplegia,all,39.0,1.0,1.0,0.0,0.0,44.0
+Postictal Nose-wiping,all,4.0,67.0,3.0,0.0,0.0,72.0
+Postictal Oral or Manual Automatisms,all,0.0,6.0,0.0,0.0,0.0,6.0
+Psychic,all,2.0,0.0,2.0,0.0,0.0,2.0
+Somatosensory,all,84.0,8.0,19.0,0.0,2.0,111.0
+Spasms,all,5.0,0.0,1.0,0.0,0.0,15.0
+Tonic,all,150.0,32.0,44.0,1.0,1.0,193.0
+Tonic-Clonic,all,4.0,0.0,0.0,0.0,0.0,5.0
+Unclassified,all,19.0,0.0,1.0,0.0,1.0,20.0
+Vestibular,all,0.0,0.0,0.0,0.0,0.0,0.0
+Visual,all,4.0,0.0,3.0,1.0,2.0,22.0
+Vocalisation - Unintelligible Noises,all,0.0,0.0,0.0,0.0,1.0,1.0
+Aphasia,seizure_free,0.0,0.0,0.0,37.0,13.0,50.0
+Astatic,seizure_free,0.0,0.0,0.0,0.0,0.0,0.0
+Asymmetric Tonic,seizure_free,32.0,1.0,1.0,0.0,0.0,59.0
+Atonic,seizure_free,6.0,1.0,1.0,0.0,0.0,7.0
+Auditory,seizure_free,1.0,0.0,0.0,0.0,0.0,1.0
+Automatisms - Oral & Manual,seizure_free,18.0,49.0,83.0,7.0,13.0,149.0
+Automatisms - Other,seizure_free,5.0,8.0,2.0,0.0,0.0,13.0
+Autonomic,seizure_free,2.0,0.0,0.0,0.0,3.0,5.0
+Clonic,seizure_free,41.0,10.0,3.0,0.0,0.0,77.0
+Complex Behavioural,seizure_free,0.0,0.0,0.0,3.0,0.0,3.0
+Dialeptic-LOA-LOC,seizure_free,2.0,0.0,0.0,1.0,2.0,5.0
+Dysphasia - Ictal Speech,seizure_free,0.0,0.0,0.0,24.0,237.0,260.0
+Dystonic,seizure_free,168.0,14.0,21.0,0.0,0.0,223.0
+Epigastric,seizure_free,0.0,0.0,0.0,0.0,0.0,0.0
+Eye Movements,seizure_free,46.0,35.0,0.0,0.0,2.0,83.0
+Fear-Anxiety,seizure_free,1.0,0.0,0.0,0.0,0.0,1.0
+Gustatory,seizure_free,0.0,0.0,0.0,0.0,0.0,0.0
+Head Version,seizure_free,74.0,32.0,1.0,0.0,0.0,197.0
+Head or Body Turn,seizure_free,17.0,54.0,2.0,0.0,0.0,107.0
+Hypermotor,seizure_free,1.0,2.0,5.0,1.0,0.0,4.0
+Hypomotor,seizure_free,0.0,0.0,0.0,0.0,0.0,0.0
+Ictal Limb Paresis,seizure_free,0.0,0.0,0.0,0.0,0.0,13.0
+Ictal Pout,seizure_free,0.0,0.0,0.0,1.0,0.0,1.0
+Mimetic Automatisms,seizure_free,1.0,0.0,5.0,1.0,0.0,2.0
+Myoclonic,seizure_free,1.0,2.0,2.0,0.0,0.0,3.0
+Non-Specific Aura,seizure_free,0.0,0.0,0.0,1.0,1.0,2.0
+Olfactory,seizure_free,28.0,2.0,3.0,0.0,2.0,34.0
+Postictal Aphasia,seizure_free,0.0,0.0,0.0,5.0,0.0,5.0
+Postictal Cough,seizure_free,0.0,0.0,0.0,0.0,0.0,0.0
+Postictal Dysphasia,seizure_free,0.0,0.0,0.0,30.0,7.0,37.0
+Postictal Hemiparesis or Hemiplegia,seizure_free,7.0,0.0,0.0,0.0,0.0,11.0
+Postictal Nose-wiping,seizure_free,0.0,19.0,2.0,0.0,0.0,19.0
+Postictal Oral or Manual Automatisms,seizure_free,0.0,6.0,0.0,0.0,0.0,6.0
+Psychic,seizure_free,1.0,0.0,0.0,0.0,0.0,1.0
+Somatosensory,seizure_free,25.0,1.0,2.0,0.0,2.0,29.0
+Spasms,seizure_free,3.0,0.0,1.0,0.0,0.0,4.0
+Tonic,seizure_free,92.0,23.0,33.0,1.0,1.0,121.0
+Tonic-Clonic,seizure_free,1.0,0.0,0.0,0.0,0.0,2.0
+Unclassified,seizure_free,6.0,0.0,1.0,0.0,1.0,7.0
+Vestibular,seizure_free,0.0,0.0,0.0,0.0,0.0,0.0
+Visual,seizure_free,2.0,0.0,0.0,1.0,2.0,16.0
+Vocalisation - Unintelligible Noises,seizure_free,0.0,0.0,0.0,0.0,1.0,1.0
+Aphasia,spontaneous,0.0,0.0,0.0,94.0,0.0,94.0
+Astatic,spontaneous,0.0,0.0,0.0,0.0,0.0,0.0
+Asymmetric Tonic,spontaneous,56.0,9.0,1.0,0.0,0.0,86.0
+Atonic,spontaneous,0.0,0.0,1.0,0.0,0.0,0.0
+Auditory,spontaneous,2.0,2.0,3.0,0.0,0.0,4.0
+Automatisms - Oral & Manual,spontaneous,7.0,16.0,63.0,6.0,11.0,60.0
+Automatisms - Other,spontaneous,7.0,47.0,3.0,0.0,0.0,55.0
+Autonomic,spontaneous,1.0,6.0,0.0,0.0,0.0,7.0
+Clonic,spontaneous,33.0,10.0,3.0,0.0,0.0,52.0
+Complex Behavioural,spontaneous,1.0,0.0,1.0,2.0,0.0,3.0
+Dialeptic-LOA-LOC,spontaneous,2.0,0.0,0.0,0.0,0.0,2.0
+Dysphasia - Ictal Speech,spontaneous,0.0,0.0,0.0,2.0,4.0,6.0
+Dystonic,spontaneous,36.0,3.0,1.0,0.0,0.0,41.0
+Epigastric,spontaneous,0.0,0.0,1.0,0.0,0.0,0.0
+Eye Movements,spontaneous,14.0,4.0,1.0,0.0,0.0,18.0
+Fear-Anxiety,spontaneous,1.0,1.0,0.0,0.0,0.0,2.0
+Gustatory,spontaneous,0.0,0.0,0.0,0.0,0.0,0.0
+Head Version,spontaneous,108.0,7.0,1.0,0.0,0.0,149.0
+Head or Body Turn,spontaneous,21.0,11.0,3.0,0.0,0.0,59.0
+Hypermotor,spontaneous,2.0,3.0,3.0,1.0,0.0,6.0
+Ictal Limb Paresis,spontaneous,22.0,0.0,0.0,0.0,0.0,22.0
+Ictal Pout,spontaneous,0.0,0.0,0.0,1.0,0.0,1.0
+Mimetic Automatisms,spontaneous,1.0,0.0,5.0,0.0,0.0,1.0
+Myoclonic,spontaneous,2.0,2.0,2.0,0.0,0.0,4.0
+Non-Specific Aura,spontaneous,0.0,1.0,0.0,0.0,0.0,1.0
+Olfactory,spontaneous,71.0,6.0,10.0,0.0,0.0,84.0
+Postictal Aggressive,spontaneous,0.0,0.0,0.0,0.0,0.0,0.0
+Postictal Aphasia,spontaneous,0.0,0.0,0.0,21.0,0.0,21.0
+Postictal Cough,spontaneous,0.0,0.0,0.0,0.0,0.0,0.0
+Postictal Dysphasia,spontaneous,0.0,0.0,0.0,9.0,0.0,9.0
+Postictal Hemiparesis or Hemiplegia,spontaneous,38.0,1.0,1.0,0.0,0.0,41.0
+Postictal Nose-wiping,spontaneous,4.0,56.0,1.0,0.0,0.0,61.0
+Postictal Oral or Manual Automatisms,spontaneous,0.0,6.0,0.0,0.0,0.0,6.0
+Psychic,spontaneous,2.0,0.0,1.0,0.0,0.0,2.0
+Somatosensory,spontaneous,69.0,5.0,10.0,0.0,0.0,81.0
+Spasms,spontaneous,3.0,0.0,1.0,0.0,0.0,12.0
+Tonic,spontaneous,81.0,13.0,40.0,0.0,0.0,94.0
+Tonic-Clonic,spontaneous,4.0,0.0,0.0,0.0,0.0,4.0
+Unclassified,spontaneous,10.0,0.0,0.0,0.0,1.0,11.0
+Vestibular,spontaneous,0.0,0.0,0.0,0.0,0.0,0.0
+Visual,spontaneous,2.0,0.0,3.0,0.0,0.0,6.0
+Vocalisation - Unintelligible Noises,spontaneous,0.0,0.0,0.0,0.0,0.0,0.0
+Aphasia,sublobar,0.0,0.0,0.0,169.0,13.0,182.0
+Astatic,sublobar,0.0,0.0,0.0,0.0,0.0,0.0
+Asymmetric Tonic,sublobar,66.0,9.0,1.0,0.0,0.0,116.0
+Atonic,sublobar,6.0,1.0,1.0,0.0,0.0,7.0
+Auditory,sublobar,28.0,5.0,19.0,0.0,0.0,33.0
+Automatisms - Oral & Manual,sublobar,26.0,64.0,93.0,7.0,13.0,174.0
+Automatisms - Other,sublobar,9.0,51.0,3.0,0.0,0.0,62.0
+Autonomic,sublobar,2.0,6.0,0.0,0.0,3.0,11.0
+Clonic,sublobar,64.0,13.0,6.0,0.0,0.0,106.0
+Complex Behavioural,sublobar,1.0,0.0,1.0,3.0,0.0,4.0
+Dialeptic-LOA-LOC,sublobar,4.0,0.0,0.0,1.0,2.0,7.0
+Dysphasia - Ictal Speech,sublobar,0.0,0.0,0.0,59.0,315.0,373.0
+Dystonic,sublobar,245.0,15.0,23.0,0.0,0.0,301.0
+Epigastric,sublobar,0.0,0.0,1.0,0.0,0.0,0.0
+Eye Movements,sublobar,68.0,47.0,1.0,0.0,2.0,124.0
+Fear-Anxiety,sublobar,1.0,1.0,0.0,0.0,0.0,2.0
+Gustatory,sublobar,0.0,0.0,0.0,0.0,0.0,0.0
+Head Version,sublobar,165.0,53.0,1.0,0.0,0.0,329.0
+Head or Body Turn,sublobar,31.0,66.0,3.0,0.0,0.0,133.0
+Hypermotor,sublobar,6.0,9.0,8.0,1.0,0.0,16.0
+Hypomotor,sublobar,0.0,0.0,0.0,0.0,0.0,0.0
+Ictal Limb Paresis,sublobar,24.0,0.0,10.0,0.0,0.0,37.0
+Ictal Pout,sublobar,0.0,0.0,0.0,1.0,0.0,1.0
+Mimetic Automatisms,sublobar,1.0,0.0,5.0,1.0,0.0,2.0
+Myoclonic,sublobar,8.0,4.0,2.0,0.0,0.0,28.0
+No Semiology - Only Stimulation Studies,sublobar,0.0,0.0,0.0,0.0,0.0,0.0
+Non-Specific Aura,sublobar,0.0,1.0,0.0,1.0,1.0,3.0
+Olfactory,sublobar,88.0,9.0,20.0,0.0,2.0,117.0
+Postictal Aggressive,sublobar,0.0,0.0,0.0,0.0,0.0,0.0
+Postictal Aphasia,sublobar,0.0,0.0,0.0,34.0,0.0,34.0
+Postictal Cough,sublobar,0.0,0.0,0.0,0.0,0.0,0.0
+Postictal Dysphasia,sublobar,0.0,0.0,0.0,32.0,7.0,39.0
+Postictal Hemiparesis or Hemiplegia,sublobar,39.0,1.0,1.0,0.0,0.0,44.0
+Postictal Nose-wiping,sublobar,4.0,67.0,3.0,0.0,0.0,72.0
+Postictal Oral or Manual Automatisms,sublobar,0.0,6.0,0.0,0.0,0.0,6.0
+Psychic,sublobar,2.0,0.0,2.0,0.0,0.0,2.0
+Somatosensory,sublobar,84.0,8.0,19.0,0.0,2.0,111.0
+Spasms,sublobar,5.0,0.0,1.0,0.0,0.0,15.0
+Tonic,sublobar,150.0,32.0,44.0,1.0,1.0,193.0
+Tonic-Clonic,sublobar,4.0,0.0,0.0,0.0,0.0,5.0
+Unclassified,sublobar,19.0,0.0,1.0,0.0,1.0,20.0
+Vestibular,sublobar,0.0,0.0,0.0,0.0,0.0,0.0
+Visual,sublobar,4.0,0.0,3.0,1.0,2.0,22.0
+Vocalisation - Unintelligible Noises,sublobar,0.0,0.0,0.0,0.0,1.0,1.0

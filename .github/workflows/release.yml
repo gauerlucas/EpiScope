@@ -1,0 +1,88 @@
+# EpiScope — publication d'une version. Pousser une étiquette « vX.Y.Z » (ex. v1.0.0) déclenche :
+#   1. contrôle : l'étiquette correspond à la version d'index.html (EPISCOPE_BRAND.version) et le CHANGELOG a sa section ;
+#   2. construction du manuel (HTML + PDF) puis de l'application en un seul fichier (dist/EpiScope.html) ;
+#   3. tests rapides ;
+#   4. Release GitHub « EpiScope X.Y.Z » : EpiScope.html, manuel HTML et PDF, archive du code ; notes = section du CHANGELOG.
+# Une étiquette avec un tiret (v1.1.0-rc.1) donne une pré-version. « Run workflow » (manuel) construit sans publier.
+name: Release EpiScope
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Version et notes de version
+        id: ver
+        run: |
+          APP=$(python -c "import re;print(re.search(r\"version: '([^']+)'\", open('index.html', encoding='utf-8').read())[1])")
+          echo "version de l'application : $APP"
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF_NAME#v}"
+            if [[ "$TAG" != "$APP" ]]; then echo "::error::étiquette v$TAG ≠ version d'index.html ($APP)"; exit 1; fi
+          fi
+          python - "$APP" <<'PY'
+          import re, sys
+          v = sys.argv[1]; s = open('CHANGELOG.md', encoding='utf-8').read()
+          m = re.search(r'^## \[' + re.escape(v) + r'\][^\n]*\n(.*?)(?=^## |\Z)', s, re.S | re.M)
+          if not m: sys.exit('CHANGELOG.md : pas de section « ## [%s] »' % v)
+          open('release_notes.md', 'w', encoding='utf-8').write(m.group(1).strip() + '\n')
+          PY
+
+      - name: Dépendances du manuel
+        run: |
+          pip install markdown pymdown-extensions pillow playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Manuel (HTML + PDF)
+        run: python tools/build_manual.py --pdf
+
+      - name: Application (dist/EpiScope.html)
+        run: python tools/build.py
+
+      - name: Tests rapides
+        run: |
+          node tools/tests/test_plan_traj.mjs
+          node tools/tests/test_store.mjs
+
+      - name: Fichiers de la version
+        run: |
+          mkdir -p out
+          cp dist/EpiScope.html out/EpiScope.html
+          cp docs/manuel/EpiScope_manuel.html out/
+          cp docs/manuel/*.pdf out/
+          git archive --format=zip --output="out/EpiScope-source-${{ steps.ver.outputs.app }}.zip" HEAD
+          ls -la out
+
+      - name: Garder les fichiers (construction manuelle)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: EpiScope-${{ steps.ver.outputs.app }}
+          path: out/
+
+      - name: Publier la version
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: EpiScope ${{ steps.ver.outputs.app }}
+          body_path: release_notes.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: out/*

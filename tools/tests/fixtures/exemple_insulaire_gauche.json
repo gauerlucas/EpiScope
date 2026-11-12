@@ -1,0 +1,80 @@
+{
+ "version": 1,
+ "app": "EpiScope",
+ "name": "Exemple — opercule-insulaire gauche (séquence Isnard 2004)",
+ "notes": "",
+ "patient": {
+  "dominant": "L",
+  "eeg_onset": null,
+  "lesion": []
+ },
+ "events": [
+  {
+   "id": 1,
+   "sign_id": "laryngeal_constriction",
+   "t": 0,
+   "dt": 1,
+   "dur": 10,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 2,
+   "sign_id": "somatosensory_paresthesia",
+   "t": 3,
+   "dt": 1,
+   "dur": 15,
+   "side": "R",
+   "topography": "hemibody",
+   "conf": 1,
+   "note": "désagréables, conscience conservée"
+  },
+  {
+   "id": 3,
+   "sign_id": "dysarthria",
+   "t": 8,
+   "dt": 2,
+   "dur": 12,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 4,
+   "sign_id": "facial_contraction",
+   "t": 13,
+   "dt": 2,
+   "dur": 15,
+   "side": "R",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 5,
+   "sign_id": "clonic",
+   "t": 18,
+   "dt": 2,
+   "dur": 20,
+   "side": "R",
+   "topography": "UL",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 6,
+   "sign_id": "hypersalivation",
+   "t": 10,
+   "dt": 3,
+   "dur": 20,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  }
+ ],
+ "params": {}
+}

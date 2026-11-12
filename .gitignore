@@ -1,0 +1,53 @@
+# EpiScope — ce qui ne va jamais sur GitHub
+
+# fichiers générés : reconstruits par GitHub à chaque version (.github/workflows/release.yml) et joints à la Release
+dist/
+data/bundle.js
+assets/manual.json
+docs/manuel/EpiScope_manuel.html
+docs/manuel/*.pdf
+tools/tests/out/
+
+# outils et brouillons du poste
+node_modules/
+__pycache__/
+*.pyc
+tools/i18n/todo*
+Claude outputs/
+synth_seeg/
+
+# archives de livraison et cas d'exemple (restent sur le poste)
+examples/
+_archives/
+_to_delete/
+_x*/
+*.tgz
+*.zip
+
+# données de patients : jamais dans le dépôt, quel que soit le dossier
+*.nii
+*.nii.gz
+*.mgz
+*.dcm
+*.DCM
+*.ima
+*.IMA
+*.edf
+*.EDF
+*.bdf
+*.vhdr
+*.eeg
+*.vmrk
+*.TRC
+*.trc
+*.mp4
+*.avi
+*.mov
+*.webm
+*.episcope
+dossier.json
+DB_*/
+db_*/
+test_db*/
+raw_exports/
+patients/

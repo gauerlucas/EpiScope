@@ -1,0 +1,113 @@
+{
+ "version": 1,
+ "app": "EpiScope",
+ "name": "Exemple — temporal mésial gauche (séquence type Maillard 2004, groupe M)",
+ "notes": "Latence clinique 8 s (début EEG avant le premier signe). Automatismes retardés, dystonie controlatérale.",
+ "patient": {
+  "dominant": "L",
+  "eeg_onset": -8,
+  "lesion": []
+ },
+ "events": [
+  {
+   "id": 1,
+   "sign_id": "aura_epigastric",
+   "t": 0,
+   "dt": 1,
+   "dur": 12,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 2,
+   "sign_id": "fear",
+   "t": 2,
+   "dt": 1,
+   "dur": 8,
+   "side": "",
+   "topography": "",
+   "conf": 0.75,
+   "note": ""
+  },
+  {
+   "id": 3,
+   "sign_id": "head_turn_nonforced",
+   "t": 6,
+   "dt": 1,
+   "dur": 3,
+   "side": "L",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 4,
+   "sign_id": "loss_of_awareness",
+   "t": 15,
+   "dt": 2,
+   "dur": 45,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 5,
+   "sign_id": "oroalimentary_automatisms",
+   "t": 18,
+   "dt": 2,
+   "dur": 35,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 6,
+   "sign_id": "gestural_automatisms_distal",
+   "t": 22,
+   "dt": 2,
+   "dur": 30,
+   "side": "L",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 7,
+   "sign_id": "dystonic_posturing",
+   "t": 24,
+   "dt": 2,
+   "dur": 20,
+   "side": "R",
+   "topography": "UL",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 8,
+   "sign_id": "postictal_aphasia",
+   "t": 70,
+   "dt": 5,
+   "dur": 120,
+   "side": "",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  },
+  {
+   "id": 9,
+   "sign_id": "postictal_nose_wiping",
+   "t": 75,
+   "dt": 3,
+   "dur": 5,
+   "side": "L",
+   "topography": "",
+   "conf": 1,
+   "note": ""
+  }
+ ],
+ "params": {}
+}

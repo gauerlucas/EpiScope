@@ -1,0 +1,1 @@
+three.js 0.186.1 (npm), bundled with esbuild 0.28.2 as IIFE: window.THREE + window.THREE.OrbitControls

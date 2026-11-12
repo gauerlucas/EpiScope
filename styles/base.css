@@ -1,0 +1,42 @@
+/* EpiScope — styles/base.css : tokens, réinitialisation, éléments de base (extrait de app.css v4.21, ordre conservé) */
+/* EpiScope — feuille de style */
+:root {
+  /* v5.3 — charte graphique (bleu #19518E, beige #AFA186, Aleo).
+     Chaque jeton porte sa valeur claire puis sombre (light-dark) ; le thème est choisi par color-scheme (data-theme sur <html>),
+     et les scènes d'image (3D, coupes, tracés) restent sombres dans les deux thèmes (.stage-dark). */
+  color-scheme: dark;
+  --bg0: light-dark(#ebe8e1, #070b12); --bg: light-dark(#f4f3ef, #0b121d); --bg2: light-dark(#ffffff, #111a27); --bg3: light-dark(#f8f7f4, #172231);
+  --hover: light-dark(#ece9e2, #1f2c3e); --sel: light-dark(#e1eaf5, #1c2f47); --line: light-dark(#e3dfd6, #213046); --line2: light-dark(#cec7ba, #2c3b53);
+  --text: light-dark(#14233a, #e7ecf3); --text-hi: light-dark(#0c1a2e, #ffffff); --sel-ink: light-dark(#123e6e, #dbe9f7); --text2: light-dark(#2f3d52, #cdd5e0); --muted: light-dark(#566276, #919fb2); --faint: light-dark(#858e9c, #5d6b7e);
+  --accent: light-dark(#19518e, #cdb98f); --accent-ink: light-dark(#ffffff, #1b1709); --accent-hi: light-dark(#13457c, #dccba5);
+  --accent2: light-dark(#2d6db0, #6fa9de); --sand: light-dark(#8a7a56, #c3b38e); --navy: #19518e;
+  --danger: light-dark(#c0262d, #e5484d); --ok: light-dark(#2f8a4a, #7bd389); --tint: light-dark(#0e2744, #ffffff);
+  --stage: #0b0f16;
+  --font: Arial, "Liberation Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;   /* charte : Arial pour le numérique */
+  --mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  --serif: "Aleo", Georgia, "Times New Roman", serif;   /* charte : Aleo (partie nominative du logo) pour les titres */
+  --brand-font: "Bodoni Moda", "Playfair Display", "Didot", "Bodoni MT", "Bodoni 72", "Libre Bodoni", "Baskerville", "Georgia", serif;   /* logo EpiScope */
+  --radius: 10px; --left-w: 330px; --right-w: 370px;
+}
+:root[data-theme=light] { color-scheme: light; }
+/* scènes d'image : toujours sombres (vue 3D, coupes, tracés, vidéo) */
+ .view3d, .slice-dock, .sv-slices, .td-stage{ color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: radial-gradient(1200px 700px at 60% 10%, var(--bg2) 0%, var(--bg) 60%); color: var(--text); font: 13.5px/1.4 var(--font); display: flex; flex-direction: column; overflow: hidden; }
+button, input, select { font: inherit; color: inherit; }
+button { white-space: nowrap; background: var(--bg3); border: 1px solid var(--line2); border-radius: 8px; padding: 5px 10px; cursor: pointer; transition: background .15s, border-color .15s, transform .05s; }
+button:hover { background: var(--hover); border-color: light-dark(#b2bfd2, #3d4858); }
+button:active { transform: translateY(1px); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button.primary:hover { background: var(--accent-hi); border-color: var(--accent-hi); }
+button.danger { color: light-dark(#a02f3b, #ff8a8e); border-color: light-dark(#e8acad, #5a2a2d); }
+button.on, .seg button.on { background: var(--sel); border-color: var(--accent2); color: var(--sel-ink); }
+input[type=text], input[type=number], input.search, input.case-name, input:not([type]), select { background: var(--bg); border: 1px solid var(--line2); border-radius: 8px; padding: 5px 8px; outline: none; color: var(--text); }
+input:focus, select:focus { border-color: var(--accent2); }
+input[type=number] { width: 72px; }
+label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.hint { color: var(--faint); font-size: 12px; line-height: 1.35; }
+.muted { color: var(--muted); }
+.spacer { flex: 1; }
+[hidden] { display: none !important; }
