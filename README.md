@@ -1,19 +1,19 @@
 <p align="center"><img src="docs/banner/banner.png" alt="EpiScope — Visualize seizures" width="100%"></p>
 
-<p align="center"><b>A multimodal data visualisation workbench for epilepsy surgery.</b><br>
-Seizure semiology · scalp EEG · SEEG · imaging · patient record — in one offline HTML file.</p>
+<p align="center"><b>A vibe-coded multimodal data visualisation workbench for epilepsy surgery.</b><br>
+Seizure semiology · scalp EEG · SEEG · imaging · signal analysis — in one offline HTML file.</p>
 
 <p align="center"><a href="https://github.com/gauerlucas/EpiScope/releases/latest"><b>⬇ Download EpiScope.html</b></a> · <a href="CHANGELOG.md">Changelog</a> · <a href="CITATION.cff">Cite</a> · <a href="LICENSE">MIT licence</a></p>
 
 ---
 
-EpiScope brings together, in one place, what a presurgical team needs to discuss a patient: seizure semiology, scalp EEG, SEEG, imaging and the patient's clinical history.
+EpiScope brings together, in one place, what a team needs to discuss a patient for epilepsy surgery : seizure semiology, scalp EEG, SEEG, signal analysis and multimodal imaging.
 
 ## What it is for
 
 - **See the seizure unfold.** Enter the signs in the order they occur; EpiScope shows which brain regions are plausibly activated over time, on the VEP atlas or on the patient's own anatomy, with lateralisation and network hypotheses.
 - **Follow the patient through the surgical pathway.** One record from the history to follow-up: phase 1 video-EEG, multidisciplinary meetings, SEEG, surgery, outcome (Engel, ILAE).
-- **Combine the modalities.** MRI, CT and PET registered and segmented in the browser, real electrode contacts located on the CT, scalp EEG (spikes, source imaging, sleep stages) and SEEG (planning, seizures, quantification, stimulation, thermocoagulation) on the same 3D brain.
+- **Combine the modalities.** MRI, CT and PET registered and segmented in the browser, real electrode contacts located on the CT, scalp EEG (spikes, source imaging, sleep stages) and SEEG (planning, seizures, quantification, direct cortical stimulations and thermoablation) on the same 3D brain.
 - **Prepare and present the meeting.** Staff slides, printable reports, annotated captures.
 
 ## Principles
