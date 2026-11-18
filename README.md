@@ -9,6 +9,8 @@ Seizure semiology · scalp EEG · SEEG · imaging · signal analysis — in one 
 
 EpiScope brings together, in one place, what a team needs to discuss a patient for epilepsy surgery : seizure semiology, scalp EEG, SEEG, signal analysis and multimodal imaging.
 
+The first idea behind this app was sketched as a <a href="https://github.com/RomeoRT/EpiScope">student project</a> back in the time when LLM were illiterate. We wanted a tool to perform ergonomic annotations of seizure semiology to link it to a probabilistic atlas. Then came the first Paros seizure semiology meeting, Semio2Brain, Paros II etc. This project is therefore a fresh restart based on old ideas, trying to combine all these work together.
+
 ## What it is for
 
 - **See the seizure unfold.** Enter the signs in the order they occur; EpiScope shows which brain regions are plausibly activated over time, on the VEP atlas or on the patient's own anatomy, with lateralisation and network hypotheses.
