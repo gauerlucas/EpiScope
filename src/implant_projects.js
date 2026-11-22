@@ -104,21 +104,19 @@
       const n = (x, s, p) => x ? `${x} ${x > 1 ? (p || s + 's') : s}` : '';
       let what, kind;
       if (['phase1', 'seeg', 'other'].includes(st.kind)) {
-        kind = 'exploration'; const szs = S.seizuresOfExploration(d, o.id), ses = S.sessionsOf(d, o.id), gal = (d.gallery || []).filter(g => g.explorationId === o.id);
-        what = [n(ses.length, 'séance'), n(szs.length, 'crise'), n((o.electrodes || []).length, 'électrode'), n((o.projects || []).length, 'autre projet', 'autres projets'), n((o.stims || []).length, 'stimulation'), n((o.thermo || []).length, 'thermocoagulation'), n((o.quant || []).length, 'analyse')].filter(Boolean);
+        kind = 'exploration'; const szs = S.seizuresOfExploration(d, o.id), gal = (d.gallery || []).filter(g => g.explorationId === o.id);
+        what = [n(szs.length, 'crise'), n((o.electrodes || []).length, 'électrode'), n((o.projects || []).length, 'autre projet', 'autres projets'), n((o.stims || []).length, 'stimulation'), n((o.thermo || []).length, 'thermocoagulation'), n((o.quant || []).length, 'analyse')].filter(Boolean);
         if (gal.length) what.push(`${n(gal.length, 'capture')} de la galerie conservée${gal.length > 1 ? 's' : ''} (sans étape)`);
       } else if (st.kind === 'meeting') { kind = 'meeting'; what = [n(d.hypotheses.filter(x => x.meetingId === o.id).length, 'hypothèse'), n(d.decisions.filter(x => x.meetingId === o.id).length, 'décision')].filter(Boolean); }
       else if (st.kind === 'procedure') { kind = 'procedure'; what = []; }
       else return;
-      if (!confirm(`Supprimer « ${st.label} »${what.length ? ' :\n— ' + what.join('\n— ') : ''} ?\n\nCette suppression est définitive (enregistrée dans le dossier).`)) return;
+      if (!confirm(`Supprimer « ${st.label} »${what.length ? ' :\n— ' + what.join('\n— ') : ''} ?\n\nL’élément part dans la corbeille du dossier (Dossier › Journal), d’où il peut être restauré.`)) return;
       if (kind === 'exploration') {
         if (this.persistWorkspace && this.ctx) this.persistWorkspace();
         const cur = this.ctx && (this.ctx.explorationId === o.id || (this.ctx.seizureId && S.seizuresOfExploration(d, o.id).some(z => z.id === this.ctx.seizureId)));
-        for (const x of d.decisions) if (x.createdExplorationId === o.id) x.createdExplorationId = null;
-        for (const x of d.explorations) if (x.implant && Array.isArray(x.implant.layers)) x.implant.layers = x.implant.layers.filter(k => k !== 'ex:' + o.id);
         S.remove(d, 'exploration', o.id);
         if (cur) { this.ctx = null; const all = S.allSeizures(d); if (all.length) this.openContext({ seizureId: all[all.length - 1].id }, true); else if (d.explorations.length) this.openContext({ explorationId: S.explorationsSorted(d).pop().id }, true); else { this._loading = true; this.newCase(true); this._loading = false; } }
-      } else if (kind === 'meeting') { for (const x of d.hypotheses.filter(x => x.meetingId === o.id)) x.meetingId = null; S.remove(d, 'meeting', o.id); }
+      } else if (kind === 'meeting') S.remove(d, 'meeting', o.id);
       else S.remove(d, 'procedure', o.id);
       this.touch(); this.toast(`« ${st.label} » supprimé`, 2500); this.go({ stage: 'dossier', view: 'synthese' });
     },

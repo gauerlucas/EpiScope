@@ -143,7 +143,7 @@
         items.push({ label: `${ex.label}${n ? ' — remplacer ses ' + n + ' électrodes' : ''}`, run: () => this.doImport(fromEx, ex, 'replace') });
         if (n) items.push({ label: `${ex.label} — compléter (électrodes absentes seulement)`, run: () => this.doImport(fromEx, ex, 'merge') });
       }
-      items.push({ label: '+ nouvelle SEEG avec ce schéma', run: () => { const ex = S.addExploration(d, { kind: 'seeg', status: 'planned' }); S.addSession(d, ex.id, { date: ex.start }); this.doImport(fromEx, ex, 'replace'); } });
+      items.push({ label: '+ nouvelle SEEG avec ce schéma', run: () => { const ex = S.addExploration(d, { kind: 'seeg', status: 'planned' }); this.doImport(fromEx, ex, 'replace'); } });
       const r = anchor.getBoundingClientRect(); this.popupMenu(items, Math.min(r.left, window.innerWidth - 420), r.bottom + 4);
     },
     doImport(fromEx, toEx, mode) {

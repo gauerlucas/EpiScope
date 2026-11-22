@@ -33,7 +33,7 @@
       if (this.ui.presLight == null) { try { this.ui.presLight = localStorage.getItem('sv_pres_light') !== '0'; } catch (e) { this.ui.presLight = true; } }   // v5.1 : fond clair par défaut (vidéoprojecteur, écran de TV)
       el.className = 'presentation' + (this.ui.presLight ? ' light' : '') + (this.ui.presNoNav ? ' nonav' : '');
       el.innerHTML = `<aside class="pr-nav"></aside>
-        <main class="pr-main"><header class="pr-head"><div class="pr-sec-t"></div><h1 class="pr-t"></h1><span class="spacer"></span><span class="pr-pt">${esc(d.patient.pseudo || '')} · ${esc(V.meeting[m.kind] || 'staff')} du ${esc(fmtDate(m.date))}</span></header>
+        <main class="pr-main"><header class="pr-head"><div class="pr-sec-t"></div><h1 class="pr-t"></h1><span class="spacer"></span><span class="pr-pt">${esc(this.dname(d))} · ${esc(V.meeting[m.kind] || 'staff')} du ${esc(fmtDate(m.date))}</span></header>
           <div class="pr-body" tabindex="-1"></div>
           <footer class="pr-foot"><button data-a="prev" title="précédente (←)">‹</button><span class="pr-n"></span><button data-a="next" title="suivante (→)">›</button>
             <span class="hint">← → défiler · Échap : préparer · F : plein écran · N : plan</span><span class="spacer"></span>
@@ -56,7 +56,7 @@
     presentNav() {
       const P = this._pres, el = $('presentation'), nav = el && el.querySelector('.pr-nav'); if (!P || !nav) return; const d = this.dossier, m = P.m;
       const secs = []; P.slides.forEach((s, i) => { let g = secs[secs.length - 1]; if (!g || g.sec !== s.sec) secs.push(g = { sec: s.sec, items: [] }); g.items.push([s, i]); });
-      nav.innerHTML = `<div class="pr-brand"><b>${esc(d.patient.pseudo || 'Patient')}</b><span>Staff du ${esc(fmtDate(m.date))}</span></div>
+      nav.innerHTML = `<div class="pr-brand"><b>${esc(this.dname(d))}</b><span>Staff du ${esc(fmtDate(m.date))}</span></div>
           ${secs.map(g => `<div class="pr-sec"><div class="pr-sec-h">${esc(g.sec)}</div>${g.items.map(([s, i]) => `<button data-i="${i}"${s.key ? ` data-key="${esc(s.key)}"` : ''}${s.gid ? ` data-gid="${s.gid}" draggable="true"` : ''} class="${s.hab ? 'hab' : ''}${s.kind === 'media' ? ' media' : ''}${s.kind === 'gal' ? ' gal' : ''}${s.sub ? ' sub' : ''}" title="${esc(s.title)}${s.gid ? ' — glisser sur une autre diapositive pour la déplacer' : ''}"><small>${i + 1}</small>${esc(s.short || s.title)}</button>${s.kind === 'media' ? `<div class="pr-sub" data-g="${esc(s.group)}">${s.media.map((x, k) => `<button data-i="${i}" data-mi="${k}" title="${esc(x.title || '')}">${/^video\//.test(x.mime || '') ? '▶' : '▣'} ${esc(x.title || (V.galleryKind[x.kind] || 'capture'))}</button>`).join('')}</div>` : ''}`).join('')}</div>`).join('')}`;
       nav.querySelectorAll('[data-i]').forEach(b => b.onclick = () => b.dataset.mi != null ? this.presentShow(+b.dataset.i, { mi: +b.dataset.mi }) : this.presentShow(+b.dataset.i));
       // glisser-déposer d'une capture : elle suit la diapositive où on la lâche
@@ -233,6 +233,11 @@
       if (npX.length) add('Bilans', 'Neuropsychologie', (el, alive) => this.prExams(el, npX, alive), { short: 'Neuropsychologie', key: 'x:np' });
       if (d.imaging.length || d.lesions.length || imgX.length) add('Bilans', 'Imagerie', (el, alive) => this.prImaging(el, imgX, alive), { kind: 'img', key: 'img' });
       for (const [k, lbl] of [['psy', 'Psychiatrie'], ['wada', 'Test de Wada'], ['fmri', 'IRMf'], ['other', 'Autres bilans']]) { const X = of(k); if (X.length) add('Bilans', lbl, (el, alive) => this.prExams(el, X, alive), { short: lbl, key: 'x:' + k }); }
+      // v2.0.0 : crises rapportées non rattachées (vidéo familiale, témoignage), avant les explorations
+      scope.seizures.filter(x => x.ex && x.ex.id === S.REPORTED).forEach(({ sz, ex }) => {
+        add('Crises rapportées', sz.label, (el, alive) => this.prSeizure(el, sz, ex, alive), { short: sz.label, hab: sz.habitual === 'yes', kind: 'sz', group: sz.id, key: 'sz:' + sz.id, prefetch: () => this.presentSeizureAsset(sz) });
+        mediaSlide('Crises rapportées', sz, gal.filter(g => g.seizureId === sz.id));
+      });
       // EEG de chaque exploration non invasive : intercritique (captures en galerie), chaque crise et ses médias, synthèse
       for (const ex of ex1) {
         const sec = 'EEG ' + ex.label, szs = scope.seizures.filter(x => x.ex === ex), inter = galList.filter(g => g.explorationId === ex.id && !g.seizureId && !g.examId);
@@ -294,7 +299,7 @@
       // v5.2 : personnes présentes en badges (annuaire : celles cochées dans « Préparer », ou les membres habituels du staff)
       const PP = SV.People, ppl = PP ? PP.idsOf(m).map(id => PP.byId(id)).filter(Boolean) : [], extra = m.participantsExtra != null ? m.participantsExtra : ppl.length ? '' : m.participants;
       const part = ppl.map(u => `<span class="pchip-p on">${esc(PP.label(u, true))}<small>${esc(PP.role(u))}</small></span>`).join('') + (extra ? `<span class="pr-pext">${esc(extra)}</span>` : '');
-      el.innerHTML = `<div class="pr-hero"><div class="pr-name">${esc(P.pseudo || 'Patient')}</div><div class="pr-line">${esc(line)}</div>
+      el.innerHTML = `<div class="pr-hero"><div class="pr-name">${esc(this.dname(d))}</div><div class="pr-line">${esc(line)}</div>
         <div class="pr-meet">${esc(V.meeting[m.kind] || 'Staff')} · ${esc(fmtDate(m.date))}</div><div class="pr-ppl">${part || '<i class="muted">participants</i>'}<button class="mini-btn pr-edit" data-a="part" title="modifier les personnes présentes">✎</button></div>
         ${m.question ? `<div class="pr-q"><span>Question posée</span>${br(m.question)}</div>` : ''}
         ${facts.length ? `<div class="pr-facts">${facts.map(([l, v]) => `<div><span>${esc(l)}</span><b>${br(v)}</b></div>`).join('')}</div>` : ''}
@@ -439,10 +444,12 @@
     // ================================================================ EEG, bilans, galerie
     examCard(x) {
       const side = x.kind === 'fmri' ? (x.langDom ? `<span class="pr-chip">langage : ${esc(V.langDom[x.langDom] || x.langDom)}</span>` : '') : x.side && x.kind !== 'psy' ? `<span class="pr-chip">${esc(SIDE_FR[x.side] || x.side)}</span>` : '';
-      const body = x.kind === 'neuropsy' ? `<dl class="pr-dl">${V.neuroDomains.filter(([k]) => (x.domains || {})[k]).map(([k, l]) => `<dt>${esc(l)}</dt><dd>${br(x.domains[k])}</dd>`).join('')}</dl>${x.text ? `<p>${br(x.text)}</p>` : ''}` : x.text ? `<p>${br(x.text)}</p>` : '';
+      // v1.1.0 : data-ed = champ du dossier modifiable sur place en mode édition de la présentation (staff_edit.js)
+      const ed = this._pres && this.ui.presEdit, ID = esc(x.id);
+      const body = x.kind === 'neuropsy' ? `<dl class="pr-dl">${V.neuroDomains.filter(([k]) => (x.domains || {})[k] || ed).map(([k, l]) => `<dt>${esc(l)}</dt><dd data-ed="exam:${ID}:domains.${k}">${br((x.domains || {})[k] || '')}</dd>`).join('')}</dl>${x.text || ed ? `<p data-ed="exam:${ID}:text">${br(x.text || '')}</p>` : ''}` : x.text || ed ? `<p data-ed="exam:${ID}:text">${br(x.text || '')}</p>` : '';
       const d = this.dossier, ng = (d.gallery || []).filter(g => g.examId === x.id).length, att = x.attachments || [], ims = (x.imagingIds || []).map(id => S.byId(d.imaging, id)).filter(Boolean);
       const links = (ims.length ? `<div class="muted small">images : ${ims.map(im => esc((V.modality[im.modality] || im.modality) + ' ' + fmtDate(im.date))).join(', ')}</div>` : '') + (att.length ? `<div class="pr-atts">${att.map(a => `<button class="pr-att" data-x="${x.id}" data-att="${a.id}" title="ouvrir dans la visionneuse">📎 ${esc(a.name)}</button>`).join('')}</div>` : '') + (ng ? `<div class="pr-thumbs" data-exam="${x.id}"></div>` : '');
-      return `<div class="pr-card exam"><div class="pr-exh"><b>${esc((V.exam[x.kind] || x.kind).replace(/^./, c => c.toUpperCase()))}</b><span class="muted">${esc(fmtDate(x.date))}</span>${x.title ? `<span>${esc(x.title)}</span>` : ''}${side}</div>${body}${x.conclusion ? `<div class="pr-concl">${br(x.conclusion)}</div>` : ''}${links}</div>`;
+      return `<div class="pr-card exam"><div class="pr-exh"><b>${esc((V.exam[x.kind] || x.kind).replace(/^./, c => c.toUpperCase()))}</b><span class="muted">${esc(fmtDate(x.date))}</span>${x.title ? `<span>${esc(x.title)}</span>` : ''}${side}</div>${body}${x.conclusion || ed ? `<div class="pr-concl" data-ed="exam:${ID}:conclusion">${br(x.conclusion || '')}</div>` : ''}${links}</div>`;
     },
     /** pièces jointes (visionneuse : image, PDF) et vignettes des captures des bilans affichés (visionneuse des captures) */
     presentExamExtras(el, alive) {
@@ -473,7 +480,7 @@
       const stage = z.querySelector('.lb-stage'), cap = z.querySelector('.pr-zcap');
       const show = async i => {
         k = (i + G.length) % G.length; const g = G[k], tok = z._tok = (z._tok || 0) + 1, vid = /^video\//.test(g.mime || '');
-        cap.innerHTML = `<b>${esc(g.title || (vid ? 'vidéo' : 'capture'))}</b>${g.date ? ' · ' + esc(fmtDate(g.date)) : ''}${G.length > 1 ? ` · ${k + 1}/${G.length}` : ''}${g.notes ? `<div class="muted">${esc(g.notes)}</div>` : ''}`;
+        cap.innerHTML = `<b>${esc(g.title || (vid ? 'vidéo' : 'capture'))}</b>${g.date ? ' · ' + esc(fmtDate(g.date)) : ''}${G.length > 1 ? ` · ${k + 1}/${G.length}` : ''}${S.polarityNote(g) ? `<div class="warn">⚠ ${esc(S.polarityNote(g))}</div>` : ''}${g.notes ? `<div class="muted">${esc(g.notes)}</div>` : ''}`;
         stage.innerHTML = '<div class="pr-wait">chargement…</div>';
         const u = vid ? await this.galleryMediaURL(g) : await this.galleryComposite(g, 4000); if (z._tok !== tok || !z.isConnected) return;
         stage.innerHTML = !u ? '<div class="hint">image introuvable dans le dossier</div>' : vid ? `<video controls autoplay playsinline src="${u}"></video>` : `<img src="${u}" alt="">`;
@@ -513,7 +520,7 @@
     },
     async prGalleryItem(el, g, alive) {
       const d = this.dossier, ex = g.explorationId && S.byId(d.explorations, g.explorationId), sz = g.seizureId && S.byId(d.seizures, g.seizureId);
-      el.innerHTML = `<div class="pr-gal"><div class="pr-gimg"><div class="pr-wait">chargement…</div></div><div class="pr-gcap"><div class="pr-chips"><span class="pr-chip">${esc(V.galleryMod[S.galleryModOf(d, g)])}</span>${g.kind ? `<span class="pr-chip k-${esc(g.kind)}">${esc(V.galleryKind[g.kind] || g.kind)}</span>` : ''}${g.vigilance ? `<span class="pr-chip">${g.vigilance === 'S' ? 'sommeil' : 'veille'}</span>` : ''}${ex ? `<span class="pr-chip">${esc(ex.label)}</span>` : ''}${sz ? `<span class="pr-chip">${esc(sz.label)}</span>` : ''}${g.date ? `<span class="pr-chip">${esc(fmtDate(g.date))}</span>` : ''}</div>${g.notes ? `<p>${br(g.notes)}</p>` : ''}<div class="hint">clic sur l’image : taille réelle</div></div></div>`;
+      el.innerHTML = `<div class="pr-gal"><div class="pr-gimg"><div class="pr-wait">chargement…</div></div><div class="pr-gcap"><div class="pr-chips"><span class="pr-chip">${esc(V.galleryMod[S.galleryModOf(d, g)])}</span>${S.polarityNote(g) ? `<span class="pr-chip warn" title="${esc(S.polarityNote(g))}">⚠ polarité inversée</span>` : ''}${g.kind ? `<span class="pr-chip k-${esc(g.kind)}">${esc(V.galleryKind[g.kind] || g.kind)}</span>` : ''}${g.vigilance ? `<span class="pr-chip">${g.vigilance === 'S' ? 'sommeil' : 'veille'}</span>` : ''}${ex ? `<span class="pr-chip">${esc(ex.label)}</span>` : ''}${sz ? `<span class="pr-chip">${esc(sz.label)}</span>` : ''}${g.date ? `<span class="pr-chip">${esc(fmtDate(g.date))}</span>` : ''}</div>${g.notes ? `<p>${br(g.notes)}</p>` : ''}<div class="hint">clic sur l’image : taille réelle</div></div></div>`;
       if (/^video\//.test(g.mime || '')) { const vu = await this.galleryMediaURL(g), th = await this.galleryThumbURL(g); if (!alive()) return; el.querySelector('.pr-gimg').innerHTML = vu ? `<video controls playsinline src="${vu}"${th ? ` poster="${th}"` : ''}></video>` : '<div class="hint">vidéo introuvable dans le dossier</div>'; return; }
       const ch = el.querySelector('.pr-gcap .pr-chips'); if (ch) { ch.insertAdjacentHTML('beforeend', this.presentRawHtml(g)); this.presentRawBind(ch, g); }
       const u = await this.galleryComposite(g, 2600); if (!alive()) return;
@@ -596,7 +603,7 @@
         <div class="pr-split"><div class="pr-card"><div class="pr-lbl">Zone épileptogène</div><div class="pr-regs">${H.ez.map(r => `<span class="rchip ez">${L(r)}</span>`).join('') || '<i class="muted">à préciser</i>'}</div>
           ${H.prop.length ? `<div class="pr-lbl">Propagation, réseau</div><div class="pr-regs">${H.prop.map(r => `<span class="rchip">${L(r)}</span>`).join('')}</div>` : ''}
           <div class="pr-args"><div class="for"><div class="pr-lbl">Pour</div><ul>${args('argsFor') || '<li class="muted">—</li>'}</ul></div><div class="against"><div class="pr-lbl">Contre</div><ul>${args('argsAgainst') || '<li class="muted">—</li>'}</ul></div></div>
-          ${H.notes ? `<p>${br(H.notes)}</p>` : ''}${lin.length > 1 ? `<div class="muted small">Historique : ${lin.map(x => `v${x.version} ${esc(V.hypStatus[x.status])}`).join(' → ')}</div>${this.hypDiff(lin[lin.length - 2], H)}` : ''}</div>
+          ${H.notes || (this.ui.presEdit && this._pres) ? `<p data-ed="hypothesis:${esc(H.id)}:notes">${br(H.notes || '')}</p>` : ''}${lin.length > 1 ? `<div class="muted small">Historique : ${lin.map(x => `v${x.version} ${esc(V.hypStatus[x.status])}`).join(' → ')}</div>${this.hypDiff(lin[lin.length - 2], H)}` : ''}</div>
         <div class="pr-card pr-shots"><div class="pr-wait">vues 3D…</div></div></div></div>`;
       const box = el.querySelector('.pr-shots');
       if (!H.ez.length && !H.prop.length) { box.innerHTML = '<div class="hint">Zone épileptogène à préciser.</div>'; return; }
@@ -609,7 +616,7 @@
     prConclusion(el, m) {
       const d = this.dossier, dec = d.decisions.filter(x => x.meetingId === m.id), L = r => esc(this.atlas.label(r)), P = this._pres;
       const TYPES = m.kind === 'post_phase1' ? ['seeg', 'surgery', 'litt', 'neuromod', 'imaging', 'workup', 'medical', 'none'] : ['surgery', 'rftc', 'litt', 'seeg2', 'neuromod', 'workup', 'medical', 'none'];
-      el.innerHTML = `<div class="pr-concl-slide"><div class="pr-conclt">${m.conclusion ? `<p class="pr-lead big">${br(m.conclusion)}</p>` : '<p class="pr-lead big muted">Conclusion à rédiger</p>'}</div>
+      el.innerHTML = `<div class="pr-concl-slide"><div class="pr-conclt">${m.conclusion || (this.ui.presEdit && this._pres) ? `<p class="pr-lead big" data-ed="meeting:${esc(m.id)}:conclusion">${br(m.conclusion || '')}</p>` : '<p class="pr-lead big muted">Conclusion à rédiger</p>'}</div>
         <div class="pr-vact"><button class="pr-btn" data-a="concl" title="rédiger ou modifier la conclusion pendant le staff (Ctrl+Entrée : enregistrer)">✎ ${m.conclusion ? 'Modifier' : 'Rédiger'} la conclusion</button><button class="pr-btn" data-a="dec" title="décision du staff : SEEG (schéma d’implantation), chirurgie (intervention proposée)…">＋ Décision ▾</button></div>
         ${dec.length ? `<div class="pr-lbl">Décision${dec.length > 1 ? 's' : ''}</div>${dec.map(x => `<button class="pr-card pr-decrow" data-dec="${x.id}" title="voir la diapositive de la décision"><b>${esc(V.decision[x.type])}</b>${x.text ? ' — ' + esc(x.text) : ''} <span class="pr-chip">${esc(V.decisionStatus[x.status])}</span>${x.targets.length ? `<div class="pr-regs">${x.targets.slice(0, 10).map(r => `<span class="rchip">${L(r)}</span>`).join('')}${x.targets.length > 10 ? '…' : ''}</div>` : ''}</button>`).join('')}` : ''}</div>`;
       el.querySelector('[data-a=concl]').onclick = () => this.presentInlineEdit(el.querySelector('.pr-conclt'), m.conclusion || '', v => { m.conclusion = v; this.touch('meeting', m.id, 'conclusion'); }, { placeholder: 'Conclusion du staff…', rows: 7 });

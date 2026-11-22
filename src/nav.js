@@ -22,8 +22,8 @@
 
   const VIEWS = {
     dossier: [['synthese', 'Synthèse'], ['antecedents', 'Antécédents et contexte'], ['maladie', 'Histoire de la maladie'], ['developpement', 'Développement et examen'], ['bilans', 'Bilans'], ['imagerie', 'Imagerie'], ['galerie', 'Galerie'], ['journal', 'Journal']],
-    phase1: [['inter', 'Intercritique'], ['crises', 'Crises'], ['analyses', 'Analyses EEG'], ['synthese', 'Synthèse'], ['galerie', 'Galerie']],   // v5.1 : l'EEG est réparti entre intercritique, crises et synthèse
-    seeg: [['planif', 'Planification'], ['loc', 'Localisation'], ['inter', 'Intercritique'], ['crises', 'Crises'], ['analyses', 'Analyses'], ['stim', 'Stimulations'], ['thermo', 'Thermocoagulations'], ['galerie', 'Galerie'], ['rapport', 'Rapport SEEG']],
+    phase1: [['apercu', 'Vue d’ensemble'], ['inter', 'Intercritique'], ['crises', 'Crises'], ['analyses', 'Analyses'], ['synthese', 'Synthèse'], ['galerie', 'Galerie']],   // v2.0.0 : vue d'ensemble d'abord ; l'EEG est réparti entre intercritique, crises et synthèse
+    seeg: [['apercu', 'Vue d’ensemble'], ['planif', 'Planification'], ['loc', 'Localisation'], ['inter', 'Intercritique'], ['crises', 'Crises'], ['analyses', 'Analyses'], ['stim', 'Stimulations'], ['thermo', 'Thermocoagulations'], ['galerie', 'Galerie'], ['rapport', 'Rapport SEEG']],
     meeting: [['preparer', 'Préparer']],   // v5 : « Présenter » est l'action orange de la barre (pas un second onglet)
     procedure: [['intervention', 'Intervention']],
     followup: [['suivi', 'Suivi']],
@@ -31,7 +31,7 @@
   VIEWS.other = VIEWS.phase1;
   const VIEW_HINT = {
     planif: 'schéma d’implantation : proposition, édition, import de la planification chirurgicale (ROSA, CSV)', loc: 'scanner post-implantation : recalage, reconstruction des électrodes, nommage, vérification une à une',
-    crises: 'crises enregistrées : sémiologie, EEG critique, types de crises', inter: 'rythme de fond, anomalies intercritiques, tracés et captures datés (veille / sommeil)', analyses: 'quantifications : EI, taux de ripples, de pointes…',
+    apercu: 'dates, centre, statut, frise des tracés et des crises, état du compte rendu', crises: 'crises enregistrées : sémiologie, EEG critique, types de crises', inter: 'rythme de fond, anomalies intercritiques, tracés et captures datés (veille / sommeil)', analyses: 'analyses des tracés, critiques (EI, début des crises) et intercritiques (pointes, HFO, sommeil, sources)',
     stim: 'stimulations corticales directes', thermo: 'thermocoagulations', rapport: 'compte rendu de la SEEG', synthese: 'synthèse intercritique et des crises, conclusion', galerie: 'captures de tracés (Ctrl+V)',
     antecedents: 'antécédents, mode de vie, comorbidités, arbre généalogique', maladie: 'histoire de l’épilepsie, fréquence des crises, traitements', developpement: 'grossesse et naissance, acquisitions psychomotrices, examen, mesures et courbes, latéralité', bilans: 'EEG, IRM, TEP, neuropsychologie… datés', imagerie: 'NIfTI, recalage, anatomie du patient', preparer: 'concordance, hypothèses, décision', presenter: 'diaporama plein écran, sans édition',
   };
@@ -40,7 +40,7 @@
   const WM_TABS = { semio: ['network', 'onset', 'targets', 'model'], semioSeeg: ['seegsz', 'network', 'onset', 'targets', 'model'], plan: ['electrodes'], stim: ['stims'], thermo: ['thermo'], quant: ['quant'] };
   const PROC_SHORT = { resection: 'Chirurgie', lobectomy: 'Chirurgie', disconnection: 'Chirurgie', rftc: 'Thermocoagulation', litt: 'Laser', neuromod: 'Neuromodulation', other: 'Procédure' };
   /** vues rendues dans la section générique #scr-view → méthode */
-  const VIEW_FN = { antecedents: 'renderAntecedentsView', maladie: 'renderDiseaseView', developpement: 'renderDevView', histoire: 'renderHistoryView', bilans: 'renderExamsView', galerie: 'renderGalleryView', journal: 'renderJournalView', crises: 'renderSeizureListView', synthese: 'renderSzSynthesisView', loc: 'renderLocalisationView', inter: 'renderInterView', rapport: 'renderSeegReportView', intervention: 'renderProcedureView', suivi: 'renderFollowupView' };
+  const VIEW_FN = { apercu: 'renderExplorationOverview', antecedents: 'renderAntecedentsView', maladie: 'renderDiseaseView', developpement: 'renderDevView', histoire: 'renderHistoryView', bilans: 'renderExamsView', galerie: 'renderGalleryView', journal: 'renderJournalView', crises: 'renderSeizureListView', synthese: 'renderSzSynthesisView', loc: 'renderLocalisationView', inter: 'renderInterView', rapport: 'renderSeegReportView', intervention: 'renderProcedureView', suivi: 'renderFollowupView' };
 
   const M = {
     loc: null,
@@ -152,7 +152,7 @@
       return this.go({ stage: 'dossier' });
     },
     openSeizure(id) { this.go({ seizureId: id, view: 'crise' }); },
-    openExploration(id, view) { const st = this.stageOfExploration(id); if (st) this.go({ stage: st.key, view: view || (st.kind === 'seeg' ? 'planif' : 'crises') }); },
+    openExploration(id, view) { const st = this.stageOfExploration(id); if (st) this.go({ stage: st.key, view: view || (st.kind === 'seeg' ? 'planif' : 'apercu') }); },
 
     // ================================================================ modes de l'espace de travail
     /** mode de l'espace de travail ; les modules s'y branchent par SV.Bus : 'workmode:before' (mode, prev) puis
@@ -194,7 +194,7 @@
     renderParcours() {
       const box = $('parcours'), cp = $('crPatient'); if (!box) return;
       const d = this.dossier;
-      if (cp) cp.textContent = d ? (d.patient.pseudo || 'patient') + ' ▾' : '—';
+      if (cp) cp.textContent = d ? this.dname(d) + ' ▾' : '—';
       if (!d || this.ui.screen === 'patients') { box.innerHTML = ''; return; }
       const cur = this.loc ? this.loc.stage : null;
       box.innerHTML = this.parcours().map(st => `<button class="pstep k-${st.kind}${st.key === cur ? ' on' : ''}" data-key="${esc(st.key)}" title="${esc(this.stageTitle(st))}"><i class="dot s-${esc(st.status || '')}"></i>${esc(st.label)}</button>`).join('<span class="psep"></span>') + '<button class="pstep add" id="pAdd" title="Nouvelle étape : vidéo-EEG, SEEG, staff, chirurgie, suivi">＋</button>';
@@ -209,26 +209,28 @@
       if (st.kind === 'procedure') return `${V.procedure[st.obj.type]}${st.date ? ' · ' + fmtDate(st.date) : ' · à dater'}`;
       if (st.kind === 'followup') return `${d.outcomes.length} évaluation${d.outcomes.length > 1 ? 's' : ''} du devenir`;
       const ex = st.obj, n = S.seizuresOfExploration(d, ex.id).length;
-      return `${V.exploration[ex.kind]} · ${ex.start ? fmtDate(ex.start) : 'à dater'}${ex.end ? ' → ' + fmtDate(ex.end) : ''} · ${V.explorationStatus[ex.status] || ''} · ${n} crise${n > 1 ? 's' : ''}`;
+      return `${ex.kind === 'other' && ex.context ? V.explorationContext[ex.context] : V.exploration[ex.kind]} · ${ex.start ? fmtDate(ex.start) : 'à dater'}${ex.end ? ' → ' + fmtDate(ex.end) : ''} · ${V.explorationStatus[ex.status] || ''} · ${n} crise${n > 1 ? 's' : ''}`;
     },
     addStageMenu(anchor) {
       const d = this.dossier, r = anchor.getBoundingClientRect();
       this.popupMenu([{ head: 'Nouvelle étape du parcours' },
         { label: 'Vidéo-EEG de scalp (phase 1)', run: () => this.newExplorationStage('phase1') },
+        { label: 'EEG ambulatoire (avant la phase 1)', run: () => this.newExplorationStage('other', { context: 'ambu' }) },
         { label: 'SEEG', run: () => this.newExplorationStage('seeg') },
         { label: 'Staff (réunion de concertation)', run: () => this.newMeeting() },
         { label: 'Chirurgie ou autre procédure', run: () => { const p = S.addProcedure(d, { date: '' }); this.touch(); this.go({ stage: 'proc:' + p.id }); } },
         { label: 'Suivi (évaluation du devenir)', run: () => { const p = d.procedures.slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).pop(); S.addOutcome(d, { procedureId: p ? p.id : null }); this.touch(); this.go({ stage: 'followup' }); } },
+        { label: 'Vidéo-EEG post-opératoire', run: () => this.newExplorationStage('other', { context: 'postop' }) },
         { label: 'Autre exploration', run: () => this.newExplorationStage('other') }], Math.min(r.left, window.innerWidth - 330), r.bottom + 4);
     },
-    newExplorationStage(kind) {
+    newExplorationStage(kind, extra) {
       const d = this.dossier, hasPlan = S.implantations(d).length;
-      const ex = S.addExploration(d, { kind, status: kind === 'seeg' ? 'planned' : 'ongoing', start: kind === 'seeg' ? '' : S.today() }); S.addSession(d, ex.id, { date: ex.start }); this.touch();
+      const ex = S.addExploration(d, Object.assign({ kind, status: kind === 'seeg' ? 'planned' : 'ongoing', start: kind === 'seeg' ? '' : S.today() }, extra || {})); this.touch();
       if (kind === 'seeg' && hasPlan && this.implantChooser) {
         const open = S.latestHypotheses(d).filter(H => ['proposed', 'testing', 'confirmed'].includes(H.status));
         this.implantChooser({ toEx: ex, hyps: open, seizures: S.allSeizures(d).filter(z => z.events.length).map(sz => ({ sz })), title: `Schéma d’implantation de ${ex.label}`, onDone: () => this.go({ stage: 'ex:' + ex.id, view: 'planif' }), onCancel: () => this.go({ stage: 'ex:' + ex.id, view: 'planif' }) });
       }
-      this.go({ stage: 'ex:' + ex.id, view: kind === 'seeg' ? 'planif' : 'crises' });
+      this.go({ stage: 'ex:' + ex.id, view: kind === 'seeg' ? 'planif' : 'apercu' });
     },
 
     // ================================================================ sous-barre : vues de l'étape
@@ -240,18 +242,18 @@
       const views = VIEWS[st.kind] || VIEWS.dossier, cur = this.loc.view === 'crise' ? 'crises' : this.loc.view;
       let extra = '';
       if (this.loc.view === 'crise' && this.ctx && this.ctx.seizureId) {
-        const ex = st.obj, list = S.seizuresOfExploration(d, ex.id), i = list.findIndex(z => z.id === this.ctx.seizureId), sz = list[i];
+        const ex = st.obj, list = ex && ex.id ? S.seizuresOfExploration(d, ex.id) : S.reportedSeizures(d), i = list.findIndex(z => z.id === this.ctx.seizureId), sz = list[i];
         extra = `<span class="sb-sz"><button class="mini-btn" data-a="szprev" title="crise précédente"${i <= 0 ? ' disabled' : ''}>‹</button><b>${esc(sz ? sz.label : '')}</b> <span class="muted">${i + 1}/${list.length}</span><button class="mini-btn" data-a="szprev2" hidden></button><button class="mini-btn" data-a="sznext" title="crise suivante"${i >= list.length - 1 ? ' disabled' : ''}>›</button></span>`;
       }
       const actions = [];
       if (st.kind === 'meeting') actions.push(`<button class="mini-btn${this.loc.view === 'presenter' ? '' : ' primary'}" data-a="present" title="Diaporama plein écran (F2)">▶ Présenter</button>`);
       const status = st.kind === 'seeg' || st.kind === 'phase1' || st.kind === 'other' ? `<select class="sb-status" title="statut de l’exploration">${Object.entries(V.explorationStatus).map(([k, l]) => `<option value="${k}"${st.obj.status === k ? ' selected' : ''}>${l}</option>`).join('')}</select>` : '';
-      bar.innerHTML = `<div class="sb-title"><b>${esc(st.kind === 'dossier' ? (d.patient.pseudo || 'Dossier') : st.label)}</b><span class="muted">${esc(st.kind === 'dossier' ? this.patientLine() : st.kind === 'meeting' ? V.meeting[st.obj.kind] : st.kind === 'procedure' ? V.procedure[st.obj.type] : st.kind === 'followup' ? 'devenir' : (st.date ? fmtDate(st.date) : 'à dater'))}</span>${status}</div>
+      bar.innerHTML = `<div class="sb-title"><b>${esc(st.kind === 'dossier' ? this.dname(d) : st.label)}</b><span class="muted">${esc(st.kind === 'dossier' ? this.patientLine() : st.kind === 'meeting' ? V.meeting[st.obj.kind] : st.kind === 'procedure' ? V.procedure[st.obj.type] : st.kind === 'followup' ? 'devenir' : (st.date ? fmtDate(st.date) : 'à dater'))}</span>${status}</div>
         <nav class="sb-tabs">${views.map(([k, l], i) => `<button data-v="${k}" class="${k === cur ? 'on' : ''}" title="${esc(VIEW_HINT[k] || '')}">${st.kind === 'seeg' ? `<small>${i + 1}</small>` : ''}${esc(l)}</button>`).join('')}</nav>${extra}<span class="spacer"></span>${actions.join('')}`;
       bar.querySelectorAll('.sb-tabs [data-v]').forEach(b => b.onclick = () => this.go({ stage: st.key, view: b.dataset.v }));
       const ss = bar.querySelector('.sb-status'); if (ss) ss.onchange = () => { st.obj.status = ss.value; this.touch('exploration', st.obj.id, st.obj.label); this.renderParcours(); };
       const A = a => bar.querySelector(`[data-a=${a}]`);
-      if (A('szprev')) { const list = S.seizuresOfExploration(d, st.obj.id), i = list.findIndex(z => z.id === this.ctx.seizureId); A('szprev').onclick = () => { if (i > 0) this.openSeizure(list[i - 1].id); }; A('sznext').onclick = () => { if (i < list.length - 1) this.openSeizure(list[i + 1].id); }; }
+      if (A('szprev')) { const list = st.obj && st.obj.id ? S.seizuresOfExploration(d, st.obj.id) : S.reportedSeizures(d), i = list.findIndex(z => z.id === this.ctx.seizureId); A('szprev').onclick = () => { if (i > 0) this.openSeizure(list[i - 1].id); }; A('sznext').onclick = () => { if (i < list.length - 1) this.openSeizure(list[i + 1].id); }; }
       if (A('newsz')) A('newsz').onclick = () => this.newSeizureIn(st.obj);
       if (A('present')) A('present').onclick = () => this.go({ stage: st.key, view: 'presenter' });
       this.updateReportButton();
@@ -260,10 +262,10 @@
       const P = this.dossier.patient, age = P.birthYear ? new Date().getFullYear() - (+P.birthYear) : null;
       return [P.sex === 'F' ? 'F' : P.sex === 'M' ? 'M' : '', age != null ? age + ' ans' : '', P.handedness ? V.handedness[P.handedness] : '', S.onsetText(P) ? 'premières crises à ' + S.onsetText(P) : ''].filter(Boolean).join(' · ');
     },
-    /** nouvelle crise dans la dernière séance de l'exploration (une séance est créée s'il n'y en a pas) */
+    /** nouvelle crise de l'exploration (ex null : crise rapportée, au niveau du dossier) */
     newSeizureIn(ex) {
-      const d = this.dossier, ses = S.sessionsOf(d, ex.id).pop() || S.addSession(d, ex.id, { date: S.today() });
-      const sz = S.addSeizure(d, ses.id, { datetime: this.defaultDT(ses.date) }); if (S.renumberSeizures) S.renumberSeizures(d, ex.id); this.touch(); this.openSeizure(sz.id);
+      const d = this.dossier;
+      const sz = S.addSeizure(d, ex ? ex.id : null, { datetime: this.defaultDT(ex ? S.today() : '') }); if (S.renumberSeizures && ex) S.renumberSeizures(d, ex.id); this.touch(); this.openSeizure(sz.id);
     },
     /** bouton « Rapport » : rapport de l'étape ouverte */
     updateReportButton() {
@@ -282,7 +284,7 @@
     // ================================================================ menus du patient et « ⋯ »
     patientMenu(anchor) {
       const d = this.dossier, r = anchor.getBoundingClientRect();
-      const items = [{ head: d ? d.patient.pseudo : 'Aucun patient' }];
+      const items = [{ head: d ? this.dname(d) : 'Aucun patient' }];
       if (d) items.push({ label: 'Exporter le dossier complet (.episcope)', run: () => this.exportBundleUI(null, false) }, { label: 'Exporter le dossier léger (sans les images d’origine)', run: () => this.exportBundleUI(null, true) }, { label: 'Importer des images NIfTI…', run: () => { this.go({ stage: 'dossier', view: 'imagerie' }); $('fileNifti').value = ''; $('fileNifti').click(); } }, { sep: true }, { label: 'Fermer le dossier', run: () => this.closeDossier() });
       items.push({ label: 'Liste des patients', run: () => this.showRaw('patients') });
       this.popupMenu(items, Math.max(8, r.left), r.bottom + 4);
@@ -296,7 +298,7 @@
       const r = anchor.getBoundingClientRect(), L = SV.Library;
       this.popupMenu([{ head: 'EpiScope' }, { label: 'Importer un dossier (.episcope) ou une crise (.json)…', run: () => { $('fileOpen').value = ''; $('fileOpen').click(); } },
         { label: 'Exporter la cohorte (tables CSV, tous les patients)', run: () => this.exportCohort() }, { label: 'Exporter la crise ouverte (.json)', run: () => this.saveCase() },
-        { sep: true }, { label: 'Base de référence (signes, priors, liens)…', run: () => this.openDB() }, { label: 'Mode présentation de la vue 3D (F2)', run: () => this.present() }, { label: 'Densité de l’affichage : ' + ({ compact: 'compacte (portable)', large: 'large (grand écran, projection)' }[document.documentElement.dataset.density] || 'automatique') + '…', run: () => this.densityMenu(anchor) }, { label: 'Manuel d’utilisation', run: () => this.openManual && this.openManual() }, { label: 'Crédits et sources…', run: () => this.openCredits && this.openCredits() }, { label: 'Mentions légales…', run: () => this.openLegal && this.openLegal() },
+        { sep: true }, { label: 'Base de référence (signes, priors, liens)…', run: () => this.openDB() }, { label: 'Mode présentation de la vue 3D (F2)', run: () => this.present() }, { label: 'Densité de l’affichage : ' + ({ compact: 'compacte (portable)', large: 'large (grand écran, projection)' }[document.documentElement.dataset.density] || 'automatique') + '…', run: () => this.densityMenu(anchor) }, { label: 'Polarité des tracés : ' + SV.Wave.label() + ' — inverser', run: () => { SV.Wave.negUp = !SV.Wave.negUp; this.toast('Polarité des tracés : ' + SV.Wave.label(), 3000); if (this._iev && this.ieegDraw) this.ieegDraw(); } }, { label: 'Manuel d’utilisation', run: () => this.openManual && this.openManual() }, { label: 'Crédits et sources…', run: () => this.openCredits && this.openCredits() }, { label: 'Mentions légales…', run: () => this.openLegal && this.openLegal() },
         { sep: true }, { head: 'Langue' }, ...[['fr', 'Français'], ['en', 'English']].map(([k, l]) => ({ label: (SV.I18n.lang === k ? '✓ ' : '') + l, run: () => { if (SV.I18n.lang !== k) SV.I18n.set(k); } })),
         { sep: true }, { head: 'Thème' }, ...[['auto', 'automatique (celui du système)'], ['light', 'clair'], ['dark', 'sombre']].map(([k, l]) => ({ label: ((document.documentElement.dataset.themePref || 'auto') === k ? '✓ ' : '') + l, run: () => this.setTheme(k) })),
         { sep: true }, { label: 'Utilisateurs… (moi : ' + ((SV.People && SV.People.me() && SV.People.label(SV.People.me(), true)) || L.user || '—') + ')', run: () => this.peopleDialog() }], r.right - 330, r.bottom + 4);

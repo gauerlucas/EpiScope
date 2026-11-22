@@ -43,6 +43,7 @@ lead: Shortcuts are never essential, but they save a lot of time while entering 
 | <kbd>Page Up</kbd> <kbd>Page Down</kbd>, wheel | Previous or next channels |
 | <kbd>Home</kbd> <kbd>End</kbd> | Start or end of the recording |
 | <kbd>O</kbd> | Go to the annotated seizure onset |
+| Wheel on the timeline | Zoom the timeline around the pointer (double-click: whole recording) |
 | <kbd>Delete</kbd> | Delete the selected marker |
 | <kbd>[</kbd> <kbd>]</kbd> | Spikes: previous or next spike in the cluster |
 | <kbd>Ctrl</kbd>+<kbd>Z</kbd> | Spikes, sleep: undo the last edit |
@@ -67,6 +68,8 @@ lead: Shortcuts are never essential, but they save a lot of time while entering 
 | <kbd>Home</kbd> <kbd>End</kbd> | First or last slide |
 | <kbd>F</kbd> | Full screen |
 | <kbd>N</kbd> | Show or hide the outline |
+| <kbd>E</kbd> | Editing mode: Edit or Comment each piece of data |
+| <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Save the current input (change or comment) |
 | <kbd>Esc</kbd> | Leave the presentation |
 
 ## This manual {#ce-manuel}

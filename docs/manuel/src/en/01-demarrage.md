@@ -24,10 +24,10 @@ lead: Six steps, ten minutes. By the end you will have a patient, a seizure desc
 
 2. **Create a patient** <span class="time">30 s</span>
 
-    Click [[+ New patient]] and type a pseudonym (for example `STR-0042`). The record opens on its **Summary**, and the patient's pathway starts with a **Phase 1**.
+    Click [[+ New patient]] and type the last and first name (for example `DUPONT Jeanne`). The first time, EpiScope asks for the library's code prefix (`HFAR` by default). The patient receives their code (`HFAR0001`), the record opens on its **Summary**, and the patient's pathway starts with a **Phase 1**.
 
     !!! attention
-        Do not use the patient's name as the pseudonym if the folder is shared with other teams or if you intend to send the record.
+        The name is stored only in the record's *Identity* area; files carry the code. To send a record outside the department, use the **anonymised** export.
 
 3. **Describe a seizure** <span class="time">4 min</span>
 

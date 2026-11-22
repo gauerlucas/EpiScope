@@ -24,8 +24,12 @@
   const REGION = { Fp: 'frontopolaire', F7: 'temporale antérieure', F8: 'temporale antérieure', F9: 'temporale antérieure', F10: 'temporale antérieure', T3: 'temporale moyenne', T4: 'temporale moyenne', T9: 'temporale moyenne', T10: 'temporale moyenne', T5: 'temporale postérieure', T6: 'temporale postérieure', P9: 'temporale postérieure', P10: 'temporale postérieure', F3: 'frontale', F4: 'frontale', C3: 'centrale', C4: 'centrale', P3: 'pariétale', P4: 'pariétale', O1: 'occipitale', O2: 'occipitale', Fz: 'frontale médiane', Cz: 'du vertex', Pz: 'pariétale médiane' };
   const regionOf = e => REGION[e] || REGION[e.slice(0, 2)] || e;
   const sideOf = e => /z$/.test(e) ? 'M' : (+e.replace(/\D/g, '') % 2 ? 'L' : 'R');
-  /** rubriques de la carte : couleur, libellé */
-  const CATS = [['spikes', 'Pointes', [230, 57, 70]], ['slow', 'Ondes lentes', [58, 134, 255]], ['ictal', 'Début des crises', [155, 93, 229]]];
+  /** rubriques de la carte : couleur, libellé — v2.0.0 : intercritique en veille (W) et au sommeil (S), les anomalies et
+   *  les foyers n'étant en général pas les mêmes ; « spikes » / « slow » (avant 2.0.0) = vigilance non précisée */
+  const RED = [230, 57, 70], BLUE = [58, 134, 255];
+  const CATS = [['spikesW', 'Pointes · veille', RED], ['slowW', 'Ondes lentes · veille', BLUE], ['spikesS', 'Pointes · sommeil', RED], ['slowS', 'Ondes lentes · sommeil', BLUE], ['ictal', 'Début des crises', [155, 93, 229]],
+    ['spikes', 'Pointes · vigilance non précisée', RED], ['slow', 'Ondes lentes · vigilance non précisée', BLUE]];
+  const LEGACY = { spikes: ['spikesW', 'spikesS'], slow: ['slowW', 'slowS'] };
   const css = (c, a) => `rgba(${c.join(',')},${a == null ? 1 : a})`;
   let uid = 0;
 
@@ -82,7 +86,7 @@
   function normEeg(E) {
     E.act = Object.assign({ sli: '', sliSpectrum: false, sliFreq: {}, sliText: '', hv: '', hvMin: '', hvText: '', other: [], otherText: '' }, E.act || {});
     E.events = Object.assign({ pnes: '', pnesText: '', other: [], otherText: '' }, E.events || {});
-    E.map = Object.assign({ spikes: {}, slow: {}, ictal: {} }, E.map || {});
+    E.map = Object.assign({ spikesW: {}, spikesS: {}, slowW: {}, slowS: {}, ictal: {}, spikes: {}, slow: {} }, E.map || {});
     return E;
   }
   const hasMap = E => !!E.map && CATS.some(([k]) => Object.values(E.map[k] || {}).some(v => v > 0));
@@ -130,7 +134,7 @@
       const KEYS = { inter: ['background', 'interictal'], ictal: ['ictal', 'postictal'], synth: ['synthInter', 'synthIctal', 'conclusion'] }[part];
       const LAB = Object.assign(Object.fromEntries(FIELDS.map(f => [f[0], f])), { synthInter: ['synthInter', 'Synthèse intercritique', 'en une ou deux phrases'], synthIctal: ['synthIctal', 'Synthèse des crises', 'types de crises, sémiologie, début électrique'], conclusion: ['conclusion', 'Conclusion', 'origine probable, hypothèse(s), suite proposée'] });
       const SUG = { interictal: 'interictal', ictal: 'ictal', conclusion: 'conclusion', synthInter: 'interictal', synthIctal: 'ictal' };
-      const cats = { inter: ['spikes', 'slow'], ictal: ['ictal'], synth: [] }[part];
+      const has = k => Object.values(E.map[k] || {}).some(v => v > 0), cats = { inter: ['spikesW', 'slowW', 'spikesS', 'slowS'].concat(['spikes', 'slow'].filter(has)), ictal: ['ictal'], synth: [] }[part];
       const ta = c => `<textarea class="grow" rows="1" ${c}`;
       host.innerHTML = `<div class="card form eeg-form">${KEYS.map(k => { const [, l, ph] = LAB[k]; return `<label><span class="srl">${l}<span class="spacer"></span>${PHRASES[k] ? `<button class="mini-btn" data-ph="${k}" title="phrases types à insérer">phrases ▾</button>` : ''}${SUG[k] ? `<button class="mini-btn" data-sug="${k}" title="d’après la carte, les épreuves et les crises saisies">proposer</button>` : ''}</span><textarea class="grow" data-f="${k}" rows="2" placeholder="${esc(ph)}">${esc(E[k] || '')}</textarea></label>`; }).join('')}</div>
         ${part === 'inter' ? `<div class="card eeg-act"><div class="card-h">Épreuves d’activation</div>
@@ -143,7 +147,9 @@
             <div class="ea-row"><span class="lbl">Crises fonctionnelles dissociatives</span><select data-e="pnes"><option value=""${E.events.pnes === '' ? ' selected' : ''}>—</option><option value="0"${String(E.events.pnes) === '0' ? ' selected' : ''}>aucune</option>${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<option value="${n}"${String(E.events.pnes) === String(n) ? ' selected' : ''}>${n}${n === 10 ? ' et plus' : ''}</option>`).join('')}</select>${ta(`data-e="pnesText" placeholder="sémiologie, contexte, absence de corrélat EEG…">${esc(E.events.pnesText)}</textarea>`)}</div>
             <div class="ea-row wrap"><span class="lbl">Autres manifestations</span>${EVENTS.filter(([k]) => k !== 'pnes').map(([k, l]) => `<label class="chip"><input type="checkbox" data-oe="${k}"${E.events.other.includes(k) ? ' checked' : ''}> ${l}</label>`).join('')}${ta(`data-e="otherText" placeholder="description">${esc(E.events.otherText)}</textarea>`)}</div></div>` : ''}
         ${cats.length ? `<div class="card eeg-mapcard"><div class="card-h">Carte 10-20 <span class="muted">clic : + → ++ → +++ → rien · clic droit : effacer</span></div>
-            <div class="eeg-maps edit">${CATS.filter(([k]) => cats.includes(k)).map(([k, l, c]) => `<figure data-cat="${k}"><div class="em-h"><i class="sw" style="background:${css(c)}"></i> <b>${l}</b><span class="spacer"></span><button class="mini-btn" data-clr="${k}" title="effacer la carte">✕</button></div><div class="em-svg"></div><figcaption class="muted small"></figcaption></figure>`).join('')}</div></div>` : ''}`;
+            ${(() => { const fig = ([k, l, c]) => `<figure data-cat="${k}"><div class="em-h"><i class="sw" style="background:${css(c)}"></i> <b>${l}</b><span class="spacer"></span>${LEGACY[k] ? `<button class="mini-btn" data-mv="${k}:${LEGACY[k][0]}" title="ajouter cette carte à celle de la veille">→ veille</button><button class="mini-btn" data-mv="${k}:${LEGACY[k][1]}" title="ajouter cette carte à celle du sommeil">→ sommeil</button>` : ''}<button class="mini-btn" data-clr="${k}" title="effacer la carte">✕</button></div><div class="em-svg"></div><figcaption class="muted small"></figcaption></figure>`;
+              const row = (lbl, keys) => { const L = CATS.filter(([k]) => keys.includes(k) && cats.includes(k)); return L.length ? `<div class="em-row">${lbl ? `<div class="em-rl">${lbl}</div>` : ''}<div class="eeg-maps edit">${L.map(fig).join('')}</div></div>` : ''; };
+              return part === 'inter' ? row('Veille', ['spikesW', 'slowW']) + row('Sommeil', ['spikesS', 'slowS']) + row('Avant 2.0 : vigilance non précisée — à ranger', ['spikes', 'slow']) : row('', cats); })()}</div>` : ''}`;
       this.bindFields(host.querySelector('.eeg-form'), E, 'exploration');
       host.querySelectorAll('[data-ph]').forEach(b => b.onclick = ev => { ev.preventDefault(); const k = b.dataset.ph, t = host.querySelector(`textarea[data-f="${k}"]`), r = b.getBoundingClientRect(); this.popupMenu([{ head: 'Insérer' }].concat(PHRASES[k].map(p => ({ label: p, run: () => { const pos = t.selectionStart != null && document.activeElement === t ? t.selectionStart : t.value.length, pre = t.value.slice(0, pos), post = t.value.slice(pos), sep = pre && !/\s$/.test(pre) ? ' ' : ''; t.value = pre + sep + p + post; E[k] = t.value; touch(); t.focus(); SV.Grow && SV.Grow.fit(t); const i = (pre + sep + p).indexOf('…'); if (i >= 0) t.setSelectionRange(i, i + 1); } }))), r.left, r.bottom + 4); });
       host.querySelectorAll('[data-sug]').forEach(b => b.onclick = ev => { ev.preventDefault(); const k = b.dataset.sug, tx = this.eegSuggest(ex, SUG[k]), t = host.querySelector(`textarea[data-f="${k}"]`); if (!tx) { this.toast('Rien à proposer : remplissez la carte (pointes, ondes lentes, début des crises) ou les crises', 3500); return; } if (t.value.trim() && !confirm('Remplacer le texte de la rubrique par la proposition ?')) return; t.value = tx; E[k] = tx; touch(); SV.Grow && SV.Grow.fit(t); });
@@ -157,6 +163,7 @@
         fig.querySelectorAll('.eh-el').forEach(g => { const e = g.dataset.el; g.onclick = () => { const v = ((E.map[k][e] || 0) + 1) % 4; if (v) E.map[k][e] = v; else delete E.map[k][e]; touch(); drawMap(k); }; g.oncontextmenu = ev => { ev.preventDefault(); delete E.map[k][e]; touch(); drawMap(k); }; });
       };
       cats.forEach(drawMap);
+      host.querySelectorAll('[data-mv]').forEach(b => b.onclick = () => { const [from, to] = b.dataset.mv.split(':'); for (const [e, v] of Object.entries(E.map[from] || {})) E.map[to][e] = Math.max(E.map[to][e] || 0, v); E.map[from] = {}; touch(); this.eegPart(host, ex, part); });
       host.querySelectorAll('[data-clr]').forEach(b => b.onclick = () => { const k = b.dataset.clr; if (Object.keys(E.map[k]).length && !confirm('Effacer cette carte ?')) return; E.map[k] = {}; touch(); drawMap(k); });
     },
     /** onglet Intercritique : phase 1 (EEG de scalp) ou SEEG (compte rendu intercritique + tracés) */
@@ -172,8 +179,11 @@
     },
     /** textes proposés : intercritique (carte), critique (carte + crises), conclusion (tout) */
     eegSuggest(ex, k) {
-      const E = normEeg(ex.eeg || (ex.eeg = {})), d = this.dossier, szs = S.seizuresOfExploration(d, ex.id).filter(z => z.events.length), sp = topoText(E.map.spikes, true), sl = topoText(E.map.slow, true), ic = topoText(E.map.ictal);
-      if (k === 'interictal') { const t = []; if (sp) t.push(`Pointes et pointes-ondes ${sp}.`); if (sl) t.push(`Ondes lentes ${sl}.`); return t.join(' '); }
+      const E = normEeg(ex.eeg || (ex.eeg = {})), d = this.dossier, szs = S.seizuresOfExploration(d, ex.id).filter(z => z.events.length), ic = topoText(E.map.ictal);
+      const T = k2 => topoText(E.map[k2], true), V3 = [['', T('spikes'), T('slow')], ['en veille', T('spikesW'), T('slowW')], ['au sommeil', T('spikesS'), T('slowS')]].filter(([, a, b]) => a || b);
+      const vig = (w, a, b) => (w ? w + ' : ' : '') + [a && `pointes et pointes-ondes ${a}`, b && `ondes lentes ${b}`].filter(Boolean).join(' ; ');
+      const sp = V3.map(([w, a]) => a && a + (w ? ' ' + w : '')).filter(Boolean).join(' ; '), sl = V3.map(([w, , b]) => b && b + (w ? ' ' + w : '')).filter(Boolean).join(' ; ');
+      if (k === 'interictal') return V3.map(([w, a, b]) => { const s = vig(w, a, b); return s.charAt(0).toUpperCase() + s.slice(1) + '.'; }).join(' ');
       if (k === 'ictal') { if (!ic && !szs.length) return ''; const hab = szs.filter(z => z.habitual === 'yes').length; return `${szs.length ? `${szs.length} crise${szs.length > 1 ? 's' : ''} enregistrée${szs.length > 1 ? 's' : ''}${hab ? ` (dont ${hab} habituelle${hab > 1 ? 's' : ''})` : ''}. ` : ''}${ic ? `Début électrique en région${/droites|gauches|bilatérales|;/.test(ic) ? 's' : ''} ${ic}.` : ''}`.trim(); }
       if (k === 'conclusion') {
         const t = [], pn = +E.events.pnes || 0;

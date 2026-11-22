@@ -155,8 +155,12 @@
         // valeurs par défaut (modifiables dans la visionneuse) : celles du bilan (date, étape, intitulé), sinon le premier jour de l'étape
         const exam = ctx.examId ? S.byId(d.exams || [], ctx.examId) : null, exId = ctx.explorationId || (exam && exam.explorationId) || null;
         const st = exId ? S.byId(d.explorations, exId) : null, date = (exam && exam.date) || (st && st.start) || S.today();
-        const g = S.addGalleryItem(d, { mime, w, h: hh, explorationId: exId, seizureId: ctx.seizureId || null, examId: ctx.examId || null, kind: ctx.kind != null ? ctx.kind : vid ? '' : st && st.kind === 'seeg' ? 'ictal' : 'interictal', modality: ctx.modality || (vid ? (exam ? 'video' : 'video') : exam && ['mri', 'pet', 'spect', 'meg', 'fmri'].includes(exam.kind) ? 'imaging' : exam && ['neuropsy', 'psy', 'wada', 'other'].includes(exam.kind) ? 'document' : st && st.kind === 'seeg' ? 'seeg' : 'eeg'), title: ctx.title || (exam && exam.title) || (vid ? String(f.name || '').replace(/\.[^.]+$/, '') : ''), date, by: L.user });
-        if (vid) { g.duration = info.dur || 0; g.size = f.size || 0; g.name = f.name || ''; if (conv) { g.converted = conv; g.name = conv.name; } if (info.thumb) { g.thumb = `gallery/${g.id}_thumb.jpg`; await L.writeFile(d, g.thumb, info.thumb); } }
+        const g = S.addGalleryItem(d, { mime, w, h: hh, explorationId: exId, seizureId: ctx.seizureId || null, examId: ctx.examId || null, kind: ctx.kind != null ? ctx.kind : vid ? '' : st && st.kind === 'seeg' ? 'ictal' : 'interictal', modality: ctx.modality || (vid ? (exam ? 'video' : 'video') : exam && ['mri', 'pet', 'spect', 'meg', 'fmri'].includes(exam.kind) ? 'imaging' : exam && ['neuropsy', 'psy', 'wada', 'other'].includes(exam.kind) ? 'document' : st && st.kind === 'seeg' ? 'seeg' : 'eeg'), title: ctx.title || (exam && exam.title) || (vid ? 'Vidéo' : ''), date, by: L.user });   // v1.1.0 : jamais le nom du fichier d'origine (voir plus bas, nom « Vidéo du … »)
+        // v1.1.0 : heure de début tirée du nom du fichier d'origine (lien avec l'heure absolue des tracés), puis nom d'origine
+        // oublié (il porte souvent le nom du patient) : nom neutre « Vidéo du … »
+        if (vid) { const orig = (conv && conv.name) || f.name || '', t0 = S.videoStartFromName(orig); g.duration = info.dur || 0; g.size = f.size || 0;
+          g.name = t0 ? `Vidéo du ${t0.slice(8, 10)}/${t0.slice(5, 7)}/${t0.slice(0, 4)} ${t0.slice(11, 19)}` : 'Vidéo'; if (conv) { g.converted = Object.assign({}, conv); delete g.converted.name; }
+          if (t0) S.addSyncLink(d, { galleryId: g.id, start: t0, method: 'filename' }); if (!ctx.title && !(exam && exam.title)) g.title = g.name; if (info.thumb) { g.thumb = `gallery/${g.id}_thumb.jpg`; await L.writeFile(d, g.thumb, info.thumb); } }
         g.file = `gallery/${g.id}.${ext}`; await L.writeFile(d, g.file, f); out.push(g);
       }
       if (out.length) { const nv = out.filter(isVideo).length, ni = out.length - nv; this.touch(); await this.flushSave(); this.toast([ni ? `${ni} capture${ni > 1 ? 's' : ''}` : '', nv ? `${nv} vidéo${nv > 1 ? 's' : ''}` : ''].filter(Boolean).join(' et ') + ` ajoutée${out.length > 1 ? 's' : ''} à la galerie`, 2500); }
@@ -276,7 +280,7 @@
                 <label>Date <input type="date" data-f="date" value="${esc(cur.date)}"></label>
                 <label>Notes <textarea data-f="notes" rows="4" placeholder="${vid ? 'contexte (qui a filmé, quand), ce que montre la vidéo' : 'montage, filtres, sensibilité, ce que montre la capture'}">${esc(cur.notes)}</textarea></label>
               </div>
-              <div class="btnrow">${vid ? '<button class="mini-btn" data-a="dl" title="enregistrer la vidéo sur le poste">télécharger la vidéo</button>' : '<button class="mini-btn" data-a="png" title="télécharger la capture annotée">PNG annoté</button>'}<span class="spacer"></span><button class="mini-btn danger" data-a="del">supprimer</button></div>
+              <div class="btnrow">${vid ? '<button class="mini-btn" data-a="sync" title="caler la vidéo sur l’heure des tracés (début, points de synchronisation)">heure de la vidéo…</button><button class="mini-btn" data-a="dl" title="enregistrer la vidéo sur le poste">télécharger la vidéo</button>' : '<button class="mini-btn" data-a="png" title="télécharger la capture annotée">PNG annoté</button>'}<span class="spacer"></span><button class="mini-btn danger" data-a="del">supprimer</button></div>
               <div class="hint">${vid ? 'Lecture, plein écran et vitesse dans le lecteur ; ← → élément voisin.' : 'Glisser sur l’image pour tracer ; ↖ pour déplacer ou effacer (Suppr) une annotation ; ← → capture voisine.'}</div>
             </div></div>`;
         card.querySelector('.close').onclick = close; card.querySelector('[data-a=prev]').onclick = () => step(-1); card.querySelector('[data-a=next]').onclick = () => step(1);
@@ -287,6 +291,7 @@
           if (!u) { card.querySelector('.gal-stage').innerHTML = '<div class="hint" style="padding:30px">Fichier absent du dossier (archive légère ?).</div>'; return; }
           v.src = u; const th = await this.galleryThumbURL(cur); if (th) v.poster = th;
           v.onerror = () => { const st0 = card.querySelector('.gal-stage'); st0.innerHTML = `<div class="hint" style="padding:30px">Format non lisible par le navigateur${cur.name ? ' (' + esc(String(cur.name).split('.').pop().toUpperCase()) + ')' : ''}. <button class="mini-btn primary" data-a="conv">Convertir en vidéo légère…</button></div>`; st0.querySelector('[data-a=conv]').onclick = async () => { if (await this.galleryConvertStored(cur)) render(); }; };
+          { const sb = card.querySelector('[data-a=sync]'); if (sb) sb.onclick = () => this.videoSyncDialog && this.videoSyncDialog(cur); }
           card.querySelector('[data-a=dl]').onclick = () => { const a = document.createElement('a'); a.href = u; a.download = cur.name || `EpiScope_${(cur.title || 'video').replace(/[^\w\-]+/g, '_')}.${String(cur.file).split('.').pop()}`; a.click(); };
           return;
         }

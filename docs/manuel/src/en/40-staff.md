@@ -28,12 +28,16 @@ The [[Prepare]] tab is filled from top to bottom:
 
 ![Preparing the meeting: summary on the left, concordance on the right.](shot:staff-preparer)
 
+### Slides {#les-diapositives}
+
+The **Slides** card in *Prepare* lists the pages of the slideshow, in the order they will be shown. For each page: ◉ / ○ shows or hides it, ↑ ↓ moves it, a click on the title renames it, 💬 adds an MDT comment on the page. [[＋ Free page]] inserts a page of your own text; [[Automatic order]] returns to the proposed order. The slideshow is still built from the record: a page whose data disappears is flagged, not deleted.
+
 !!! astuce
-    Everything can also be edited during the meeting: a concordance cell, a hypothesis, a decision. The report will follow.
+    Everything can also be edited during the meeting: a concordance cell, a hypothesis, a decision, and every piece of data shown in the slideshow (see [Editing or commenting during the meeting](#editer-ou-commenter-pendant-le-staff)). The report will follow.
 
 ## Presenting {#presenter}
 
-[[▶ Present]] (or <kbd>F2</kbd>) shows the record full screen, as slides, with no editing buttons. <kbd>←</kbd> <kbd>→</kbd> to move on, the outline on the left to jump to a section, <kbd>Esc</kbd> to leave.
+[[▶ Present]] (or <kbd>F2</kbd>) shows the record full screen, as slides. <kbd>←</kbd> <kbd>→</kbd> to move on, the outline on the left to jump to a section, <kbd>Esc</kbd> to leave. Pages hidden in *Prepare* do not appear; renamed titles and free pages do.
 
 The order follows the reasoning: patient presentation and question asked, clinical history, seizure summary then each seizure (timeline, sequence, video, model), scalp EEG and recordings, imaging (interactive slices), neuropsychology, for each SEEG the implantation, seizure-onset contacts, analyses, stimulations and thermocoagulations, then the concordance, hypotheses, decisions and conclusion.
 
@@ -43,11 +47,27 @@ During the presentation:
 
 - [[▶ Review in 3D]] on a seizure opens its workspace; a button brings you back to the same slide;
 - [[〰 Review the recording]] on a capture or a source line opens the recording at that moment (montage, filters, time base), then *Back to the presentation*;
-- imaging slices remain interactive (wheel, zoom, contrast).
+- imaging slices remain interactive (wheel, zoom, contrast);
+- double-clicking a page title renames it;
+- [[◉ Snapshot]] saves the meeting **as presented** (see [The snapshot](#linstantane)).
+
+### Editing or commenting during the meeting {#editer-ou-commenter-pendant-le-staff}
+
+[[✎ Edit]] (or <kbd>E</kbd>) switches the presentation to editing mode: two buttons appear under each piece of data shown (conclusion, text and domains of an investigation; history, lifestyle, epilepsy history, examination, handedness, treatments; meeting conclusion, hypotheses, decisions).
+
+- [[✎ Edit]] **changes the data in the record**: the value opens in an input box ([[Save in the record]], or <kbd>Ctrl</kbd>+<kbd>Enter</kbd>). The whole record, the reports and later meetings see the new value; the log notes “changed during the staff meeting”.
+- [[💬 Comment]] **adds an MDT comment without changing the data**: it appears right under it, in this meeting and in later meetings (“staff meeting of 21/11/2026”), which therefore see the original data and the comment. Comments of the current meeting can be edited (✎) or moved to the bin (✕); those of earlier meetings are read-only.
+- [[💬 Comment on the page]], at the top of the page, comments on the whole page (a seizure, the interictal EEG, an SEEG page…).
+
+In editing mode the page scrolls instead of being split, and the arrow keys do not change page while typing. <kbd>E</kbd> or [[✓ Done]] returns to the presentation; comments stay visible, buttons disappear.
+
+### The snapshot {#linstantane}
+
+A meeting is a moment: reopened months later, the slideshow would show the record as it has become. [[◉ Snapshot]] therefore keeps each page **as it was shown**, with its data, changes and comments. Several snapshots are possible; the **Slides** card › *Snapshots* lists them and reopens them read-only (“Snapshot of 21/11/2026”). The record itself stays editable.
 
 ## The report {#le-compte-rendu}
 
-The [[MDT report]] button (in place of *Report* in the top bar) produces the meeting report: question, participants, summary, concordance, hypotheses, decisions and conclusion, with the 3D views. It is downloaded as an HTML file; open it in the browser and <kbd>Ctrl</kbd>+<kbd>P</kbd> prints it or saves it as PDF. [[Copy the text]] in *Prepare* copies the summary as plain text, for a letter.
+The [[MDT report]] button (in place of *Report* in the top bar) produces the meeting report: question, participants, summary, concordance, hypotheses, decisions and conclusion, with the 3D views. **MDT comments** appear where the commented data is (under an investigation's conclusion, under a seizure's section…), not at the end of the document; data changed during the meeting appears with its new value. The report window offers to **hide the patient's name** (code instead) for a report leaving the department. It is downloaded as an HTML file; open it in the browser and <kbd>Ctrl</kbd>+<kbd>P</kbd> prints it or saves it as PDF. [[Copy the text]] in *Prepare* copies the summary as plain text, for a letter.
 
 ??? plus
     **Several meetings?** Each meeting is a stage; a post-SEEG meeting takes over the hypotheses of the previous meeting (revised or not) and the concordance cells entered by hand. **Surgical proposal**: a surgery decision offers standard procedures (anterior temporal lobectomy, tailored resection, disconnection…) and shows, on the brain, how the retained hypotheses are covered.

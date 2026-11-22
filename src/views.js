@@ -1,5 +1,5 @@
 /* EpiScope — views.js : vues des étapes du parcours qui ne sont pas l'espace de travail 3D.
- *   Phase 1 / SEEG : liste des crises (séances), synthèse des crises, EEG de scalp ;
+ *   Phase 1 / SEEG : liste des crises (par jour), synthèse des crises, EEG de scalp ;
  *   Chirurgie : intervention (gabarit, côté, étendue, histologie, complications) ;
  *   Suivi : évaluations du devenir (Engel, ILAE, recul calculé) ; Dossier : journal complet.              */
 (function (SV) {
@@ -15,46 +15,47 @@
     // ================================================================ crises d'une exploration
     renderSeizureListView(box, st) {
       const d = this.dossier, ex = st.obj, all = S.seizuresOfExploration(d, ex.id), hab = all.filter(z => z.habitual === 'yes').length, seeg = ex.kind === 'seeg';
-      box.innerHTML = `<div class="scr-inner wide"><div class="view-head"><h3>Crises · ${esc(ex.label)}</h3><span class="muted">${all.length} crise${all.length > 1 ? 's' : ''}${hab ? `, ${hab} habituelle${hab > 1 ? 's' : ''}` : ''}</span><span class="spacer"></span><button id="vsSz" class="primary" title="nouvelle crise (dans la dernière séance)">+ Crise</button><button id="vsMore" class="mini-btn" title="autres actions : séance d’enregistrement séparée, types de crises">⋯</button></div>
-        <div class="form row4 ex-form"><label>Début <input type="date" data-f="start" value="${esc(ex.start)}"></label><label>Fin <input type="date" data-f="end" value="${esc(ex.end)}"></label><label>Centre <input data-f="center" value="${esc(ex.center)}"></label><label>Libellé <input data-f="label" value="${esc(ex.label)}"></label></div>
+      box.innerHTML = `<div class="scr-inner wide"><div class="view-head"><h3>Crises · ${esc(ex.label)}</h3><span class="muted">${all.length} crise${all.length > 1 ? 's' : ''}${hab ? `, ${hab} habituelle${hab > 1 ? 's' : ''}` : ''}</span><span class="spacer"></span><button id="vsSz" class="primary" title="nouvelle crise de cette exploration">+ Crise</button><button id="vsMore" class="mini-btn" title="autres actions : rattacher une crise rapportée, types de crises">⋯</button></div>
+        <div class="muted small ov-line">${esc([ex.start && 'du ' + new Date(ex.start + 'T12:00').toLocaleDateString(SV.LOC), ex.end && 'au ' + new Date(ex.end + 'T12:00').toLocaleDateString(SV.LOC), ex.center].filter(Boolean).join(' ') || 'dates à renseigner')} · <a href="#" data-a="ov">dates, centre, notes : Vue d’ensemble</a></div>
         ${(() => { const bad = all.map((z, i) => [z, i + 1]).filter(([z, k]) => /^Crise \d+$/.test(String(z.label || '').trim()) && z.label !== 'Crise ' + k); return bad.length ? `<div class="note" id="vsRenum">Les titres « Crise n » ne suivent pas l’ordre chronologique (dates et heures) : ${bad.map(([z, k]) => `${esc(z.label)} → Crise ${k}`).join(', ')}. <button class="mini-btn primary" data-a="renum">Renuméroter par date</button></div>` : ''; })()}
-        <div id="vsSessions"></div>
+        <div id="vsAnn"></div><div id="vsSessions"></div>
         ${seeg ? '' : '<div class="sub-h">EEG critique <small class="muted">pour l’ensemble des crises de cette exploration</small></div><div class="eeg-grid ictal" id="vsIctal"></div>'}</div>`;
-      this.bindFields(box.querySelector('.ex-form'), ex, 'exploration', k => { if (k === 'start' || k === 'label') { this.renderParcours(); this.renderSubbar(); } });
+      box.querySelector('.ov-line [data-a=ov]').onclick = e => { e.preventDefault(); this.go({ stage: st.key, view: 'apercu' }); };
       // types de crises (v5.1) : regroupent les crises pour la synthèse (ex. « crises gélastiques », « crises hypermotrices »)
       ex.szTypes = ex.szTypes || [];
       const typeSel = sz => `<select data-z="typeId" title="type de crise (regroupement pour la synthèse)"><option value="">—</option>${ex.szTypes.map(t => `<option value="${t.id}"${sz.typeId === t.id ? ' selected' : ''}>${esc(t.label)}</option>`).join('')}<option value="+">+ type…</option></select>`;
       $('vsSz').onclick = () => this.newSeizureIn(ex);
-      $('vsMore').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); this.popupMenu([{ label: '+ Séance d’enregistrement séparée (autre période, autre centre…)', run: () => { S.addSession(d, ex.id, { date: S.today() }); this.touch(); this.renderSeizureListView(box, st); } }, { label: 'Types de crises…', run: () => this.szTypesDialog(ex, () => this.renderSeizureListView(box, st)) }], Math.min(r.left, window.innerWidth - 380), r.bottom + 4); };
+      $('vsMore').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); const rep0 = S.reportedSeizures(d); this.popupMenu([{ label: `Rattacher une crise rapportée du dossier…${rep0.length ? ' (' + rep0.length + ')' : ''}`, disabled: !rep0.length, run: () => this.attachReportedSeizure(ex, () => this.renderSeizureListView(box, st)) }, { label: 'Types de crises…', run: () => this.szTypesDialog(ex, () => this.renderSeizureListView(box, st)) }], Math.min(r.left, window.innerWidth - 380), r.bottom + 4); };
       const rn = box.querySelector('#vsRenum [data-a=renum]'); if (rn) rn.onclick = () => { const n = S.renumberSeizures(d, ex.id); this.touch('exploration', ex.id, 'crises renumérotées par date'); this.toast(`${n} crise${n > 1 ? 's' : ''} renumérotée${n > 1 ? 's' : ''} dans l’ordre chronologique`, 3000); this.updateCrumbs && this.updateCrumbs(); this.renderSubbar && this.renderSubbar(); this.renderSeizureListView(box, st); };
-      const sb = $('vsSessions'), sess = S.sessionsOf(d, ex.id), one = sess.length <= 1;
-      if (!sess.length) sb.innerHTML = '<div class="card"><div class="hint">Aucune crise. « + Crise » en ajoute une.</div></div>';
+      // v2.0.0 : plus de séances — crises regroupées par jour (J1, J2…), d'après leur date
+      const sb = $('vsSessions'), days = S.seizureDays(d, ex.id), one = days.length <= 1;
+      if (!days.length) sb.innerHTML = '<div class="card"><div class="hint">Aucune crise. « + Crise » en ajoute une ; une crise rapportée du dossier (vidéo familiale…) se rattache par « ⋯ ».</div></div>';
       // médias liés à une crise : vidéos et captures (galerie), tracé SEEG, jeux d'analyse
       const recOf = sz => (ex.recordings || []).find(r => r.seizureId === sz.id || (r.bySz && r.bySz[sz.id]));
       const media = sz => { const g = (d.gallery || []).filter(x => x.seizureId === sz.id), nv = g.filter(x => /^video\//.test(x.mime || '')).length, nc = g.length - nv, nq = seeg ? (ex.quant || []).filter(q => q.seizureId === sz.id).length : 0;
         return [nv && `▶ ${nv} vidéo${nv > 1 ? 's' : ''}`, nc && `▣ ${nc} capture${nc > 1 ? 's' : ''}`, nq && `∑ ${nq} analyse${nq > 1 ? 's' : ''}`].filter(Boolean).join(' · '); };
-      for (const ses of sess) {
-        const list = S.seizuresOfSession(d, ses.id), c = h('div', 'card session' + (one ? ' one' : ''));
-        // une seule séance (cas habituel, toujours en SEEG) : pas d'en-tête de séance ; plusieurs : en-tête éditable
-        c.innerHTML = `${one ? '' : `<div class="ses-h"><input class="inline" data-f="label" value="${esc(ses.label)}"><input type="date" data-f="date" value="${esc((ses.date || '').slice(0, 10))}"><input class="inline files" data-f="filesText" value="${esc((ses.files || []).map(f => f.name || f).join(', '))}" placeholder="fichiers (ex. EEG_0042.TRC)"><span class="spacer"></span><button class="mini-btn primary" data-a="sz">+ crise</button><button class="mini-btn danger" data-a="del" title="supprimer la séance">✕</button></div>`}
+      const dayLbl = dy => dy.day ? `${dy.n != null && dy.n > 0 ? 'J' + dy.n + ' · ' : ''}${new Date(dy.day + 'T12:00').toLocaleDateString(SV.LOC, { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}` : 'date inconnue';
+      for (const dy of days) {
+        const list = dy.seizures, c = h('div', 'card session' + (one ? ' one' : ''));
+        // un seul jour : pas d'en-tête ; plusieurs : en-tête du jour (J1, J2…)
+        c.innerHTML = `${one ? '' : `<div class="ses-h"><b>${esc(dayLbl(dy))}</b><span class="muted small">${list.length} crise${list.length > 1 ? 's' : ''}</span><span class="spacer"></span></div>`}
           <table class="sz-table">${list.map(sz => {
             const il = S.ilaeText(S.deriveIlae(sz, this.db)), evs = sz.events.slice().sort((a, b) => a.t - b.t), first = evs.slice(0, 4).map(e => (this.db.signById.get(e.sign_id) || {}).label_fr || e.sign_id).join(' → ');
             const on = seeg && sz.seeg && sz.seeg.onset ? Object.entries(sz.seeg.onset).filter(([, r]) => r === 'onset').map(([k]) => k) : [];
-            return `<tr data-id="${sz.id}" class="click${this.ctx && this.ctx.seizureId === sz.id ? ' cur' : ''}"><td><b>${esc(sz.label)}</b></td><td><input type="datetime-local" data-z="datetime" value="${esc(sz.datetime ? (sz.datetime.length <= 10 ? sz.datetime + 'T00:00' : sz.datetime.slice(0, 16)) : '')}"></td><td><select data-z="habitual">${opts(V.habitual, sz.habitual)}</select></td><td><select data-z="vigilance">${opts(V.vigilance, sz.vigilance)}</select></td><td>${typeSel(sz)}</td><td class="seq">${esc(first) || '<i class="muted">aucun signe</i>'}${evs.length > 4 ? ' …' : ''}<small>${esc(il)}</small>${on.length ? `<small class="onset">début SEEG : ${esc(on.join(', '))}</small>` : ''}${media(sz) ? `<small class="media">${esc(media(sz))}</small>` : ''}${recOf(sz) ? `<button class="mini-btn sz-trace" data-a="trace" title="Ouvrir le tracé « ${esc(recOf(sz).title)} » au début de la crise">〰 tracé</button>` : ''}</td><td>${evs.length} signe${evs.length > 1 ? 's' : ''}</td><td><button class="mini-btn primary" data-a="open">ouvrir</button><button class="mini-btn danger" data-a="rm" title="supprimer la crise">✕</button></td></tr>`; }).join('') || '<tr><td class="hint">Aucune crise dans cette séance.</td></tr>'}</table>`;
-        if (!one) c.querySelectorAll('.ses-h [data-f]').forEach(el => { el.oninput = el.onchange = () => { if (el.dataset.f === 'filesText') ses.files = el.value.split(/[,;]+/).map(x => x.trim()).filter(Boolean).map(name => ({ name })); else ses[el.dataset.f] = el.value; this.touch('session', ses.id, ses.label); }; });
-        if (!one) c.querySelector('[data-a=sz]').onclick = () => this.newSeizureFlow(ses, ex);
-        if (!one) c.querySelector('.ses-h [data-a=del]').onclick = () => { if (!confirm(`Supprimer « ${ses.label} » et ses ${list.length} crise(s) ?`)) return; S.remove(d, 'session', ses.id); this.touch(); this.renderSeizureListView(box, st); };
+            return `<tr data-id="${sz.id}" class="click${this.ctx && this.ctx.seizureId === sz.id ? ' cur' : ''}"><td><b>${esc(sz.label)}</b></td><td><input type="datetime-local" data-z="datetime" value="${esc(sz.datetime ? (sz.datetime.length <= 10 ? sz.datetime + 'T00:00' : sz.datetime.slice(0, 16)) : '')}"></td><td><select data-z="habitual">${opts(V.habitual, sz.habitual)}</select></td><td><select data-z="vigilance">${opts(V.vigilance, sz.vigilance)}</select></td><td>${typeSel(sz)}</td><td class="seq">${esc(first) || '<i class="muted">aucun signe</i>'}${evs.length > 4 ? ' …' : ''}<small>${esc(il)}</small>${on.length ? `<small class="onset">début SEEG : ${esc(on.join(', '))}</small>` : ''}${media(sz) ? `<small class="media">${esc(media(sz))}</small>` : ''}${recOf(sz) ? `<button class="mini-btn sz-trace" data-a="trace" title="Ouvrir le tracé « ${esc(recOf(sz).title)} » au début de la crise">〰 tracé</button>` : ''}</td><td class="sz-st">${this.szStatusHtml ? this.szStatusHtml(sz, ex) : esc(evs.length + ' signes')}</td><td class="nowrap"><button class="mini-btn primary" data-a="open">ouvrir</button><button class="mini-btn" data-a="more" title="reprendre la sémiologie d’une autre crise, supprimer…">⋯</button></td></tr>`; }).join('') || '<tr><td class="hint">Aucune crise ce jour.</td></tr>'}</table>`;
         c.querySelectorAll('tr[data-id]').forEach(tr => {
           const sz = S.byId(d.seizures, tr.dataset.id);
           tr.onclick = e => { if (e.target.closest('input,select,button')) return; this.openSeizure(sz.id); };
           tr.querySelector('[data-a=open]').onclick = () => this.openSeizure(sz.id);
           const tb = tr.querySelector('[data-a=trace]'); if (tb) tb.onclick = async () => { const r = recOf(sz); if (r.seizureId !== sz.id && this.ieegSetSeizure) this.ieegSetSeizure(r, sz.id); await this.recOpenAt(r, r.marks && r.marks.onset); };
-          tr.querySelector('[data-a=rm]').onclick = () => { if (!confirm(`Supprimer « ${sz.label} » (${sz.events.length} signes) ?`)) return; const cur = this.ctx && this.ctx.seizureId === sz.id; S.remove(d, 'seizure', sz.id); if (cur) this.openContext({ explorationId: ex.id }, true); this.touch(); this.renderSeizureListView(box, st); };
+          const rm = () => { if (!confirm(`Supprimer « ${sz.label} » (signes : ${sz.events.length}) ? (corbeille du dossier : restaurable)`)) return; const cur = this.ctx && this.ctx.seizureId === sz.id; S.remove(d, 'seizure', sz.id); if (cur) this.openContext({ explorationId: ex.id }, true); this.touch(); this.renderSeizureListView(box, st); };
+          tr.querySelector('[data-a=more]').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); this.popupMenu([{ head: sz.label }, { label: 'Reprendre la sémiologie de…', run: () => setTimeout(() => this.szCopyMenu(sz, r, () => this.renderSeizureListView(box, st)), 0) }, { sep: true }, { label: 'Supprimer la crise…', danger: true, run: rm }], Math.min(r.left, window.innerWidth - 300), r.bottom + 4); };
           tr.querySelectorAll('[data-z]').forEach(el => el.onchange = () => { if (el.dataset.z === 'typeId' && el.value === '+') { el.value = sz.typeId || ''; const l = prompt('Nouveau type de crise (ex. crises gélastiques) :'); if (!l || !l.trim()) return; const t = { id: S.uid('T'), label: l.trim() }; ex.szTypes.push(t); sz.typeId = t.id; this.touch('exploration', ex.id, 'type de crise ' + t.label); this.renderSeizureListView(box, st); return; }
             sz[el.dataset.z] = el.value; this.touch('seizure', sz.id, sz.label); if (el.dataset.z === 'datetime' && S.renumberSeizures && S.renumberSeizures(d, ex.id)) { this.toast('Titres « Crise n » renumérotés dans l’ordre chronologique', 3000); this.updateCrumbs && this.updateCrumbs(); this.renderSeizureListView(box, st); } });
         });
         sb.appendChild(c);
       }
+      if (this.renderAnnotatedCard) this.renderAnnotatedCard($('vsAnn'), ex, () => this.renderSeizureListView(box, st));
       if ($('vsIctal') && this.eegPart) this.eegPart($('vsIctal'), ex, 'ictal');
     },
     /** types de crises d'une exploration : nom, ordre ; retirer un type le retire des crises */
@@ -97,8 +98,9 @@
 
     // ================================================================ journal
     renderJournalView(box) {
-      const d = this.dossier, act = { create: 'création', add: 'ajout', edit: 'modification', remove: 'suppression', revise: 'nouvelle version', import: 'import', compute: 'calcul' };
+      const d = this.dossier, act = { create: 'création', add: 'ajout', edit: 'modification', remove: 'suppression (corbeille)', revise: 'nouvelle version', import: 'import', compute: 'calcul', restore: 'restauration', purge: 'corbeille vidée' };
       box.innerHTML = `<div class="scr-inner"><div class="view-head"><h3>Journal</h3><span class="muted">${(d.journal || []).length} entrées · qui a modifié quoi, quand (regroupé par 10 min)</span></div><div class="card journal">${(d.journal || []).slice().reverse().map(j => `<div><span class="muted">${esc(fmtDT(j.t))}${j.user ? ' · ' + esc(j.user) : ''}</span> ${esc(act[j.action] || j.action)} ${esc(j.text || j.kind)}${j.n > 1 ? ' <small>×' + j.n + '</small>' : ''}</div>`).join('') || '<div class="hint">—</div>'}</div></div>`;
+      if (this.renderSafetyCards) this.renderSafetyCards(box.querySelector('.scr-inner .view-head') ? box.querySelector('.scr-inner') : box);
     },
 
     // ================================================================ intervention

@@ -1,9 +1,9 @@
 /* EpiScope — patient_ui.js : dossiers patients dans l'application.
  *   - bibliothèque (répertoire local / partagé, ou navigateur), liste des patients, import / export (.episcope, .json),
  *     export de cohorte (tables CSV : une ligne par patient, exploration, crise, signe, hypothèse, décision, procédure…) ;
- *   - contexte de travail : patient › exploration › séance › crise ; l'espace de travail « crise » existant lit et écrit
+ *   - contexte de travail : patient › exploration (ou crises rapportées du dossier) › crise ; l'espace de travail « crise » existant lit et écrit
  *     le dossier (SV.Store.toWorkspace / fromWorkspace), enregistrement automatique, détection des conflits ;
- *   - écran « Dossier » : chronologie du parcours (frise façon LifeLines), explorations / séances / crises, lésions,
+ *   - écran « Dossier » : chronologie du parcours (frise façon LifeLines), explorations / crises, lésions,
  *     procédures, devenir, journal.
  * Les méthodes sont ajoutées à SV.app (même principe que seeg_ui.js).                                                */
 (function (SV) {
@@ -24,7 +24,7 @@
 
     // ================================================================ démarrage
     async startDossiers() {
-      await L.init(); this.setSaveState(this.dossier ? 'saved' : 'none');
+      await L.init(); this.setSaveState(this.dossier ? 'saved' : 'none'); if (this.requestPersistentStorage) this.requestPersistentStorage();
       let list = [];
       try { list = await L.list(); } catch (e) { console.warn(e); }
       // reprise d'un cas v1 laissé dans le stockage local (première ouverture de la v2)
@@ -91,7 +91,9 @@
       if (!this.dossier || !this.ctx) return;   // pas de crise hors d'un dossier patient
       const r = S.fromWorkspace(this.dossier, this.ctx, this.state);
       if (r.ctx && r.ctx.seizureId !== this.ctx.seizureId) { this.ctx = Object.assign({}, this.ctx, r.ctx); this.rememberCtx(); this.updateCrumbs(); }
-      if (r.changed) this.scheduleSave();
+      if (r.changed) { const sz = r.ctx && r.ctx.seizureId ? S.byId(this.dossier.seizures, r.ctx.seizureId) : (this.ctx.seizureId ? S.byId(this.dossier.seizures, this.ctx.seizureId) : null);
+        if (sz && this.db) sz.computedWith = { db: this.db.id || '', dbLocal: !!(this.shippedDbId && this.db.id !== this.shippedDbId), model: SV.Prov ? SV.Prov.versionOf('semio') : '', app: (window.EPISCOPE_BRAND || {}).version || '' };   // v1.1.0 : base et modèle de la carte sémiologique
+        this.scheduleSave(); }
     },
     /** modification hors espace de travail (dossier, staff, imagerie) */
     touch(kind, id, text) { if (!this.dossier) return; if (kind) S.log(this.dossier, 'edit', kind, id, text, L.user); this.scheduleSave(); },
@@ -102,13 +104,13 @@
       this._saving = true; this.setSaveState('saving');
       try {
         const r = await L.save(d);
-        if (r.ok) this.setSaveState('saved'); else if (r.conflict) { this.setSaveState('conflict'); this.onConflict(r); }
+        if (r.ok) this.setSaveState('saved'); else if (r.conflict) { this.setSaveState('conflict'); this.onConflict(r); } else if (r.readonly) this.setSaveState('error', 'Lecture seule : dossier enregistré par une version plus récente d’EpiScope');
       } catch (e) { console.error(e); this.setSaveState('error', 'Erreur d’enregistrement : ' + e.message); this.toast('Enregistrement impossible : ' + e.message, 6000); }
       this._saving = false; if (this._saveAgain) { this._saveAgain = false; this.setSaveState('pending'); this.flushSave(); }
     },
     onConflict(r) {
       const d = this.dossier;
-      this.choice(`Le dossier « ${esc(d.patient.pseudo)} » a été enregistré sur un autre poste pendant que vous le modifiiez (version ${r.diskRevision}, ${fmtDT(r.diskUpdated)}). Votre version a été mise de côté dans <code>${esc(r.file)}</code>, sans rien écraser.`, [
+      this.choice(`Le dossier « ${esc(this.dname(d))} » a été enregistré sur un autre poste pendant que vous le modifiiez (version ${r.diskRevision}, ${fmtDT(r.diskUpdated)}). Votre version a été mise de côté dans <code>${esc(r.file)}</code>, sans rien écraser.`, [
         { label: 'Recharger la version enregistrée', primary: true, run: () => this.openDossier(d.id, { ctx: this.ctx, loc: this.loc }) },
         { label: 'Écraser avec ma version', danger: true, run: () => { d._base = r.diskRevision; this.setSaveState('pending'); this.flushSave(); } },
       ]);
@@ -121,7 +123,7 @@
       let d; try { d = await L.load(id); } catch (e) { this.toast('Dossier illisible : ' + e.message, 5000); return; }
       const lk = await L.lockInfo(id);
       if (lk && !o.quiet && !confirm(`Ce dossier est ouvert par ${lk.user} depuis ${fmtDT(lk.t)}.\nL’ouvrir quand même ? (si vous enregistrez tous les deux, EpiScope détecte le conflit et n’écrase rien)`)) return;
-      this.dossier = d; await L.lock(d); clearInterval(this._lockT); this._lockT = setInterval(() => this.dossier && L.lock(this.dossier), 5 * 60000);
+      this.dossier = d; if (d._readonly && this.readonlyNotice) this.readonlyNotice(d); await L.lock(d); clearInterval(this._lockT); this._lockT = setInterval(() => this.dossier && L.lock(this.dossier), 5 * 60000);
       this.setSaveState('saved');
       if (this.onDossierOpened) await this.onDossierOpened(d);   // anatomie du patient (imaging_ui)
       const mine = this.uiSlot(d);
@@ -134,7 +136,7 @@
       let closed = false; try { const cl = JSON.parse(localStorage.getItem('sv_closed') || '[]'); closed = cl.includes(id); if (closed) localStorage.setItem('sv_closed', JSON.stringify(cl.filter(x => x !== id))); } catch (e) { }
       const loc = o.loc || (closed ? { stage: 'dossier', view: 'synthese' } : mine.loc || d.ui.loc) || null;
       if (o.screen === 'patients') this.showRaw('patients'); else this.go(loc && this.stageByKey(loc.stage) ? loc : { stage: 'dossier', view: 'synthese' });
-      if (!o.quiet) this.toast('Dossier « ' + d.patient.pseudo + ' » ouvert', 1800);
+      if (!o.quiet) this.toast('Dossier « ' + this.dname(d) + ' » ouvert', 1800);
     },
     /** v5 — emplacement de reprise propre à chaque utilisateur (initiales) dans le dossier partagé : d.ui.byUser[initiales] ;
      *  sans initiales, l'ancien emplacement commun (d.ui.lastCtx / loc) reste utilisé */
@@ -154,12 +156,12 @@
       this.rememberCtx(); this.updateCrumbs();
       if (!silent) this.toast(c.seizure ? `${c.exploration.label} · ${c.seizure.label}` : `${c.exploration.label} · implantation et SEEG (aucune crise saisie)`, 1600);
     },
-    /** date de la séance + heure courante (format datetime-local) */
+    /** date donnée (ou du jour) + heure courante (format datetime-local) */
     defaultDT(date) { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (date || S.today()).slice(0, 10) + 'T' + hm; },
     caseTitle() {
       if (!this.dossier) return this.state.name || 'cas';
       const c = this.ctx ? S.resolveCtx(this.dossier, this.ctx) : null;
-      return [this.dossier.patient.pseudo, c && c.exploration.label, c && c.session && c.session.label, c && c.seizure && c.seizure.label].filter(Boolean).join(' — ');
+      return [this.dname(this.dossier), c && c.exploration.label, c && c.session && c.session.label, c && c.seizure && c.seizure.label].filter(Boolean).join(' — ');
     },
     /** fil d'Ariane et barre du parcours */
     updateCrumbs() { if (this.renderParcours) { this.renderParcours(); this.renderSubbar(); } const d = this.dossier; if (d && $('dominant')) $('dominant').value = d.patient.dominant === 'R' ? 'R' : 'L'; },
@@ -178,25 +180,30 @@
     async renderPatients() {
       const box = $('scr-patients'); box.innerHTML = '<div class="scr-inner"><div class="hint">Lecture de la bibliothèque…</div></div>';
       let list = []; try { if (!L.pendingHandle) list = await L.list(); } catch (e) { this.toast('Bibliothèque illisible : ' + e.message, 5000); }
-      const q = (this._pq || '').toLowerCase(), shown = list.filter(x => !q || (x.pseudo || '').toLowerCase().includes(q) || x.stage.text.toLowerCase().includes(q));
+      { const cnt = {}; for (const x of list) if (x.subject) cnt[x.subject] = (cnt[x.subject] || 0) + 1; for (const x of list) x.dupSubject = !!(x.subject && cnt[x.subject] > 1); }   // v1.1.0 : codes en double (attribution simultanée sur un partage)
+      const q = (this._pq || '').toLowerCase(), shown = list.filter(x => !q || (x.pseudo || '').toLowerCase().includes(q) || (this.anon ? '' : (x.display || '')).toLowerCase().includes(q) || (x.subject || '').toLowerCase().includes(q) || x.stage.text.toLowerCase().includes(q));
       const counts = {}; for (const x of list) counts[x.stage.key] = (counts[x.stage.key] || 0) + 1;
       const stageFr = { new: 'nouveaux', phase1: 'phase 1', seeg: 'SEEG', other: 'autre exploration', decided: 'décision prise', operated: 'opérés', followup: 'suivis' };
       box.innerHTML = `<div class="scr-inner">
         <div class="scr-head"><h2>Patients</h2><span class="muted">${list.length} dossier${list.length > 1 ? 's' : ''}${Object.keys(counts).length ? ' · ' + Object.entries(counts).map(([k, n]) => `${n} ${stageFr[k] || k}`).join(' · ') : ''}</span><span class="spacer"></span>
-          <button id="pNew" class="primary">+ Nouveau patient</button><button id="pImport">Importer un dossier…</button><button id="pCohort" title="Toutes les données de tous les patients en tables CSV (Excel, R, Python) : une ligne par patient, exploration, séance, crise, signe, lésion, hypothèse, décision, procédure, devenir">Exporter la cohorte (CSV)</button></div>
+          <button id="pNew" class="primary">+ Nouveau patient</button><button id="pImport">Importer un dossier…</button><button id="pIdTable" title="code ↔ identité de tous les patients (CSV) : données identifiantes, usage interne">Table de correspondance…</button><button id="pTrash" title="patients supprimés : restaurer ou supprimer définitivement">Corbeille</button><button id="pCohort" title="Toutes les données de tous les patients en tables CSV (Excel, R, Python) : une ligne par patient, exploration, séance, crise, signe, lésion, hypothèse, décision, procédure, devenir">Exporter la cohorte (CSV)</button></div>
         <div class="lib-bar"><span><b>Bibliothèque :</b> ${esc(L.describe())}</span>
           ${L.pendingHandle ? `<button id="pReopen" class="primary">Rouvrir « ${esc(L.pendingHandle.name)} »</button>` : ''}
           ${L.supportsFolder() ? `<button id="pFolder">${L.mode === 'folder' ? 'Changer de répertoire…' : 'Choisir un répertoire (disque, partage réseau)…'}</button>` : '<span class="hint">Ce navigateur ne permet pas d’utiliser un répertoire : utilisez Chrome ou Edge pour une bibliothèque partagée.</span>'}
           ${L.mode === 'folder' ? '<button id="pBrowser" class="ghost">Revenir au stockage du navigateur</button>' : ''}
           <label title="utilisateur de ce poste : ses initiales signent le journal de chaque dossier">Utilisateur <select id="pUser">${(() => { const P0 = SV.People, me = P0 && P0.me(), us = P0 ? P0.dir.users : []; return `<option value="">${esc(me ? '' : (L.user ? L.user + ' (initiales)' : '—'))}</option>` + us.map(u => `<option value="${esc(u.id)}"${me && me.id === u.id ? ' selected' : ''}>${esc(P0.label(u))}</option>`).join(''); })()}</select> <button class="mini-btn" id="pPeople" title="annuaire des utilisateurs de la bibliothèque (partagé par tous les postes)">annuaire…</button></label></div>
         ${L.mode === 'browser' && !L.pendingHandle ? '<div class="note">Les dossiers sont pour l’instant gardés dans ce navigateur, sur ce poste. Choisissez un répertoire (de préférence le partage réseau de l’équipe) pour les conserver durablement et les partager ; chaque patient y devient un sous-répertoire lisible (dossier.json, images, dérivés).</div>' : ''}
-        <input id="pSearch" class="search" placeholder="Rechercher (pseudonyme, étape)…" value="${esc(this._pq || '')}">
-        <table class="ptable"><thead><tr><th>Pseudonyme</th><th>Étape du parcours</th><th>Explorations</th><th>Crises</th><th>Imagerie</th><th>Mis à jour</th><th></th></tr></thead><tbody>
-        ${shown.map(x => `<tr data-id="${esc(x.id)}" class="${this.dossier && this.dossier.id === x.id ? 'cur' : ''}"><td><b>${esc(x.pseudo || '—')}</b>${x.lock ? ` <span class="badge warn" title="ouvert par ${esc(x.lock.user)} depuis ${esc(fmtDT(x.lock.t))}">ouvert par ${esc(x.lock.user)}</span>` : ''}</td><td><span class="stage st-${esc(x.stage.key)}">${esc(x.stage.text)}</span></td><td>${x.nExpl}</td><td>${x.nSeizures}</td><td>${x.nImaging}${x.anatomy ? ' · <span class="ok">anatomie</span>' : ''}</td><td>${esc(fmtDT(x.updated))}</td>
-          <td class="acts"><button data-a="open" class="primary">Ouvrir</button><button data-a="export">Exporter</button><button data-a="del" class="danger" title="Supprimer le dossier">✕</button></td></tr>`).join('') || `<tr><td colspan="7" class="hint">${list.length ? 'Aucun dossier ne correspond.' : L.pendingHandle ? 'Rouvrez la bibliothèque pour voir les dossiers.' : 'Aucun dossier. Créez un patient, ou importez un dossier reçu d’un collègue (.episcope) ou un cas EpiScope (.json).'}</td></tr>`}
+        ${list.some(x => x.oldFormat) ? `<div class="note" id="pOld">${list.filter(x => x.oldFormat).length} dossier(s) de l’ancien format (séances) : convertis à leur ouverture, l’état d’avant restant dans l’historique. <button class="mini-btn" id="pOldDry">Essai à blanc…</button></div>` : ''}
+        <input id="pSearch" class="search" placeholder="Rechercher (nom, code, étape)…" value="${esc(this._pq || '')}">
+        <table class="ptable"><thead><tr><th title="code neutre du sujet (identifiant BIDS sub-…)">Code</th><th>Patient</th><th>Étape du parcours</th><th>Explorations</th><th>Crises</th><th>Imagerie</th><th>Mis à jour</th><th></th></tr></thead><tbody>
+        ${shown.map(x => `<tr data-id="${esc(x.id)}" class="${this.dossier && this.dossier.id === x.id ? 'cur' : ''}"><td class="mono">${esc(x.subject || '—')}${x.dupSubject ? ' <span class="badge warn" title="code attribué à plusieurs dossiers : à corriger">doublon</span>' : ''}</td><td><b>${esc(this.dnameSum(x))}</b>${x.lock ? ` <span class="badge warn" title="ouvert par ${esc(x.lock.user)} depuis ${esc(fmtDT(x.lock.t))}">ouvert par ${esc(x.lock.user)}</span>` : ''}</td><td><span class="stage st-${esc(x.stage.key)}">${esc(x.stage.text)}</span></td><td>${x.nExpl}</td><td>${x.nSeizures}</td><td>${x.nImaging}${x.anatomy ? ' · <span class="ok">anatomie</span>' : ''}</td><td>${esc(fmtDT(x.updated))}</td>
+          <td class="acts"><button data-a="open" class="primary">Ouvrir</button><button data-a="export">Exporter</button><button data-a="del" class="danger" title="Mettre le dossier à la corbeille (restaurable)">✕</button></td></tr>`).join('') || `<tr><td colspan="8" class="hint">${list.length ? 'Aucun dossier ne correspond.' : L.pendingHandle ? 'Rouvrez la bibliothèque pour voir les dossiers.' : 'Aucun dossier. Créez un patient, ou importez un dossier reçu d’un collègue (.episcope) ou un cas EpiScope (.json).'}</td></tr>`}
         </tbody></table>
-        <div class="hint" style="margin-top:14px">Pseudonymes uniquement (pas de nom, pas de date de naissance complète) : la table de correspondance reste dans le dossier médical. Un dossier exporté (.episcope) contient tout ce qui a été saisi et calculé ; la version « légère » laisse de côté les images d’origine pour tenir dans un mail.</div>${this.footHtml()}</div>`;
+        <div class="hint" style="margin-top:14px">Chaque patient reçoit un code neutre (préfixe de la bibliothèque + numéro, ex. HFAR0007), identifiant des fichiers et des exports de recherche ; le nom du patient (zone « Identité » du dossier) s’affiche dans l’application — « Masquer les noms » le remplace par le code pour une projection — et il est retiré des exports anonymisés (menu Exporter). Un dossier exporté (.episcope) contient tout ce qui a été saisi et calculé ; la version « légère » laisse de côté les images d’origine pour tenir dans un mail.</div>${this.footHtml()}</div>`;
       $('pNew').onclick = () => this.newPatient();
+      if ($('pOldDry')) $('pOldDry').onclick = () => this.migrationDryRun && this.migrationDryRun(list.filter(x => x.oldFormat));
+      $('pIdTable').onclick = () => this.exportIdentityTable && this.exportIdentityTable();
+      $('pTrash').onclick = () => this.renderLibraryTrash && this.renderLibraryTrash(box.querySelector('.lib-bar'));
       $('pImport').onclick = () => { $('fileOpen').value = ''; $('fileOpen').click(); };
       $('pCohort').onclick = () => this.exportCohort();
       if ($('pReopen')) $('pReopen').onclick = async () => { if (await L.reopen()) { this.toast('Bibliothèque « ' + L.rootName + ' » rouverte'); const last = LSget('sv_last'); const lst = await L.list(); if (last && lst.some(x => x.id === last.dossierId)) await this.openDossier(last.dossierId, { ctx: last.ctx, screen: 'patients', quiet: true }); this.renderPatients(); } };
@@ -212,12 +219,11 @@
         tr.querySelector('[data-a=export]').onclick = e => this.exportMenu(e.target, id);
         tr.querySelector('[data-a=del]').onclick = async () => {
           const x = list.find(y => y.id === id);
-          const typed = prompt(`Supprimer définitivement « ${x.pseudo} » et TOUTES ses données : explorations, crises, staffs, imagerie (NIfTI), anatomie et dérivés, électrodes, galerie EEG, journal.\nExportez d’abord le dossier si besoin. Tapez le pseudonyme pour confirmer :`);
-          if (typed !== x.pseudo) { if (typed != null) this.toast('Pseudonyme différent : rien n’a été supprimé', 3000); return; }
+          if (!confirm(`Mettre « ${this.dnameSum(x)} » à la corbeille de la bibliothèque ?\nLe dossier et tous ses fichiers restent sur le disque et peuvent être restaurés (bouton « Corbeille » de la liste des patients) ; la suppression définitive se fait depuis la corbeille.`)) return;
           if (this.dossier && this.dossier.id === id) await this.closeDossier();
-          await L.remove(id);
+          try { await L.remove(id); } catch (e) { this.toast('Mise à la corbeille impossible : ' + e.message, 5000); return; }
           try { const last = LSget('sv_last'); if (last && last.dossierId === id) localStorage.removeItem('sv_last'); } catch (e) { }
-          this.toast(`« ${x.pseudo} » supprimé, avec ses fichiers`, 3500); this.renderPatients();
+          this.toast(`« ${this.dnameSum(x)} » mis à la corbeille (restaurable)`, 3500); this.renderPatients();
         };
         tr.ondblclick = () => this.openDossier(id, {});
       });
@@ -233,9 +239,15 @@
       this.toast(n + ' dossier(s) copiés dans « ' + rootName + ' »', 4000);
     },
     newPatient() {
-      const pseudo = prompt('Pseudonyme du nouveau patient (ex. STR-0042 ; pas de nom en clair) :'); if (!pseudo || !pseudo.trim()) return;
-      const d = S.newDossier({ pseudo: pseudo.trim() }); S.log(d, 'create', 'dossier', d.id, 'création', L.user);
-      const ex = S.addExploration(d, { kind: 'phase1' }); S.addSession(d, ex.id, { date: S.today() });
+      if (this.browserModeOk && !this.browserModeOk()) return;
+      this.newPatientAsync();
+    },
+    async newPatientAsync() {
+      if (this.ensureLibrarySettings && !(await this.ensureLibrarySettings())) return;
+      let subj = null; try { subj = await L.nextSubject(); } catch (e) { this.toast('Code du sujet impossible : ' + e.message, 5000); return; }
+      const nm = prompt(`Nouveau patient — code ${subj.label}.\nNom et prénom (ex. DUPONT Jeanne ; facultatif, à compléter ensuite dans la zone « Identité » du dossier) :`, ''); if (nm == null) return;
+      const d = S.newDossier({ pseudo: subj.label }); d.subject = subj; Object.assign(d.identity, S.parseName(nm)); S.log(d, 'create', 'dossier', d.id, 'création · ' + subj.label, L.user);
+      const ex = S.addExploration(d, { kind: 'phase1' });
       L.save(d).then(() => this.openDossier(d.id, { loc: { stage: 'dossier', view: 'synthese' } }));
     },
 
@@ -248,7 +260,7 @@
         if (j.format === 'episcope-dossier') return this.importBundle({ dossier: S.normalize(j), meta: {}, files: new Map() });
         if (Array.isArray(j.events)) {
           // cas v1 (une crise) : dans le dossier ouvert, ou nouveau dossier
-          if (this.dossier && confirm(`Ajouter cette crise (« ${j.name || f.name} ») au dossier ouvert « ${this.dossier.patient.pseudo} » ?\nAnnuler = créer un nouveau dossier patient.`)) {
+          if (this.dossier && confirm(`Ajouter cette crise (« ${j.name || f.name} ») au dossier ouvert « ${this.dname(this.dossier)} » ?\nAnnuler = créer un nouveau dossier patient.`)) {
             this.persistWorkspace(); const { seizure } = S.migrateCase(j, this.dossier); this.touch(); this.openSeizure(seizure.id); return;
           }
           const { dossier, seizure } = S.migrateCase(j); const p = prompt('Pseudonyme du patient :', dossier.patient.pseudo); if (p) dossier.patient.pseudo = p.trim();
@@ -259,46 +271,48 @@
     },
     async importBundle(b) {
       const d = b.dossier, exists = await L.exists(d.id);
-      const go = async mode => { const out = await L.importBundle(b, mode); this.toast(`Dossier « ${out.patient.pseudo} » importé (${b.files.size} fichier${b.files.size > 1 ? 's' : ''})${b.meta.light ? ' · version légère, sans les images d’origine' : ''}`, 5000); await this.openDossier(out.id, { loc: { stage: 'dossier', view: 'synthese' }, quiet: true }); };
+      const go = async mode => { const out = await L.importBundle(b, mode); this.toast(`Dossier « ${this.dname(out)} » importé (${b.files.size} fichier${b.files.size > 1 ? 's' : ''})${b.meta.light ? ' · version légère, sans les images d’origine' : ''}`, 5000); await this.openDossier(out.id, { loc: { stage: 'dossier', view: 'synthese' }, quiet: true }); };
       if (!exists) return go('new');
       const local = await L.load(d.id);
-      this.choice(`Le dossier « ${esc(d.patient.pseudo)} » existe déjà dans votre bibliothèque.<br>Archive : version ${d.revision}, ${esc(fmtDT(d.updated))}${b.meta.by ? ', envoyée par ' + esc(b.meta.by) : ''}.<br>Votre copie : version ${local.revision}, ${esc(fmtDT(local.updated))}.`, [
+      this.choice(`Le dossier « ${esc(this.dname(d))} » existe déjà dans votre bibliothèque.<br>Archive : version ${d.revision}, ${esc(fmtDT(d.updated))}${b.meta.by ? ', envoyée par ' + esc(b.meta.by) : ''}.<br>Votre copie : version ${local.revision}, ${esc(fmtDT(local.updated))}.`, [
         { label: 'Remplacer ma copie par l’archive', primary: String(d.updated) > String(local.updated), run: () => go('replace') },
         { label: 'Garder les deux (copie)', run: () => go('copy') },
       ]);
     },
-    async exportBundleUI(id, light) {
+    async exportBundleUI(id, light, anon) {
       const d = id && (!this.dossier || this.dossier.id !== id) ? await L.load(id) : this.dossier;
       if (!d) { this.toast('Aucun dossier ouvert : ouvrez ou créez un patient'); return; }
       if (d === this.dossier) { this.persistWorkspace(); await this.flushSave(); }
       this.toast('Préparation de l’archive…', 2000);
-      const blob = await L.exportBundle(d, { light });
-      this.download(`${sanitize(d.patient.pseudo)}${light ? '_leger' : ''}.episcope`, blob);
+      if (anon && !confirm(`Export anonymisé de ${this.dname(d)} (code ${S.subjectLabel(d) || '—'}) :\n• identité retirée, nom remplacé par le code dans tous les textes ;\n• en-têtes des fichiers EDF anonymisés ;\n• vidéos non incluses (visages).\nLes images (IRM, captures) restent incluses : vérifiez qu’aucune ne montre un visage ou un nom avant de partager.\n\nContinuer ?`)) return;
+      const blob = await L.exportBundle(d, { light, anon });
+      this.download(`${this.fileStem(d)}${anon ? '_anonyme' : ''}${light ? '_leger' : ''}.episcope`, blob);
       this.toast(`${(blob.size / 1e6).toFixed(1)} Mo · à ouvrir dans EpiScope (Fichier → Importer) sur le poste du collègue`, 5000);
     },
     exportMenu(anchor, id) {
-      const run = kind => kind === 'case' ? this.saveCase() : this.exportBundleUI(id, kind === 'light');
-      const items = [{ head: 'Exporter' }, { label: 'Dossier complet (.episcope) — avec les images', run: () => run('full') }, { label: 'Dossier léger (.episcope) — sans les images d’origine (mail)', run: () => run('light') }];
+      const run = kind => kind === 'case' ? this.saveCase() : this.exportBundleUI(id, kind === 'light' || kind === 'anon-light', kind === 'anon' || kind === 'anon-light');
+      const items = [{ head: 'Exporter' }, { label: 'Dossier complet (.episcope) — avec les images', run: () => run('full') }, { label: 'Dossier léger (.episcope) — sans les images d’origine (mail)', run: () => run('light') }, { head: 'Partage extérieur (anonymisé)' }, { label: 'Dossier anonymisé (.episcope) — sans nom, en-têtes EDF anonymisés, sans vidéos', run: () => run('anon') }, { label: 'Dossier anonymisé léger (.episcope)', run: () => run('anon-light') }];
       if (!id) items.push({ label: 'Crise seule (.json, format v1)', run: () => run('case') });
-      items.push({ sep: true }, { label: 'Cohorte : tables CSV (tous les patients)', run: () => this.exportCohort() });
+      items.push({ sep: true }, { label: 'Cohorte : tables CSV anonymisées (codes, tous les patients)', run: () => this.exportCohort(true) }, { label: 'Cohorte : tables CSV avec les noms (usage interne)', run: () => this.exportCohort(false) }, { label: 'Export de recherche (BIDS anonymisé)…', run: () => this.researchExportDialog && this.researchExportDialog() });
       const r = anchor.getBoundingClientRect(); this.popupMenu(items, r.left, r.bottom + 4);
     },
     /** cohorte : une table par entité (format long), pour des questions de recherche posées après coup */
-    async exportCohort() {
+    async exportCohort(anon) {
+      if (anon == null) anon = true;
       if (this.dossier) { this.persistWorkspace(); await this.flushSave(); }
       this.toast('Lecture des dossiers…', 2000);
       const all = []; for (const x of await L.list()) { try { all.push(await L.load(x.id)); } catch (e) { } }
-      const T = { patients: [], explorations: [], sessions: [], seizures: [], signs: [], lesions: [], imaging: [], stimulations: [], thermocoagulations: [], hypotheses: [], decisions: [], meetings: [], procedures: [], outcomes: [], contacts: [], quant: [], transforms: [] };
+      const T = { patients: [], explorations: [], seizures: [], signs: [], lesions: [], imaging: [], stimulations: [], thermocoagulations: [], hypotheses: [], decisions: [], meetings: [], procedures: [], outcomes: [], contacts: [], quant: [], transforms: [] };
       const M4 = SV.Mat4, r2 = v => v == null || !isFinite(v) ? '' : Math.round(v * 100) / 100;
       const reg = i => this.atlas ? this.atlas.labelEn(i) : i, regs = a => (a || []).map(reg).join('|');
       for (const d of all) {
-        const P = d.patient, pid = P.pseudo;
-        T.patients.push({ patient: pid, sex: P.sex, birth_year: P.birthYear, etiologies: S.etiologyText(P), frequency_current: P.frequency, frequency_date: P.frequencyDate || '', handedness: P.handedness, language_dominance: P.dominant, dominance_method: P.dominanceMethod, onset_age: P.onsetAge, onset_age_unit: P.onsetAgeUnit || 'y', onset_age_years: S.onsetYears(P), etiology: P.etiology, mri: P.mri, n_explorations: d.explorations.length, n_seizures: d.seizures.length, stage: S.stage(d).text, updated: d.updated });
+        const P = d.patient, pid = S.subjectLabel(d) || (anon ? 'X' + String(d.id).slice(-6) : P.pseudo);   // v1.1.0 : clé = code neutre du sujet
+        T.patients.push(Object.assign({ patient: pid }, anon ? {} : { last_name: (d.identity || {}).lastName || '', first_name: (d.identity || {}).firstName || '', pseudonym: P.pseudo }, { sex: P.sex, birth_year: P.birthYear, etiologies: S.etiologyText(P), frequency_current: P.frequency, frequency_date: P.frequencyDate || '', handedness: P.handedness, language_dominance: P.dominant, dominance_method: P.dominanceMethod, onset_age: P.onsetAge, onset_age_unit: P.onsetAgeUnit || 'y', onset_age_years: S.onsetYears(P), etiology: P.etiology, mri: P.mri, n_explorations: d.explorations.length, n_seizures: d.seizures.length, stage: S.stage(d).text, updated: d.updated }));
         // v5 — cohorte multi-patients : transformation patient → gabarit (MNI305 / fsaverage tkrRAS), plots réels en espace du T1 et
         // en espace du gabarit (même affine 12 ddl que la parcellation), valeurs des jeux d'analyses par plot ou paire
         const an = d.anatomy || {}, Tt = an.toTemplate ? M4.from(an.toTemplate) : null;
         if (Tt) T.transforms.push(Object.assign({ patient: pid, space_from: 'T1w (RAS scanner du T1 de référence)', space_to: 'template tkrRAS (fsaverage / MNI305)', method: an.method || '', rms_mm: an.fit && an.fit.rms, reference: an.refLabel || '' }, Object.fromEntries(Array.from(Tt).map((v, i) => ['m' + Math.floor(i / 4) + (i % 4), +v.toFixed(6)]))));
-        let regTsv = null; try { const names = (await L.listFiles(d)).filter(p => /derivatives\/ieeg\/.*_electrodes\.tsv$/.test(p)); if (names.length) { const f = await L.readFile(d, names[0]); if (f) regTsv = await f.text(); } } catch (e) { }
+        let regTsv = null; try { const names = (await L.listFiles(d)).filter(p => /_electrodes\.tsv$/.test(p)); if (names.length) { const f = await L.readFile(d, names[0]); if (f) regTsv = await f.text(); } } catch (e) { }
         const regOf = new Map(); if (regTsv) for (const line of regTsv.split('\n')) { const f = line.split('\t'); if (f.length > 5 && f[0] !== 'name') regOf.set(f[0], f[f.length - 1]); }
         for (const ex of d.explorations) {
           T.explorations.push({ patient: pid, exploration: ex.label, kind: ex.kind, rank: ex.rank, start: ex.start, end: ex.end, status: ex.status, center: ex.center, n_electrodes: ex.electrodes.length, n_stims: ex.stims.length, n_thermo: ex.thermo.length, maker: ex.maker || '' });
@@ -306,11 +320,10 @@
           for (const qs of ex.quant || []) for (const [key, v] of Object.entries(qs.values || {})) T.quant.push({ patient: pid, exploration: ex.label, set: qs.name, method: qs.method || '', unit: qs.unit || '', key, value: v, threshold: qs.thr == null ? '' : qs.thr, source: qs.source || '' });
           for (const s of ex.stims) T.stimulations.push({ patient: pid, exploration: ex.label, pair: `${s.elec}${s.c1}-${s.c2}`, mode: s.mode, freq: s.freq, pulse_ms: s.pulse, dur_s: s.dur, mA: s.mA, clinical: s.clin ? 1 : 0, clinical_type: s.clin ? (SV.Seeg.clinTypeOf(s) === 'subj' ? 'subjective' : 'fonctionnelle') : '', sign: s.clinText, habitual: s.habitual ? 1 : 0, afterdischarge: s.ad ? 1 : 0, ad_s: s.adDur, seizure: s.sz ? 1 : 0, seizure_habitual: s.szHabitual ? 1 : 0, ccep: (s.ccep || []).join('|'), time: s.t });
           for (const t of ex.thermo) T.thermocoagulations.push({ patient: pid, exploration: ex.label, pair: `${t.elec}${t.c1}-${t.c2}`, status: S.thermoStatusOf(t), validated_by: t.validatedBy || '', date: t.date, note: t.note });
-          for (const ses of S.sessionsOf(d, ex.id)) {
-            T.sessions.push({ patient: pid, exploration: ex.label, session: ses.label, date: ses.date, files: (ses.files || []).map(f => f.name || f).join('|') });
-            for (const sz of S.seizuresOfSession(d, ses.id)) {
+          for (const dy of [{ seizures: S.seizuresOfExploration(d, ex.id) }]) {   // v2.0.0 : plus de séances (colonne « day » : jour d'enregistrement)
+            for (const sz of dy.seizures) {
               const il = S.deriveIlae(sz, this.db), evs = sz.events.slice().sort((a, b) => a.t - b.t);
-              T.seizures.push({ patient: pid, exploration: ex.label, exploration_kind: ex.kind, session: ses.label, seizure: sz.label, datetime: sz.datetime, habitual: sz.habitual, ilae_onset: il.onset, consciousness: il.consciousness, first_sign_type: il.first, fbtc: il.fbtc ? 1 : 0, eeg_onset_s: sz.eeg_onset, end_s: sz.seizure_end, vigilance: sz.vigilance, n_signs: evs.length, first_sign: evs[0] ? evs[0].sign_id : '', sequence: evs.map(e => e.sign_id).join('>') });
+              T.seizures.push({ patient: pid, exploration: ex.label, exploration_kind: ex.kind, day: String(sz.datetime || '').slice(0, 10), seizure: sz.label, datetime: sz.datetime, habitual: sz.habitual, ilae_onset: il.onset, consciousness: il.consciousness, first_sign_type: il.first, fbtc: il.fbtc ? 1 : 0, eeg_onset_s: sz.eeg_onset, end_s: sz.seizure_end, vigilance: sz.vigilance, n_signs: evs.length, first_sign: evs[0] ? evs[0].sign_id : '', sequence: evs.map(e => e.sign_id).join('>') });
               evs.forEach((e, k) => { const sg = this.db && this.db.signById.get(e.sign_id); T.signs.push({ patient: pid, exploration: ex.label, seizure: sz.label, habitual: sz.habitual, rank: k + 1, sign: e.sign_id, label_fr: sg ? sg.label_fr : '', category: sg ? sg.category : '', t_s: e.t, uncertainty_s: e.dt, duration_s: e.dur, side: e.side, topography: e.topography, certainty: e.conf }); });
             }
           }
@@ -325,8 +338,9 @@
       }
       const csv = rows => { if (!rows.length) return ''; const cols = Object.keys(rows[0]); const q = v => { const s = v == null ? '' : String(v); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }; return '﻿' + cols.join(',') + '\n' + rows.map(r => cols.map(c => q(r[c])).join(',')).join('\n') + '\n'; };
       const files = Object.entries(T).filter(([, rows]) => rows.length).map(([k, rows]) => ({ name: k + '.csv', data: csv(rows) }));
-      files.push({ name: 'LISEZMOI.txt', data: `EpiScope — export de cohorte (${new Date().toLocaleString(SV.LOC)}), ${all.length} patient(s).\nUne table par entité, format long, clé « patient » (pseudonyme). signs.csv : une ligne par signe de chaque crise (rang, temps, côté, topographie, certitude) ; seizures.csv : classification ILAE 2025 déduite de la séquence ; hypotheses.csv : toutes les versions (lignée, version, statut) ; régions = noms VEP.\ncontacts.csv (v5) : un plot réel par ligne, coordonnées dans l'espace du T1 et dans l'espace du gabarit (tkrRAS fsaverage / MNI305, affine 12 ddl de transforms.csv : m00…m33 ligne par ligne) — pour superposer les trajectoires de tous les patients ; quant.csv : valeurs des jeux d'analyses (EI, cEI, PEI, HFO…) par plot ou paire.\nDonnées pseudonymisées : à traiter selon le cadre réglementaire de l’étude (MR-004, entrepôt de données de santé).\n` });
-      this.download(`EpiScope_cohorte_${S.today()}.zip`, await SV.Zip.write(files)); this.toast(`Cohorte exportée : ${all.length} patient(s), ${files.length - 1} tables`, 4000);
+      files.push({ name: 'LISEZMOI.txt', data: `EpiScope — export de cohorte (${new Date().toLocaleString(SV.LOC)}), ${all.length} patient(s).\nUne table par entité, format long, clé « patient » (code neutre du sujet, à défaut pseudonyme ; aucune donnée d’identité). signs.csv : une ligne par signe de chaque crise (rang, temps, côté, topographie, certitude) ; seizures.csv : classification ILAE 2025 déduite de la séquence ; hypotheses.csv : toutes les versions (lignée, version, statut) ; régions = noms VEP.\ncontacts.csv (v5) : un plot réel par ligne, coordonnées dans l'espace du T1 et dans l'espace du gabarit (tkrRAS fsaverage / MNI305, affine 12 ddl de transforms.csv : m00…m33 ligne par ligne) — pour superposer les trajectoires de tous les patients ; quant.csv : valeurs des jeux d'analyses (EI, cEI, PEI, HFO…) par plot ou paire.\nDonnées pseudonymisées : à traiter selon le cadre réglementaire de l’étude (MR-004, entrepôt de données de santé).\n` });
+      if (!anon) files.push({ name: 'NOMINATIF.txt', data: 'Export nominatif (usage interne) : patients.csv contient le nom et le prénom des patients. Ne pas partager hors du service ; utiliser l’export anonymisé pour la recherche.\n' });
+      this.download(`EpiScope_cohorte_${anon ? 'anonyme' : 'nominatif'}_${S.today()}.zip`, await SV.Zip.write(files)); this.toast(`Cohorte exportée : ${all.length} patient(s), ${files.length - 1} tables`, 4000);
     },
     /** fenêtre de choix (texte HTML + boutons) */
     choice(html, buttons) {
@@ -397,7 +411,7 @@
     },
     renderDxPatient() {
       const d = this.dossier, P = d.patient, box = $('dxPatient');
-      box.innerHTML = `<label>Pseudonyme <input data-f="pseudo" value="${esc(P.pseudo)}"></label>
+      box.innerHTML = `<label title="libellé de travail, facultatif : le nom affiché vient de l’identité (prénom NOM) quand elle est remplie">Pseudonyme <input data-f="pseudo" value="${esc(P.pseudo)}"></label>
         <label>Sexe <select data-f="sex">${opts(V.sex, P.sex)}</select></label>
         <label>Naissance <span class="inrow"><select data-f="birthMonth" title="mois (facultatif : pour l’âge exact sur la frise)">${opts(Object.fromEntries([['', 'mois'], ...Array.from({ length: 12 }, (_, i) => [String(i + 1), String(i + 1).padStart(2, '0')])]), P.birthMonth || '')}</select><input data-f="birthYear" type="number" min="1900" max="2100" value="${esc(P.birthYear)}" placeholder="année"></span></label>
         <label>Latéralité manuelle <select data-f="handedness">${opts(V.handedness, P.handedness)}</select></label>
@@ -414,7 +428,7 @@
       const C = P.clin, FH = () => (C.freqHistory || []).filter(f => f.text).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).pop();
       box.querySelector('.freq-cur').oninput = e => { let f = FH(); if (!f) { f = { id: S.uid('H'), date: S.today().slice(0, 7), text: '' }; (C.freqHistory = C.freqHistory || []).push(f); } f.text = e.target.value; S.syncPatient(P); this.touch('patient', null, 'fréquence des crises'); };
       box.querySelector('.freq-new').onclick = () => { const t = prompt('Fréquence actuelle des crises (datée d’aujourd’hui) :', P.frequency || ''); if (t == null) return; (C.freqHistory = C.freqHistory || []).push({ id: S.uid('H'), date: S.today(), text: t.trim() }); S.syncPatient(P); this.touch('patient', null, 'fréquence des crises'); this.renderDxPatient(); };
-      this.bindFields(box, P, 'patient', k => { if (k === 'birthYear' || k === 'birthMonth') this.renderDxTimeline(); if (k === 'pseudo') { this.updateCrumbs(); box.closest('.scr-inner').querySelector('h2').textContent = P.pseudo; } if (k === 'dominant') { $('dominant').value = P.dominant === 'R' ? 'R' : 'L'; this.state.patient.dominant = $('dominant').value; this.changed(); } });
+      this.bindFields(box, P, 'patient', k => { if (k === 'birthYear' || k === 'birthMonth') this.renderDxTimeline(); if (k === 'pseudo') { this.updateCrumbs(); const h2 = box.closest('.scr-inner') && box.closest('.scr-inner').querySelector('h2'); if (h2) h2.textContent = this.dname(this.dossier); } if (k === 'dominant') { $('dominant').value = P.dominant === 'R' ? 'R' : 'L'; this.state.patient.dominant = $('dominant').value; this.changed(); } });
     },
     /** sélecteur de régions VEP (liste déroulante groupée par système + pastilles) */
     regionPicker(list, onChange) {
@@ -489,22 +503,19 @@
       for (const ex of exs) {
         const card = h('div', 'card expl k-' + ex.kind), szs = S.seizuresOfExploration(d, ex.id), hab = szs.filter(z => z.habitual === 'yes').length;
         card.innerHTML = `<div class="card-h"><span class="kind">${esc(V.explorationShort[ex.kind])}</span><input class="inline" data-f="label" value="${esc(ex.label)}"><span class="muted">${szs.length} crise${szs.length > 1 ? 's' : ''}${hab ? ` dont ${hab} habituelle${hab > 1 ? 's' : ''}` : ''}</span><span class="spacer"></span>
-            <button class="mini-btn" data-a="work" title="Ouvrir l’implantation, les stimulations et la quantification de cette exploration">${ex.kind === 'seeg' ? 'implantation · SEEG' : 'projet d’implantation'}${ex.electrodes.length ? ' (' + ex.electrodes.length + ')' : ''}</button><button class="mini-btn" data-a="ses">+ séance</button><button class="mini-btn danger" data-a="del" title="Supprimer l’exploration">✕</button></div>
+            <button class="mini-btn" data-a="work" title="Ouvrir l’implantation, les stimulations et la quantification de cette exploration">${ex.kind === 'seeg' ? 'implantation · SEEG' : 'projet d’implantation'}${ex.electrodes.length ? ' (' + ex.electrodes.length + ')' : ''}</button><button class="mini-btn" data-a="ses" title="nouvelle crise de cette exploration">+ crise</button><button class="mini-btn danger" data-a="del" title="Supprimer l’exploration">✕</button></div>
           <div class="form row4"><label>Début <input type="date" data-f="start" value="${esc(ex.start)}"></label><label>Fin <input type="date" data-f="end" value="${esc(ex.end)}"></label><label>Statut <select data-f="status">${opts(V.explorationStatus, ex.status)}</select></label><label>Centre <input data-f="center" value="${esc(ex.center)}"></label></div>
           ${ex.kind === 'seeg' ? `<div class="hint">${ex.electrodes.length} électrode${ex.electrodes.length > 1 ? 's' : ''}${ex.ctImageId ? ' · localisées sur le scanner' : ''} · ${ex.stims.length} stimulation${ex.stims.length > 1 ? 's' : ''} · ${ex.thermo.length} paire${ex.thermo.length > 1 ? 's' : ''} thermocoagulée${ex.thermo.length > 1 ? 's' : ''} · ${ex.quant.length} quantification${ex.quant.length > 1 ? 's' : ''}</div>` : ''}
           <div class="sessions"></div>`;
         this.bindFields(card, ex, 'exploration', k => { if (k !== 'label' && k !== 'center') this.renderDxTimeline(); this.updateCrumbs(); });
         card.querySelector('[data-a=work]').onclick = () => this.openExploration(ex.id);
-        card.querySelector('[data-a=ses]').onclick = () => { S.addSession(d, ex.id, { date: S.today() }); this.touch(); this.renderDxExplorations(); };
-        card.querySelector('[data-a=del]').onclick = () => { if (!confirm(`Supprimer « ${ex.label} », ses séances et ses ${szs.length} crise(s) ?`)) return; const cur = this.ctx && this.ctx.explorationId === ex.id; S.remove(d, 'exploration', ex.id); if (cur) { this.ctx = null; const all = S.allSeizures(d); if (all.length) this.openContext({ seizureId: all[all.length - 1].id }, true); else { this._loading = true; this.newCase(true); this._loading = false; } } this.touch(); this.renderDossier(); this.updateCrumbs(); };
+        card.querySelector('[data-a=ses]').onclick = () => this.newSeizureFlow(ex);
+        card.querySelector('[data-a=del]').onclick = () => { if (!confirm(`Supprimer « ${ex.label} » et ses ${szs.length} crise(s) ? (corbeille du dossier : restaurable)`)) return; const cur = this.ctx && this.ctx.explorationId === ex.id; S.remove(d, 'exploration', ex.id); if (cur) { this.ctx = null; const all = S.allSeizures(d); if (all.length) this.openContext({ seizureId: all[all.length - 1].id }, true); else { this._loading = true; this.newCase(true); this._loading = false; } } this.touch(); this.renderDossier(); this.updateCrumbs(); };
         const sesBox = card.querySelector('.sessions');
-        for (const ses of S.sessionsOf(d, ex.id)) {
-          const sc = h('div', 'session'), list = S.seizuresOfSession(d, ses.id);
-          sc.innerHTML = `<div class="ses-h"><input class="inline" data-f="label" value="${esc(ses.label)}"><input type="date" data-f="date" value="${esc((ses.date || '').slice(0, 10))}"><input class="inline files" data-f="filesText" value="${esc((ses.files || []).map(f => f.name || f).join(', '))}" placeholder="fichiers (ex. EEG_0042.TRC)"><span class="spacer"></span><button class="mini-btn primary" data-a="sz">+ crise</button><button class="mini-btn danger" data-a="del">✕</button></div>
+        for (const dy of S.seizureDays(d, ex.id)) {   // v2.0.0 : regroupement par jour à la place des séances
+          const sc = h('div', 'session'), list = dy.seizures, ses = { label: dy.day ? (dy.n > 0 ? 'J' + dy.n + ' · ' : '') + new Date(dy.day + 'T12:00').toLocaleDateString(SV.LOC) : 'date inconnue' };
+          sc.innerHTML = `<div class="ses-h"><b>${esc(ses.label)}</b><span class="muted small">${list.length} crise${list.length > 1 ? 's' : ''}</span><span class="spacer"></span></div>
             <table class="sz-table">${list.map(sz => { const il = S.ilaeText(S.deriveIlae(sz, this.db)), evs = sz.events.slice().sort((a, b) => a.t - b.t), first = evs.slice(0, 3).map(e => (this.db.signById.get(e.sign_id) || {}).label_fr || e.sign_id).join(' → '); return `<tr data-id="${sz.id}" class="${this.ctx && this.ctx.seizureId === sz.id ? 'cur' : ''}"><td><b>${esc(sz.label)}</b></td><td><input type="datetime-local" data-z="datetime" value="${esc(sz.datetime ? (sz.datetime.length <= 10 ? sz.datetime + 'T00:00' : sz.datetime.slice(0, 16)) : '')}"></td><td><select data-z="habitual">${opts(V.habitual, sz.habitual)}</select></td><td class="seq">${esc(first)}${evs.length > 3 ? ' …' : ''}<small>${esc(il)}</small></td><td>${evs.length} signe${evs.length > 1 ? 's' : ''}</td><td><button class="mini-btn" data-a="open">ouvrir</button><button class="mini-btn danger" data-a="rm">✕</button></td></tr>`; }).join('') || '<tr><td class="hint">Aucune crise : « + crise », ou ouvrez l’exploration et saisissez un signe.</td></tr>'}</table>`;
-          sc.querySelectorAll('.ses-h [data-f]').forEach(el => { el.oninput = el.onchange = () => { if (el.dataset.f === 'filesText') ses.files = el.value.split(/[,;]+/).map(x => x.trim()).filter(Boolean).map(name => ({ name })); else ses[el.dataset.f] = el.value; this.touch('session', ses.id, ses.label); if (el.dataset.f === 'date') this.renderDxTimeline(); this.updateCrumbs(); }; });
-          sc.querySelector('[data-a=sz]').onclick = () => this.newSeizureFlow(ses, ex);
-          sc.querySelector('.ses-h [data-a=del]').onclick = () => { if (!confirm(`Supprimer la séance et ses ${list.length} crise(s) ?`)) return; S.remove(d, 'session', ses.id); this.touch(); this.renderDxExplorations(); this.renderDxTimeline(); };
           sc.querySelectorAll('tr[data-id]').forEach(tr => {
             const sz = S.byId(d.seizures, tr.dataset.id);
             tr.querySelector('[data-a=open]').onclick = () => this.openSeizure(sz.id); tr.querySelector('td b').ondblclick = () => this.openSeizure(sz.id);
@@ -576,7 +587,7 @@
       const day = s => { if (!s) return NaN; const t = Date.parse(String(s).length <= 10 ? s + 'T12:00:00' : s); return isNaN(t) ? NaN : t; };
       const P = d.patient, ageTxt = t => { const a = isNaN(t) ? null : S.ageAt(P, new Date(t).toISOString().slice(0, 10)); return a == null ? '' : a + ' ans'; };
       for (const ex of d.explorations) { const a = ageTxt(day(ex.start)); items.push({ lane: 0, t0: day(ex.start), t1: day(ex.end) || day(ex.start), kind: 'expl', id: ex.id, text: ex.label + (a ? ' · ' + a : ''), cls: 'k-' + ex.kind }); }
-      for (const sz of d.seizures) { const ses = S.byId(d.sessions, sz.sessionId); items.push({ lane: 1, t0: day(sz.datetime) || day(ses && ses.date), kind: 'sz', id: sz.id, text: sz.label, cls: 'hab-' + (sz.habitual === 'yes' ? 'y' : sz.habitual === 'no' ? 'n' : 'u') }); }
+      for (const sz of d.seizures) { const ex = sz.explorationId && S.byId(d.explorations, sz.explorationId); items.push({ lane: 1, t0: day(sz.datetime) || day(ex && ex.start), kind: 'sz', id: sz.id, text: sz.label, cls: 'hab-' + (sz.habitual === 'yes' ? 'y' : sz.habitual === 'no' ? 'n' : 'u') }); }
       for (const im of d.imaging) items.push({ lane: 2, t0: day(im.date), kind: 'img', id: im.id, text: V.modality[im.modality] || im.modality, cls: 'm-' + im.modality });
       for (const x of d.exams || []) if (x.kind !== 'mri' || !(x.imagingIds || []).length) items.push({ lane: 2, t0: day(x.date), kind: 'exam', id: x.id, text: ({ eeg: 'EEG', neuropsy: 'neuropsy', mri: 'IRM' }[x.kind] || V.exam[x.kind] || x.kind), cls: 'x-' + x.kind });
       for (const m of d.meetings) items.push({ lane: 3, t0: day(m.date), kind: 'meet', id: m.id, text: 'staff', cls: '' });

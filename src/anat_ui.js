@@ -19,7 +19,7 @@
   const $ = id => document.getElementById(id), S = SV.Store, L = SV.Library, M4 = SV.Mat4;
   const esc = SV.U.esc;
   const DIR = 'derivatives/anat/';
-  const subLabel = d => ((d.patient && d.patient.pseudo) || 'patient').replace(/[^A-Za-z0-9]/g, '') || 'patient';
+  const subLabel = d => SV.BIDS.subOf(d);   // v1.1.0 : code du sujet, jamais le pseudonyme (qui peut être un nom)
   const fmtS = ms => ms >= 60000 ? Math.floor(ms / 60000) + ' min ' + String(Math.round(ms / 1000) % 60).padStart(2, '0') + ' s' : Math.round(ms / 1000) + ' s';
 
   // ---- méthodes de segmentation du T1 (v4.19) : choisies une à une, en cascade, ou comparées puis choisies à la main
@@ -280,6 +280,8 @@
         d.anatomy = info;
         S.log(d, 'compute', 'imaging', ref.id, `anatomie du patient · ${cand.name} (${fmtS(info.timings.total)})`); this.touch(); await this.flushSave();
         this.patientAnat = this.buildPatientAnat(d, { mesh: pk, vepVol, segVol, meta: { names: seg.labelNames, colors: mdl.colors || null } }); if (this.fixElectrodeSides) this.fixElectrodeSides(d);
+        // v2.0.0 : électrodes validées réécrites avec leurs régions et leurs coordonnées MNI305 (nouvelle transformation)
+        for (const ex of d.explorations) if (ex.electrodes.some(e => e.real) && this.exportElectrodesBids) { try { await this.exportElectrodesBids(ex); } catch (e) { console.warn('électrodes BIDS', e); } }
         this.ui.anatJob = null;
         job.done(`Anatomie du patient prête (${cand.name}) en ${fmtS(info.timings.total)} — bouton « Patient » pour l’afficher`);
         this.updateAnatSwitch();

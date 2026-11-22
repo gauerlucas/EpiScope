@@ -19,6 +19,19 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmtDate = s => { if (!s) return ''; const d = new Date(String(s).length <= 10 ? s + 'T12:00:00' : s); return isNaN(d) ? String(s) : d.toLocaleDateString(SV.LOC); };
   const LS = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }, del(k) { try { localStorage.removeItem(k); } catch (e) { } } };
+  // v1.0.1 — polarité des tracés EEG / SEEG : convention clinique « négatif en haut » (une valeur positive descend).
+  // Tous les dessins de signal passent par SV.Wave (visionneuse, volet Tracé, moyennes de pointes, captures) ; les données ne
+  // changent jamais. Réglage mémorisé sur le poste (localStorage) en attendant les réglages de la bibliothèque.
+  let _negUp = true; try { _negUp = localStorage.getItem('sv_polarity') !== 'posup'; } catch (e) { /* hors navigateur */ }
+  SV.Wave = {
+    get negUp() { return _negUp; },
+    set negUp(v) { _negUp = !!v; try { localStorage.setItem('sv_polarity', _negUp ? 'negup' : 'posup'); } catch (e) { } },
+    /** +1 : une valeur positive est dessinée vers le bas (négatif en haut) ; −1 : positif en haut */
+    sign() { return _negUp ? 1 : -1; },
+    /** ordonnée écran d'une valeur v (même unité que ppu⁻¹) autour de la ligne de base yc */
+    y(v, yc, ppu) { return yc + (_negUp ? 1 : -1) * v * ppu; },
+    label() { return _negUp ? 'négatif en haut (convention EEG)' : 'positif en haut'; },
+  };
   SV.U = { $, h, esc, fmtDate, LS, debounce(fn, ms) { let t; return function () { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); }; } };
 
   // ================================================================ bus d'évènements

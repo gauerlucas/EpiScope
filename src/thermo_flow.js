@@ -36,7 +36,7 @@
       const t = { eid: e.id, elec: e.name, c1, c2, date: '', note: '', status: s || 'planned' };
       this.thermoSetStatus(t, t.status); this.state.thermo.push(t); return t;
     },
-    thermoRemove(t) { this.state.thermo = this.state.thermo.filter(x => x !== t); },
+    thermoRemove(t) { this.wsDiscard('thermo', t, 'thermocoagulation', `${t.elec}${t.c1}-${t.c2}`); },
     /** affichage : étapes montrées (3D, coupes) et, au choix, seulement les électrodes qui portent ces cibles */
     thermoShown() { return new Set(this.tcSettings().show); },
     thermoElecIds() { const sh = this.thermoShown(), ids = new Set(); for (const t of this.state.thermo || []) { if (!sh.has(TS.thermoStatusOf(t))) continue; const r = this.resolvePair(t); if (r) ids.add(r.e.id); } return ids; },

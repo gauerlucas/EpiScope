@@ -109,9 +109,11 @@
                 <div class="inrow"><label>Depuis <input data-since value="${esc(S.fmtPartial(P.aedsSince || ''))}" placeholder="mm/aaaa" title="date de début du traitement actuel (année, mois/année ou date)"></label><span class="spacer"></span><button class="mini-btn primary" id="hxAedChange" title="nouveau traitement actuel ; l’actuel passe dans l’historique (avec ses dates)">changer de traitement…</button></div></div>
               <div class="sub-h">Historique <span class="spacer"></span><button class="mini-btn" id="hxAedAdd">+ ligne</button></div><table class="aed" id="hxAed"></table>
               <div class="form"><label>Intolérances, effets indésirables <textarea class="grow" data-c="intolerances" rows="2">${esc(C.intolerances)}</textarea></label></div></div>
+            <div id="hxReported"></div>
           </div>
         </div></div>`;
       this._hxBind(box, P, C); this._hxDated(box, C);
+      if (this.renderReportedCard) this.renderReportedCard($('hxReported'));   // v2.0.0 : crises rapportées (hors exploration)
       const sync = () => S.syncPatient(P);
       const eti = () => {
         const w = box.querySelector('.eti-chips'), E = P.etiologies;
@@ -168,7 +170,7 @@
       host.querySelector('[data-a=tidy]').onclick = () => this.pedMutate(host, d => PD.Ed.tidy(d));
       this.pedigreeBind(host);
     },
-    pedName(ped, id) { const q = SV.Pedigree.byId(ped, id); return !q ? '' : q.id === 'proband' ? (this.dossier.patient.pseudo || 'cas index') : (q.label || SV.Pedigree.kinship(ped, q)); },
+    pedName(ped, id) { const q = SV.Pedigree.byId(ped, id); return !q ? '' : q.id === 'proband' ? (this.dname(this.dossier) || 'cas index') : (q.label || SV.Pedigree.kinship(ped, q)); },
     /** modification de l'arbre avec point d'annulation ; fn(ped) peut renvoyer { err } (rien n'est changé) */
     pedMutate(host, fn) {
       const ped = this.dossier.patient.clin.pedigree, before = JSON.stringify(ped), r = fn(ped);
@@ -288,7 +290,7 @@
       const reopen = () => { this.closeMenu(); const q = PD.byId(ped, p.id); if (q) this.pedigreePersonMenu(q, x, y, host); };
       const R = this.pedLinkRows(ped, PD.linksOf(ped, p.id).map(l => l.id), host, p.id, reopen);
       const side = added && added.kind === 'side' ? PD.findLink(ped, 'sibling', added.from, p.id) : null;
-      panel.innerHTML = `<div class="ctx-head">${esc(proband ? 'Cas index — ' + (this.dossier.patient.pseudo || '') : (p.label ? p.label + ' · ' : '') + kin)}</div>
+      panel.innerHTML = `<div class="ctx-head">${esc(proband ? 'Cas index — ' + this.dname(this.dossier) : (p.label ? p.label + ' · ' : '') + kin)}</div>
         ${side ? `<div class="seg ped-rel"><button class="on" data-rel="sibling">frère / sœur de ${esc(this.pedName(ped, added.from))}</button><button data-rel="union">conjoint(e) de ${esc(this.pedName(ped, added.from))}</button></div>` : ''}
         ${proband ? '<div class="hint">Sexe et statut du cas index : ceux du patient (synthèse du dossier).</div>' : `<div class="form">
         <div class="seg" data-g="sex">${[['M', '□ homme'], ['F', '○ femme'], ['U', '◇ non précisé']].map(([v, l]) => `<button data-v="${v}" class="${p.sex === v ? 'on' : ''}">${l}</button>`).join('')}</div>
@@ -365,7 +367,7 @@
         const A = x.attachments || [], box = c.querySelector('.xl-att');
         box.innerHTML = A.map(a => `<span class="xl-chip">📎 <a href="#" data-open="${a.id}" title="ouvrir">${esc(a.name)}</a> <span class="muted small">${a.size ? Math.max(1, Math.round(a.size / 1024)) + ' ko' : ''}</span><b class="x" data-del="${a.id}">✕</b></span>`).join('');
         box.querySelectorAll('[data-open]').forEach(b => b.onclick = async ev => { ev.preventDefault(); const a = A.find(y => y.id === b.dataset.open); const blob = await L.readFile(d, a.file).catch(() => null); if (!blob) { this.toast('Fichier absent du dossier (archive légère ?)', 3500); return; } this.fileViewer(blob, a.name, a.mime); });
-        box.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { const a = A.find(y => y.id === b.dataset.del); if (!confirm(`Retirer « ${a.name} » du dossier ?`)) return; await L.removeFile(d, a.file).catch(() => { }); x.attachments = A.filter(y => y !== a); this.touch('exam', x.id, 'pièce jointe retirée'); drawAtt(); });
+        box.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { const a = A.find(y => y.id === b.dataset.del); if (!confirm(`Retirer « ${a.name} » du dossier ?`)) return; await L.removeFile(d, a.file).catch(() => { }); S.discard(d, { kind: 'attachment', list: 'exams', id: x.id, field: 'attachments', item: a }); this.touch('exam', x.id, 'pièce jointe retirée'); drawAtt(); });
       };
       drawAtt();
       const fi = c.querySelector('.xl-file');
@@ -385,10 +387,11 @@
       const esc1 = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
       document.addEventListener('keydown', esc1, true); card.querySelector('.close').onclick = close; m.onclick = e => { if (e.target === m) close(); };
     },
-    /** pièces jointes d'un bilan : fichiers copiés dans attachments/<id>_<nom> */
+    /** pièces jointes d'un bilan : fichiers copiés dans attachments/<id>.<ext> (v2.0.0 : le nom d'origine, qui porte souvent
+     *  le nom du patient, ne va pas sur le disque ; le nom affiché en est débarrassé de l'identité — remplacée par le code) */
     async examAttach(x, files) {
       const d = this.dossier, L = SV.Library; x.attachments = x.attachments || [];
-      for (const f of files) { const id = S.uid('F'), safe = String(f.name || 'fichier').replace(/[^\w.\-]+/g, '_').slice(-80), file = `attachments/${id}_${safe}`; await L.writeFile(d, file, f); x.attachments.push({ id, name: f.name || safe, mime: f.type || '', size: f.size || 0, file, added: S.now(), by: L.user }); }
+      for (const f of files) { const id = S.uid('F'), ext = (String(f.name || '').match(/\.([A-Za-z0-9]{1,8})$/) || [, 'bin'])[1].toLowerCase(), file = `attachments/${id}.${ext}`; await L.writeFile(d, file, f); x.attachments.push({ id, name: S.scrub(d, f.name || 'pièce jointe.' + ext), mime: f.type || '', size: f.size || 0, file, added: S.now(), by: L.user }); }
       if (files.length) { this.touch('exam', x.id, 'pièce jointe'); await this.flushSave(); this.toast(`${files.length} pièce${files.length > 1 ? 's' : ''} jointe${files.length > 1 ? 's' : ''} au bilan`, 2500); }
     },
     /** ouvre une image du dossier dans Dossier › Imagerie (en base si c'est un T1, en superposition sinon) */

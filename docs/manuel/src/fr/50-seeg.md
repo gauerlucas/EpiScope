@@ -11,7 +11,7 @@ lead: De la planification au rapport : schéma d'implantation, électrodes réel
 
 !!! bref
     - **Où ?** Étape **SEEG** du parcours, créée par une décision de staff ou par [[+]] › *SEEG*.
-    - **Les onglets suivent l'ordre du travail** : 1 Planification · 2 Localisation · 3 Intercritique · 4 Crises · 5 Analyses · 6 Stimulations · 7 Thermocoagulations · 8 Galerie · 9 Rapport SEEG.
+    - **Les onglets suivent l'ordre du travail** : Vue d'ensemble (dates, frise des tracés et des crises, comme en [phase 1](20-phase1.md#vue-densemble)) · 1 Planification · 2 Localisation · 3 Intercritique · 4 Crises · 5 Analyses (critiques, puis intercritiques) · 6 Stimulations · 7 Thermocoagulations · 8 Galerie · 9 Rapport SEEG.
     - **Rien n'est obligatoire** : on peut ne saisir que les stimulations, ou seulement le rapport.
 
 ## Planifier
@@ -60,12 +60,20 @@ Les plots marqués apparaissent en 3D et nourrissent la concordance, la proposit
 
 L'onglet [[Analyses]] reçoit les **tracés SEEG** (EDF, BrainVision, exports Brainquick et Micromed, BIDS iEEG) : [[+ Importer un tracé…]]. Les tracés sont rangés en *Crises* et *Intercritique* ; un tracé de crise se lie à sa crise.
 
-[[Ouvrir]] lance la visionneuse (montage monopolaire ou bipolaire, page, gain, filtres, électrodes affichées). Puis, dans le panneau **Quantification** :
+Les tracés importés sont rangés sous leur nom BIDS (`sub-HFAR0007_ses-seeg1_task-seizure_run-01_ieeg.edf`) avec un titre neutre, comme en phase 1.
+
+[[Ouvrir]] lance la visionneuse : page, gain, filtres, électrodes affichées, heure réelle et frise de navigation comme en [phase 1](@phase1#relire-un-trace), vidéo calée ([Vidéo et tracé](@phase1#video-et-trace)). Deux réglages indépendants organisent les voies :
+
+- **Référence** : [[Cascade]] (paires de plots voisins sur la même électrode, A’1-A’2, A’2-A’3… ; un plot absent du fichier n'est jamais « ponté », le trou est signalé dans la gouttière), [[Référence]] (référence d'enregistrement du fichier), [[Moyenne]] (moyenne commune des plots), [[Plot ▾]] (un plot de référence choisi, en général en substance blanche : les plots en substance blanche sont proposés en premier, avec leur région et leur amplitude, pour choisir un plot calme).
+- **Disposition** ([[Disposition ▾]]) : par électrode, ou **anatomique** (une bande par région en panachant les électrodes qui échantillonnent la même région), filtre substance grise, dispositions enregistrées pour l'exploration.
+
+Le montage choisi pour un tracé devient le montage par défaut des tracés suivants de la même SEEG ; la correspondance voies → électrodes du schéma est vérifiée une fois pour toute l'exploration. Puis, dans le panneau **Quantification** :
 
 - **EI**, l'index d'épileptogénicité (Bartolomei 2008) : la fenêtre va du début à la fin de crise annotés (marques du fichier, ou clic droit sur le tracé) ; l'EI se calcule en quelques secondes et s'affiche sous le tracé, plot par plot : **≥ 0,4 en rouge** (zone épileptogène), 0,1 à 0,4 en orange ;
 - d'autres méthodes dans les onglets voisins : **cEI**, **PEI**, **h²** (connectivité), **Empreinte** (Grinenko 2018), **EM** (cartes d'épileptogénicité, David 2011), **Pointes · HFO** (Delphos) ;
 - [[Enregistrer dans Analyses (3D)]] verse le résultat en **valeurs sur les plots** : sphères colorées en 3D, régions colorées sur la parcellation, coupes ;
-- avec au moins deux crises, **EImax** (ou cEImax, PEImax) garde la valeur maximale de chaque plot.
+- avec au moins deux crises, **EImax** (ou cEImax, PEImax) garde la valeur maximale de chaque plot ;
+- chaque jeu enregistré porte une **pastille de provenance** : méthode et version, date, auteur, montage, fenêtre analysée (en heure réelle), empreinte du fichier. Elle passe à l'orange si le tracé, les marques ou la méthode ont changé depuis ; un clic ouvre l'historique des calculs (voir [Provenance des résultats](@m-seeg#provenance-des-resultats)).
 
 ![La visionneuse SEEG et le panneau EI : rapport d'énergie sous le tracé, détections, tableau des voies.](shot:seeg-ei)
 

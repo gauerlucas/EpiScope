@@ -69,7 +69,8 @@
       this.shippedDb = rawDb;
       const override = LS.get('sv_db_v1');
       this.db = new SV.DB(override && override.signs ? override : rawDb);
-      if (override && override.signs) this.toast('Base de référence modifiée localement chargée (Base → Réinitialiser pour revenir à la base livrée)');
+      this.shippedDbId = new SV.DB(rawDb).id;   // v1.1.0 : base livrée vs base modifiée sur ce poste (empreintes)
+      if (override && override.signs) this.toast(this.db.id === this.shippedDbId ? 'Base de référence locale identique à la base livrée' : `Attention : base de référence modifiée sur ce poste (empreinte ${this.db.id.slice(0, 8)}, livrée ${this.shippedDbId.slice(0, 8)}) : les cartes sémiologiques peuvent différer de celles des autres postes. Base → Réinitialiser pour revenir à la base livrée.`, 9000);
       this.atlas = new SV.Atlas(mesh, this.db);
       try { this.vol = new SV.Electrodes.Volume(window.SV_VOL || JSON.parse($('sv-vol').textContent)); } catch (e) { console.warn('volume VEP absent', e); this.vol = null; }
       this.viewer = new SV.Viewer3D($('view3d'), this.atlas, (r, kind, e) => this.onPick(r, kind, e));
@@ -575,7 +576,7 @@
       for (const k of ['name', 'model', 'yaw', 'pitch']) if (patch[k] !== undefined) spec[k] = patch[k];
       spec.auto = false; this.rebuildElectrodes();
     },
-    removeElectrode(id) { this.state.electrodes = (this.state.electrodes || []).filter(e => e.id !== id); if (this.ui.selElec === id) this.ui.selElec = null; this.rebuildElectrodes(); },
+    removeElectrode(id) { const it = (this.state.electrodes || []).find(e => e.id === id); if (it && this.wsDiscard) this.wsDiscard('electrodes', it, 'électrode', it.name); else this.state.electrodes = (this.state.electrodes || []).filter(e => e.id !== id); if (this.ui.selElec === id) this.ui.selElec = null; this.rebuildElectrodes(); },
     electrodeTests(e) { const r = this.result; if (!r) return []; return r.hypotheses.filter(H => (H.members || []).some(m => e.regions.has(m.region))).map(H => 'H' + (H.index + 1)); },
     renderElectrodes() {
       const box = $('tab-electrodes'); if (!this.vol) { box.innerHTML = '<div class="hint">Volume VEP absent du bundle.</div>'; return; }

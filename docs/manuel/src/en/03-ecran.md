@@ -23,7 +23,7 @@ lead: Every EpiScope screen is built the same way: a top bar for the patient's p
 | [[Patients]] | Back to the patient list (<kbd>F9</kbd>). |
 | Patient name ▾ | Export the record, switch patient. |
 | Pathway | The patient's stages in chronological order: Record, Phase 1, MDT meeting, SEEG, Surgery, Follow-up. The coloured dot shows the status (ongoing, completed). |
-| [[+]] | Adds a stage: scalp video-EEG, SEEG, MDT meeting, surgery or other procedure, follow-up, other exploration. |
+| [[+]] | Adds a stage: scalp video-EEG, ambulatory EEG, SEEG, MDT meeting, surgery or other procedure, follow-up, postoperative video-EEG, other exploration. |
 | [[Report]] | Produces the document for the open stage. Its name changes with the stage: *Record report*, *Phase 1 report*, *SEEG report*, *MDT report*. |
 | ● | Green: saved. Blue: saving. Red: problem (record open elsewhere, disk full). |
 | [[◐]] | Light or dark theme. Imaging views always stay on a black background. |

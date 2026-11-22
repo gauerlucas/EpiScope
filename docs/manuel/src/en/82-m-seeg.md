@@ -50,6 +50,21 @@ Delphos detector (wavelets, normalisation, island shape): spikes, ripples, fast 
 
 Each saved result becomes an **analysis set**: one value per contact or pair, shown as coloured spheres in 3D, on the parcellation (maximum or mean value of the region) and on the slices. Values computed elsewhere (Excel, CSV) can be imported the same way.
 
+## Provenance of results {#provenance-des-resultats}
+
+A result computed in 2026 must remain interpretable in 2028, even if the method has changed in the meantime. Each saved set therefore keeps a **provenance record**, which is never modified:
+
+- the method and its **version**, the EpiScope version, the date and the author;
+- the inputs: the recording (SHA-256 fingerprint of the file), the analysed window (in recording time and wall-clock time), the onset and end markers, the **montage** (cascade, reference, average or reference contact), the excluded channels, the channel → electrode correspondence;
+- all parameters, defaults included, and the values obtained.
+
+The set's badge tells where it stands: **up to date**; **outdated** (the recording, window, montage or correspondence changed since the computation); **old method** (the method has changed version since: the result remains available, a new computation complements it without erasing it); **values edited by hand**; **earlier** (set saved before version 1.1, without a complete record). A click on the badge opens the history: the successive computations of the same set, each with its record.
+
+!!! methode
+    Any change in a method's output raises its version number (checked by automatic tests on reference signals) and is listed in EpiScope's change log. A published EpiScope version is never modified: an old computation can always be replayed with the version that produced it.
+
+The semiology reference base also carries a fingerprint; if the base on this computer differs from the shipped base, a warning says so, and each seizure keeps the base and model version it was computed with.
+
 ## Further reading {#pour-aller-plus-loin}
 
 {refs: isnard2018}

@@ -219,7 +219,7 @@
       const nm = x => String(x || '').trim().replace(/['’‘´`]/g, '’').toUpperCase();
       for (const spec of ex.electrodes.slice()) if (spec.real && spec.real.imagingId === ct.id && !done.has(spec.id)) {
         nOut++; const twin = ex.electrodes.some(s => s !== spec && done.has(s.id) && nm(s.name) === nm(spec.name));   // doublon d'une électrode refaite : retiré en entier
-        if (!twin && (spec.target || (spec.plan && spec.plan.tip))) delete spec.real; else ex.electrodes.splice(ex.electrodes.indexOf(spec), 1);
+        if (!twin && (spec.target || (spec.plan && spec.plan.tip))) delete spec.real; else SV.Store.discard(this.dossier, { kind: 'électrode', label: spec.name, list: 'explorations', id: ex.id, field: 'electrodes', item: spec });
       }
       ex.ctImageId = ct.id; ex.ctDate = S.now(); det.dirty = false;
       S.log(this.dossier, 'edit', 'exploration', ex.id, `électrodes réelles validées (${nUp} prévues, ${nNew} nouvelles${nOut ? ', ' + nOut + ' retirées' : ''})`); this.touch();
@@ -229,14 +229,19 @@
       ex.ctDetect.validated = S.now();
       if (quiet) return; if (this.refreshImagingScreen) this.refreshImagingScreen(); else this.renderImaging();
     },
-    /** BIDS iEEG : sub-<pseudo>_ses-<exploration>_space-T1w_electrodes.tsv + coordsystem.json, rangés dans derivatives/ieeg */
+    /** BIDS iEEG (v2.0.0) : plots validés rangés avec les tracés de la session, ses-<session>/ieeg/ —
+     *  …_space-ScanRAS_electrodes.tsv (repère du T1 du patient) et …_space-MNI305_electrodes.tsv (affine vers le gabarit, si
+     *  l'anatomie du patient est calculée), chacun avec son _coordsystem.json ; région VEP de chaque plot */
     async exportElectrodesBids(ex, download) {
-      const d = this.dossier, A = this.patientAnat, sub = (d.patient.pseudo || 'patient').replace(/[^A-Za-z0-9]/g, ''), ses = ex.label.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
-      const rows = ['name\tx\ty\tz\tsize\tmaterial\tmanufacturer\tgroup\themisphere\ttype\tregion_vep'];
-      for (const spec of ex.electrodes) if (spec.real) spec.real.contacts.forEach((c, k) => { const l = A && A.labelWorld ? A.labelWorld.labelAt(c[0], c[1], c[2]) : 0; rows.push([spec.name.replace(/’/g, "'") + (k + 1), c[0].toFixed(2), c[1].toFixed(2), c[2].toFixed(2), '5.03', 'PtIr', spec.maker || 'DIXI', spec.name.replace(/’/g, "'"), spec.hemi, 'depth', l >= 1 && l <= 162 ? this.atlas.labelEn(l) : l === 200 ? 'white-matter' : l === 201 ? 'CSF' : 'n/a'].join('\t')); });
-      const base = `derivatives/ieeg/sub-${sub}_ses-${ses}_space-T1w`, cs = { iEEGCoordinateSystem: 'Other', iEEGCoordinateUnits: 'mm', iEEGCoordinateSystemDescription: 'RAS scanner du T1 pré-opératoire de référence (monde NIfTI), EpiScope', IntendedFor: (S.refImaging(d) || {}).file || '', iEEGCoordinateProcessingDescription: 'scanner post-implantation recalé (rigide, information mutuelle) ; plots détectés (seuil du métal, droites, peigne 2 mm / 3,5 mm) et validés', iEEGCoordinateProcessingReference: 'EpiScope ; méthode Brainstorm SEEG / GARDEL (Medina Villalon et al. 2018)' };
-      await L.writeFile(d, base + '_electrodes.tsv', rows.join('\n') + '\n'); await L.writeFile(d, base + '_coordsystem.json', JSON.stringify(cs, null, 2));
-      if (download) { this.download(base.split('/').pop() + '_electrodes.tsv', rows.join('\n') + '\n', 'text/tab-separated-values'); }
+      const d = this.dossier, A = this.patientAnat, sub = SV.BIDS.subOf(d), ses = SV.BIDS.sesOf(d, ex), T = d.anatomy && d.anatomy.toTemplate ? Array.from(d.anatomy.toTemplate) : null;
+      const region = c => { const l = A && A.labelWorld ? A.labelWorld.labelAt(c[0], c[1], c[2]) : 0; return l >= 1 && l <= 162 ? this.atlas.labelEn(l) : l === 200 ? 'white-matter' : l === 201 ? 'CSF' : 'n/a'; };
+      const regions = {}; for (const spec of ex.electrodes) if (spec.real) spec.real.contacts.forEach((c, k) => { regions[spec.name.replace(/’/g, "'") + (k + 1)] = region(c); });
+      const B = SV.Research.buildSubject({ ...d, explorations: d.explorations.map(e => Object.assign({}, e, { recordings: [], stims: [], thermo: [], quant: [] }, e.id === ex.id ? {} : { electrodes: [] })), seizures: [], lesions: [], procedures: [], outcomes: [] }, { regions: { [ex.id]: regions } });
+      const el = B.files.filter(f => /_(electrodes\.tsv|coordsystem\.json)$/.test(f.path));
+      for (const f of el) await L.writeFile(d, f.path.replace(/^sub-[^/]+\//, ''), f.text);
+      if (!T && !el.length) return;
+      const tsvN = el.find(f => /space-ScanRAS_electrodes/.test(f.path));
+      if (download && tsvN) this.download(tsvN.path.split('/').pop(), tsvN.text, 'text/tab-separated-values');
     },
   };
   Object.assign(SV.app, M);

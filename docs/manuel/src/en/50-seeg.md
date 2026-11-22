@@ -10,7 +10,7 @@ lead: From planning to report: implantation scheme, actual electrodes on the CT,
 
 !!! bref
     - **Where?** The **SEEG** stage of the pathway, created by an MDT decision or by [[+]] › *SEEG*.
-    - **The tabs follow the order of work**: 1 Planning · 2 Localisation · 3 Interictal · 4 Seizures · 5 Analyses · 6 Stimulations · 7 Thermocoagulations · 8 Gallery · 9 SEEG report.
+    - **The tabs follow the order of work**: Overview (dates, timeline of recordings and seizures, as in [phase 1](20-phase1.md#vue-densemble)) · 1 Planning · 2 Localisation · 3 Interictal · 4 Seizures · 5 Analyses (ictal, then interictal) · 6 Stimulations · 7 Thermocoagulations · 8 Gallery · 9 SEEG report.
     - **Nothing is mandatory**: you may enter only the stimulations, or only the report.
 
 ## Planning {#planifier}
@@ -59,12 +59,20 @@ Marked contacts appear in 3D and feed the concordance, the suggested report zone
 
 The [[Analyses]] tab receives the **SEEG recordings** (EDF, BrainVision, Brainquick and Micromed exports, BIDS iEEG): [[+ Import a recording…]]. Recordings are filed under *Seizures* and *Interictal*; a seizure recording is linked to its seizure.
 
-[[Open]] launches the viewer (monopolar or bipolar montage, page, gain, filters, displayed electrodes). Then, in the **Quantification** panel:
+Imported recordings are stored under their BIDS name (`sub-HFAR0007_ses-seeg1_task-seizure_run-01_ieeg.edf`) with a neutral title, as in phase 1.
+
+[[Open]] launches the viewer: page, gain, filters, displayed electrodes, wall-clock time and navigation timeline as in [phase 1](@phase1#relire-un-trace), aligned video ([Video and recording](@phase1#video-et-trace)). Two independent settings organise the channels:
+
+- **Reference**: [[Cascade]] (pairs of neighbouring contacts on the same electrode, A’1-A’2, A’2-A’3…; a contact missing from the file is never “bridged”, the gap is shown in the gutter), [[Reference]] (the file's recording reference), [[Average]] (common average of the contacts), [[Contact ▾]] (a chosen reference contact, usually in white matter: white-matter contacts are offered first, with their region and amplitude, to pick a quiet one).
+- **Layout** ([[Layout ▾]]): by electrode, or **anatomical** (one band per region, mixing the electrodes that sample the same region), grey-matter filter, layouts saved for the exploration.
+
+The montage chosen for a recording becomes the default for the next recordings of the same SEEG; the channel → electrode correspondence is checked once for the whole exploration. Then, in the **Quantification** panel:
 
 - **EI**, the epileptogenicity index (Bartolomei 2008): the window runs from the annotated seizure onset to its end (file markers, or right-click on the recording); the EI is computed in a few seconds and shown under the recording, contact by contact: **≥ 0.4 in red** (epileptogenic zone), 0.1 to 0.4 in orange;
 - other methods in the neighbouring tabs: **cEI**, **PEI**, **h²** (connectivity), **Fingerprint** (Grinenko 2018), **EM** (epileptogenicity maps, David 2011), **Spikes · HFO** (Delphos);
 - [[Save in Analyses (3D)]] turns the result into **values on the contacts**: coloured spheres in 3D, regions coloured on the parcellation, slices;
-- with at least two seizures, **EImax** (or cEImax, PEImax) keeps the maximum value of each contact.
+- with at least two seizures, **EImax** (or cEImax, PEImax) keeps the maximum value of each contact;
+- each saved set carries a **provenance badge**: method and version, date, author, montage, analysed window (in wall-clock time), file fingerprint. It turns orange if the recording, the markers or the method have changed since; a click opens the history of the computations (see [Provenance of results](@m-seeg#provenance-des-resultats)).
 
 ![The SEEG viewer and the EI panel: energy ratio under the recording, detections, channel table.](shot:seeg-ei)
 

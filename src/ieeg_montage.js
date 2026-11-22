@@ -128,15 +128,15 @@
     ieegMontageBtn() {
       const V = this._iev, b = V && V.el.querySelector('.ie-lay'); if (!b) return; const L = V.lay || {};
       const nm = L.kind === 'saved' ? ((this.ieegMontages().find(m => m.id === L.id) || {}).name || '?') : LAY_NAME[L.kind] || '';
-      b.innerHTML = `Montage : ${esc(nm)}${L.gm && L.gm !== 'off' ? ' · SG' : ''} ▾`; b.classList.toggle('on', L.kind !== 'elec' || (L.gm && L.gm !== 'off'));
+      b.innerHTML = `Disposition : ${esc(nm)}${L.gm && L.gm !== 'off' ? ' · SG' : ''} ▾`; b.classList.toggle('on', L.kind !== 'elec' || (L.gm && L.gm !== 'off'));
     },
     ieegMontageMenu(anchor) {
       const V = this._iev, ex = this.ieegEx(), L = V.lay, mons = this.ieegMontages(), panel = h('div', 'cell-panel ie-laym');
       const opt = (k, id, label, title) => `<label class="ie-lo" title="${esc(title || '')}"><input type="radio" name="ielay" data-k="${k}"${id ? ` data-id="${id}"` : ''}${L.kind === k && (!id || L.id === id) ? ' checked' : ''}> ${label}</label>`;
-      panel.innerHTML = `<div class="ctx-head">Montage du tracé</div>
+      panel.innerHTML = `<div class="ctx-head">Disposition des voies</div>
         <div class="ie-lsec">Disposition</div>
         ${opt('elec', null, 'par électrode', 'ordre du fichier, une bande par électrode')}${opt('anat', null, 'anatomique — régions, lobes, faces', 'une bande par région VEP, rangées : temporal mésial, pôle, latéral, basal, insula, frontal, central, pariétal, occipital, sous-cortical, puis substance blanche')}
-        ${mons.map(m => opt('saved', m.id, `${esc(m.name)} <span class="muted small">${m.ref === 'mono' ? 'monopolaire' : 'bipolaire'}</span>`, 'montage enregistré pour cette implantation')).join('')}
+        ${mons.map(m => opt('saved', m.id, `${esc(m.name)} <span class="muted small">${esc(IE.montageLabel(m.ref))}</span>`, 'montage enregistré pour cette implantation')).join('')}
         ${L.kind === 'custom' ? opt('custom', null, 'modifié <span class="muted small">(non enregistré)</span>') : ''}
         <div class="ie-lsec">Substance grise</div>
         <div class="seg ie-gm">${GM_OPTS.map(([k, l]) => `<button data-gm="${k}" class="${(L.gm || 'off') === k ? 'on' : ''}">${l}</button>`).join('')}</div>
@@ -155,18 +155,47 @@
       const del = panel.querySelector('.ie-ldel'); if (del) del.onclick = () => { const m = mons.find(x => x.id === L.id); if (!m || !confirm(`Supprimer le montage « ${m.name} » ?`)) return; ex.montages = ex.montages.filter(x => x !== m); V.lay = { kind: 'elec', gm: L.gm || 'off' }; this.touch('exploration', ex.id, 'montage supprimé'); this.closeMenu(); this.ieegLayoutChanged(); };
       const r = anchor.getBoundingClientRect(); this.popupMenu([{ node: panel }], Math.min(r.left, window.innerWidth - 470), r.bottom + 4);
     },
+    // ---------------------------------------------------------------- plot de référence (v1.1.0)
+    /** plots SEEG du tracé : nom, électrode, rang, substance (SG / SB / ?), région, amplitude efficace sur la page affichée */
+    ieegRefCandidates() {
+      const V = this._iev, ch = V.mem.channels, el = this.elecs || [], map = this.ieegElecMap ? this.ieegElecMap() : {}, lab = this.quantLabeler ? this.quantLabeler() : null;
+      const fs = V.mem.fs, i0 = Math.max(0, Math.floor(V.t * fs)), i1 = Math.min(V.mem.nSamples, Math.ceil((V.t + V.page) * fs)), regName = r => (this.atlas && r && this.atlas.labelShort ? this.atlas.labelShort(r) : this.atlas && r && this.atlas.label ? this.atlas.label(r) : '');
+      const out = [];
+      ch.forEach((c, i) => {
+        if (!IE.isSeegChannel(c) || /bad/i.test(c.status || '')) return; const p = IE.parseContact(c.name); if (!p) return;
+        const x = V.mem.data[i]; let m = 0, n = 0; for (let j = i0; j < i1; j += 2) { m += x[j]; n++; } m /= n || 1; let s2 = 0; for (let j = i0; j < i1; j += 2) s2 += (x[j] - m) * (x[j] - m); const rms = Math.sqrt(s2 / Math.max(1, n));
+        let tissue = '?', region = ''; const e = el.length && Q.findElec(el, map[p.elec] || p.elec);
+        if (e && e.contacts && e.contacts[p.k - 1]) { const lb = e.contacts[p.k - 1].label; tissue = lb >= 1 && lb <= 162 ? 'SG' : lb ? 'SB' : '?'; if (this.quantContactRegion) region = regName(this.quantContactRegion(e, p.k, lab)); }
+        out.push({ name: c.name, elec: p.elec, k: p.k, tissue, region, rms });
+      });
+      return out;
+    },
+    /** choix du plot de référence : plots en substance blanche d'abord (du plus calme au plus agité), puis les autres par électrode */
+    ieegRefPicker(anchor) {
+      const V = this._iev, C = this.ieegRefCandidates(), cur = /^ref:/.test(V.montage) ? V.montage.slice(4) : null, panel = h('div', 'cell-panel ie-refp');
+      const wm = C.filter(c => c.tissue === 'SB').sort((a, b) => a.rms - b.rms).slice(0, 12), byE = new Map(); for (const c of C) (byE.get(c.elec) || byE.set(c.elec, []).get(c.elec)).push(c);
+      const chip = c => `<button class="ie-refc${c.name === cur ? ' on' : ''}${c.tissue === 'SB' ? ' wm' : c.tissue === 'SG' ? ' gm' : ''}" data-n="${esc(c.name)}" title="${esc(c.name)}${c.region ? ' · ' + esc(c.region) : ''} · ${c.tissue === 'SB' ? 'substance blanche' : c.tissue === 'SG' ? 'substance grise' : 'localisation inconnue'} · ${Math.round(c.rms)} µV efficaces sur la page">${esc(c.name)}</button>`;
+      panel.innerHTML = `<div class="ctx-head">Plot de référence</div>
+        <div class="hint">Chaque voie devient « plot − référence ». Choisir un plot calme, en substance blanche, loin de la zone de début. ${cur ? `Actuel : <b>${esc(cur)}</b>.` : ''}</div>
+        ${wm.length ? `<div class="ie-lsec">Suggestions : substance blanche, du plus calme au plus agité (page affichée)</div><div class="ie-refrow">${wm.map(chip).join('')}</div>` : '<div class="hint">Électrodes non localisées : pas de suggestion en substance blanche (Imagerie › Électrodes réelles).</div>'}
+        <div class="ie-lsec">Tous les plots</div><div class="ie-refall">${[...byE].map(([e, L]) => `<div class="ie-refrow"><span class="muted small ie-refe">${esc(e)}</span>${L.sort((a, b) => a.k - b.k).map(chip).join('')}</div>`).join('')}</div>
+        <div class="hint small"><span class="ie-refc wm">SB</span> substance blanche · <span class="ie-refc gm">SG</span> substance grise (parcellation du patient)</div>`;
+      panel.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { V.montage = 'ref:' + b.dataset.n; if (V.keepView) V.keepView(); this.closeMenu(); this.ieegSetMontage(); this.toast(`Référence : ${b.dataset.n} — chaque voie = plot − ${b.dataset.n}`, 3500); });
+      const r = anchor.getBoundingClientRect(); this.popupMenu([{ node: panel }], Math.min(r.left, window.innerWidth - 560), r.bottom + 4);
+    },
     // ---------------------------------------------------------------- capture d'une page
     ieegPageTime() {
       const V = this._iev, rec = V.rec, d0 = rec.startDate && rec.startTime ? new Date(`${rec.startDate}T${String(rec.startTime).slice(0, 8)}`) : null;
       if (!d0 || isNaN(d0)) { const s = Math.round(V.t); return { date: null, text: `t = ${Math.floor(s / 60)}:${pad(s % 60)}` }; }
-      const t = new Date(d0.getTime() + V.t * 1000); return { date: `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`, text: `${t.toLocaleDateString(SV.LOC)} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}` };
+      const t = V.tm && V.tm.hasClock ? V.tm.abs(V.t) : new Date(d0.getTime() + V.t * 1000); return {   // v1.1.0 : heure réelle (coupures EDF+D)
+        date: `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`, text: `${t.toLocaleDateString(SV.LOC)} ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}` };
     },
     ieegCaptureMenu(anchor) {
-      const V = this._iev, url = () => V.cv.toDataURL('image/png'), T = this.ieegPageTime(), sc = V.rec.modality === 'scalp', title = `${V.rec.title} · ${T.text} · ${V.page} s · ${MONT_FR[V.montage] || V.montage}`;
+      const V = this._iev, url = () => V.cv.toDataURL('image/png'), T = this.ieegPageTime(), sc = V.rec.modality === 'scalp', title = `${V.rec.title} · ${T.text} · ${V.page} s · ${MONT_FR[V.montage] || IE.montageLabel(V.montage)}`;
       const items = [{ head: 'Capture de la page' }, { label: 'Ranger dans la galerie', run: async () => {
         const ex = this.ieegEx(), b = await (await fetch(url())).blob(), sz = V.rec.seizureId || null;
         const g = (await this.galleryAdd([new File([b], 'trace.png', { type: 'image/png' })], { explorationId: ex ? ex.id : null, seizureId: sz, kind: sz ? 'ictal' : 'interictal', modality: sc ? 'eeg' : 'seeg', title }))[0];
-        if (g) { if (T.date) g.date = T.date; g.notes = g.notes || `Page de ${V.page} s du tracé ${V.rec.title}, début ${T.text}.`; g.src = { recId: V.rec.id, t: Math.round((V.t + V.page / 2) * 100) / 100, page: V.page, montage: V.montage };   // le tracé à cet instant, en un clic (cartes des tracés, staff)
+        if (g) { if (T.date) g.date = T.date; g.notes = g.notes || `Page de ${V.page} s du tracé ${V.rec.title}, début ${T.text}.`; g.src = { polarity: SV.Wave && SV.Wave.negUp ? 'negup' : 'posup', recId: V.rec.id, t: Math.round((V.t + V.page / 2) * 100) / 100, page: V.page, montage: V.montage };   // le tracé à cet instant, en un clic (cartes des tracés, staff)
           this.touch('gallery', g.id, g.title); this.toast('Page du tracé rangée dans la galerie (et sous le tracé dans Analyses)', 3000); }
       } }, { label: 'Copier (coller dans Word, PowerPoint)', run: async () => { const ok = SV.Clip && await SV.Clip.copyImage(url()); this.toast(ok ? 'Page copiée' : 'Copie impossible', 2000); } },
       { label: 'Enregistrer en PNG', run: () => { const a = document.createElement('a'); a.href = url(); a.download = `${String(V.rec.title).replace(/[^\w.-]+/g, '_')}_${T.text.replace(/[^\d]+/g, '')}.png`; a.click(); } }];
@@ -182,7 +211,10 @@
     const vw0 = rec && rec.view ? rec.view : {}, r = await open0.apply(this, arguments), V = this._iev; if (!V || V.rec !== rec) return r;
     V.lay = Object.assign({ kind: 'elec', gm: 'off' }, vw0.layout || {}); V.custom = vw0.custom || null; V.labels = vw0.labels || null; if (V.lay.kind === 'custom' && !V.custom) V.lay.kind = 'elec';
     const mont = V.el.querySelector('.ie-mont'); if (mont) {
-      const lb = h('button', 'ie-lay', 'Montage ▾'); if (rec.modality === 'scalp') lb.hidden = true;   // dispositions anatomiques, substance grise : SEEG lb.title = 'disposition des voies : par électrode, anatomique (régions, lobes), montages enregistrés ; voies en substance grise'; mont.after(lb); lb.onclick = e => this.ieegMontageMenu(e.currentTarget);
+      // dispositions anatomiques, substance grise : SEEG seulement (v1.0.1 : ce commentaire en fin de ligne masquait la suite
+      // de l'instruction — le bouton n'était jamais ajouté à la barre)
+      const lb = h('button', 'ie-lay', 'Disposition ▾'); if (rec.modality === 'scalp') lb.hidden = true;
+      lb.title = 'Disposition des voies : par électrode, anatomique (régions, lobes ; électrodes panachées), montages enregistrés ; voies en substance grise'; mont.after(lb); lb.onclick = e => this.ieegMontageMenu(e.currentTarget);
       const theme = V.el.querySelector('.ie-theme'), cb = h('button', 'ie-cap', 'Capture ▾'); cb.title = 'capture de la page affichée : galerie (tracé, date et heure), presse-papiers, PNG'; if (theme) theme.before(cb); cb.onclick = e => this.ieegCaptureMenu(e.currentTarget);
     }
     V._layKey = null; this.ieegLanes(); this.ieegDraw(); this.ieegMontageBtn();

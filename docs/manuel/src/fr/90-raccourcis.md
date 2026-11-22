@@ -43,6 +43,7 @@ lead: Les raccourcis ne sont jamais indispensables, mais ils font gagner beaucou
 | <kbd>Page préc.</kbd> <kbd>Page suiv.</kbd>, molette | Voies précédentes ou suivantes |
 | <kbd>Début</kbd> <kbd>Fin</kbd> | Début ou fin du tracé |
 | <kbd>O</kbd> | Aller au début de crise annoté |
+| Molette sur la frise | Zoomer la frise autour du pointeur (double-clic : tout le tracé) |
 | <kbd>Suppr</kbd> | Effacer la marque choisie |
 | <kbd>[</kbd> <kbd>]</kbd> | Pointes : pointe précédente ou suivante du groupe |
 | <kbd>Ctrl</kbd>+<kbd>Z</kbd> | Pointes, sommeil : annuler la dernière retouche |
@@ -67,6 +68,8 @@ lead: Les raccourcis ne sont jamais indispensables, mais ils font gagner beaucou
 | <kbd>Début</kbd> <kbd>Fin</kbd> | Première ou dernière diapositive |
 | <kbd>F</kbd> | Plein écran |
 | <kbd>N</kbd> | Afficher ou masquer le plan |
+| <kbd>E</kbd> | Mode édition : Éditer ou Commenter chaque donnée |
+| <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> | Enregistrer la saisie en cours (modification ou commentaire) |
 | <kbd>Échap</kbd> | Quitter la présentation |
 
 ## Ce manuel

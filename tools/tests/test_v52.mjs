@@ -11,7 +11,9 @@ ok(sh('grayt', 0.6, 0, null)[3] === 1 && sh('grayt', 0.6, 0, null)[0] === sh('gr
 const r = Sl.CMAPS.red(1), r0 = Sl.CMAPS.red(0); ok(r[0] > 250 && r[1] < 200 && r0[0] === 0, 'rampe rouge');
 ok(Sl.CMAP_FR.red && Sl.CMAP_FR.grayt, 'palettes nommées');
 // remarques de l'arbre : nommées par le lien au cas index
-const Pd = SV.Pedigree, ped = Pd.migrate(null), me = ped.persons.find(p => p.proband), [fa, mo] = Pd.Ed.addParents(ped, me), [gf] = Pd.Ed.addParents(ped, mo);
+const Pd = SV.Pedigree, ped = Pd.migrate(null), me = ped.persons.find(p => p.proband), E = Pd.Ed;   // v1.0.1 : éditeur v3
+const fa = E.person(ped, { sex: 'M', gen: me.gen - 1, x: me.x - 60 }), mo = E.person(ped, { sex: 'F', gen: me.gen - 1, x: me.x + 60 }), gf = E.person(ped, { sex: 'M', gen: me.gen - 2, x: me.x + 60 });
+E.addFiliation(ped, fa.id, me.id); E.addFiliation(ped, mo.id, me.id); E.addFiliation(ped, gf.id, mo.id);
 ok(Pd.kinship(ped, fa) === 'père' && Pd.kinship(ped, mo) === 'mère', 'parents');
 ok(/grand-père mat\./.test(Pd.kinship(ped, gf)), 'grand-père maternel');
 console.log(`test_v52 : ${n} vérifications ok`);

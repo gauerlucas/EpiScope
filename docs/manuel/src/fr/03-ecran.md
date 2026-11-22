@@ -23,7 +23,7 @@ lead: Tous les écrans d'EpiScope sont bâtis de la même façon : une barre du 
 | [[Patients]] | Revient à la liste des patients (<kbd>F9</kbd>). |
 | Nom du patient ▾ | Exporter le dossier, changer de patient. |
 | Parcours | Les étapes du patient dans l'ordre chronologique : Dossier, Phase 1, Staff, SEEG, Chirurgie, Suivi. La pastille de couleur indique l'état (en cours, terminée). |
-| [[+]] | Ajoute une étape : vidéo-EEG de scalp, SEEG, staff, chirurgie ou autre procédure, suivi, autre exploration. |
+| [[+]] | Ajoute une étape : vidéo-EEG de scalp, EEG ambulatoire, SEEG, staff, chirurgie ou autre procédure, suivi, vidéo-EEG post-opératoire, autre exploration. |
 | [[Rapport]] | Produit le document de l'étape ouverte. Son nom change avec l'étape : *Rapport du dossier*, *Rapport Phase 1*, *Rapport SEEG*, *Compte rendu du staff*. |
 | ● | Vert : enregistré. Bleu : enregistrement en cours. Rouge : problème (dossier ouvert ailleurs, disque plein). |
 | [[◐]] | Thème clair ou sombre. Les vues d'imagerie restent toujours sur fond noir. |

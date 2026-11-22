@@ -50,7 +50,19 @@ Relisez les groupes et supprimez ceux d'artefacts ; montez le seuil de SpikeNet 
 Dans *Préparer*, décochez les explorations ou les crises à ne pas montrer, et ne cochez que les captures utiles.
 
 **J'ai effacé quelque chose par erreur.**
-Le journal du dossier dit quoi et quand. Pour les retouches de pointes et de sommeil, <kbd>Ctrl</kbd>+<kbd>Z</kbd>. Sinon, revenez à la sauvegarde du répertoire.
+Journal du dossier › *Corbeille du dossier* › [[Restaurer]] : l'élément revient exactement en place, avec ses dépendances. Pour revenir à un état antérieur du dossier entier : *Versions enregistrées* › [[Restaurer…]]. Un patient retiré de la liste : [[Corbeille]] de la liste des patients. Pour les retouches de pointes et de sommeil, <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
+
+**Le tracé semble inversé par rapport au logiciel d'acquisition.**
+EpiScope suit la convention EEG : négatif vers le haut. Les captures de tracé faites avant la version 1.1 étaient dessinées positif vers le haut ; leur fiche le signale.
+
+**Comment cacher les noms pendant une projection ?**
+[[Masquer les noms]] dans la liste des patients (ou dans la zone Identité) : les codes remplacent les noms partout à l'écran, sur ce poste, jusqu'à [[Afficher les noms]].
+
+**D'où vient ce résultat ? A-t-il été calculé avec la méthode actuelle ?**
+Cliquez la pastille du jeu d'analyse : version de la méthode, date, auteur, paramètres, tracé et fenêtre ; « périmé » ou « ancienne méthode » si quelque chose a changé depuis (voir [Provenance des résultats](@m-seeg#provenance-des-resultats)).
+
+**La vidéo ne correspond pas au tracé.**
+Ouvrez [[▶ Vidéo]] dans la visionneuse, mettez la vidéo et le curseur sur le même évènement, puis [[📍 point]]. Avec deux points éloignés, la dérive de l'horloge de la caméra est corrigée (voir [Vidéo et tracé](@phase1#video-et-trace)).
 
 ## Signaler un problème
 

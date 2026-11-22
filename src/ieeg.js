@@ -189,6 +189,15 @@
     return { onset: on ? on.onset : null, end: off ? off.onset : null };
   }
 
+  /** v2.0.0 : toutes les crises annotées dans un fichier (longue nuit : plusieurs débuts) → [{ onset, end|null, label }] ;
+   *  chaque début est apparié à la première fin qui le suit avant le début suivant */
+  function seizureEvents(events) {
+    const L = (events || []).filter(e => e && e.label != null && isFinite(e.onset)).slice().sort((a, b) => a.onset - b.onset), out = [];
+    const ons = L.filter(e => SZ_ON.test(e.label) && !SZ_END.test(e.label));
+    ons.forEach((e, i) => { const nx = ons[i + 1], off = L.find(x => SZ_END.test(x.label) && x.onset > e.onset && (!nx || x.onset <= nx.onset)); out.push({ onset: e.onset, end: off ? off.onset : null, label: String(e.label).trim() }); });
+    return out;
+  }
+
   // ================================================================ voies, montages
   /** « A’12 », « A'12 », « Ap12 », « TB’3 », « LA1 » → { elec, k } (prime typographique unifié) */
   function parseContact(name) {
@@ -200,7 +209,15 @@
   function bipolarPairs(chans, ok) {
     const by = new Map(); chans.forEach((c, i) => { if (ok && !ok(c, i)) return; const p = parseContact(c.name); if (!p) return; (by.get(p.elec) || by.set(p.elec, []).get(p.elec)).push({ i, k: p.k }); });
     const out = [];
-    for (const [elec, L] of by) { L.sort((a, b) => a.k - b.k); for (let j = 0; j + 1 < L.length; j++) if (L[j + 1].k === L[j].k + 1) out.push({ name: `${chans[L[j].i].name}-${chans[L[j + 1].i].name}`, a: L[j].i, b: L[j + 1].i, elec, k1: L[j].k, k2: L[j + 1].k }); }
+    // montage « cascade » : plots voisins seulement, jamais de paire pontée par-dessus un plot absent (v1.0.1 : le trou est
+    // signalé sur la première paire qui le suit, gapBefore = plots absents, pour l'afficher dans la gouttière)
+    for (const [elec, L] of by) {
+      L.sort((a, b) => a.k - b.k); let gap = null;
+      for (let j = 0; j + 1 < L.length; j++) {
+        if (L[j + 1].k === L[j].k + 1) { out.push(Object.assign({ name: `${chans[L[j].i].name}-${chans[L[j + 1].i].name}`, a: L[j].i, b: L[j + 1].i, elec, k1: L[j].k, k2: L[j + 1].k }, gap ? { gapBefore: gap } : {})); gap = null; }
+        else if (L[j + 1].k > L[j].k + 1) { gap = []; for (let k = L[j].k + 1; k < L[j + 1].k; k++) gap.push(elec + k); }
+      }
+    }
     return out;
   }
   /** dérivations : 'mono' (voies SEEG d'abord, puis les autres) ou 'bipolar' (plots voisins valides) →
@@ -213,6 +230,10 @@
       const D = L.filter(Boolean).sort((x, y) => E.scalpRank(x.name.split('-')[0]) - E.scalpRank(y.name.split('-')[0]));
       return D.concat(chans.map((c, i) => L[i] ? null : { name: c.name, a: i, b: -1, elec: '·', k1: null, k2: null, seeg: false, bad: isBad(c) }).filter(Boolean));
     }
+    // v1.0.1 : un montage de scalp (référence moyenne, laplacien, double banane, transverse) demandé pour un tracé SEEG (moins de
+    // 8 électrodes 10-20 et des électrodes SEEG nommées) revient au bipolaire au lieu de produire des voies incohérentes
+    const seegLike = () => { const n = new Map(); chans.forEach(c => { const p = isSeegChannel(c) && parseContact(c.name); if (p) n.set(p.elec, (n.get(p.elec) || 0) + 1); }); return [...n.values()].filter(v => v >= 3).length >= 2; };
+    if (sc.length < 8 && ['avg', 'banana', 'trans', 'lap'].includes(kind) && seegLike()) kind = 'bipolar';
     if (sc.length >= 8 || ['avg', 'banana', 'trans', 'lap'].includes(kind)) {
       const idx = new Map(sc.map(x => [x.name, x.i])), others = chans.map((c, i) => i).filter(i => !sc.some(x => x.i === i)).map(i => ({ name: chans[i].name, a: i, b: -1, elec: '·', k1: null, k2: null, seeg: false, bad: isBad(chans[i]) }));
       if (kind === 'banana' || kind === 'trans') return E.scalpPairs(idx, kind).map(p => Object.assign(p, { k1: null, k2: null, seeg: true, bad: false, scalp: true })).concat(others.filter(d => /^(ecg|ekg|emg|eog)/i.test(d.name)));
@@ -220,6 +241,16 @@
       return ord.map(x => ({ name: kind === 'avg' ? x.name + '-moy' : kind === 'lap' ? x.name + '-lap' : x.name, a: x.i, b: -1, avg: kind === 'avg' ? refs : nb ? nb[pos.get(x.i)].map(k => sc[k].i) : null, elec: E.scalpRegion(x.name), k1: null, k2: null, seeg: true, bad: false, scalp: true })).concat(others);
     }
     if (kind === 'bipolar') return bipolarPairs(chans, c => isSeegChannel(c) && !isBad(c)).map(p => Object.assign(p, { seeg: true, bad: false }));
+    // v1.1.0 — références SEEG : moyenne commune des voies SEEG valides ('car') ou plot de référence choisi ('ref:<nom>',
+    // en général un plot en substance blanche) ; voie = plot − référence, valeur portée sur le plot (k2 = null)
+    if (kind === 'car' || /^ref:/.test(kind)) {
+      const ok = chans.map((c, i) => isSeegChannel(c) && !isBad(c) ? i : -1).filter(i => i >= 0), norm = s => String(s || '').replace(/[’'`´‘]/g, '’').replace(/\s+/g, '').toLowerCase();
+      const r = /^ref:/.test(kind) ? chans.findIndex(c => norm(c.name) === norm(kind.slice(4))) : -1;
+      if (/^ref:/.test(kind) && r < 0) return bipolarPairs(chans, c => isSeegChannel(c) && !isBad(c)).map(p => Object.assign(p, { seeg: true, bad: false, refMissing: kind.slice(4) }));
+      const der = ok.filter(i => i !== r).map(i => { const c = chans[i], p = parseContact(c.name); return { name: kind === 'car' ? c.name + '-moy' : c.name + '-' + chans[r].name, a: i, b: kind === 'car' ? -1 : r, avg: kind === 'car' ? ok : null, elec: p ? p.elec : c.name, k1: p ? p.k : null, k2: null, seeg: true, bad: false }; });
+      const others = chans.map((c, i) => i).filter(i => !ok.includes(i) && i !== r).map(i => ({ name: chans[i].name, a: i, b: -1, elec: '·', k1: null, k2: null, seeg: false, bad: isBad(chans[i]) }));
+      return der.concat(others);
+    }
     const out = chans.map((c, i) => { const p = parseContact(c.name); return { name: c.name, a: i, b: -1, elec: p ? p.elec : c.name, k1: p ? p.k : null, k2: null, seeg: isSeegChannel(c), bad: isBad(c) }; });
     return out.filter(d => d.seeg).concat(out.filter(d => !d.seeg));
   }
@@ -386,5 +417,42 @@
     return { rows, N0 };
   }
 
-  SV.IEEG = { BANDS, DEF, parseTSV, parseIni, vhdrInfo, vmrkEvents, decodeBinary, bidsRawInfo, readEDF, openRecording, seizureMarks, unitFactor, parseContact, isSeegChannel, bipolarPairs, montage, derContacts, deriveSignal, matchElectrode, biquad, filterView, fftPlan, fft, decimate, energyRatio, erBatch, pageHinkley, phCurve, epileptogenicity, eiMax, EZT, eiZone };
+  // ================================================================ temps réel (v1.0.1)
+  /** Temps d'un tracé : la visionneuse travaille en temps « du tracé » t (s, blocs EDF+D mis bout à bout). timeMap donne
+   *  l'heure réelle : real(t) = secondes depuis le début réel de l'enregistrement (table des blocs mem.segments), abs(t) =
+   *  Date (début de l'en-tête EDF / BrainVision, heure locale du poste d'acquisition), tOf(real) = inverse (null dans une
+   *  coupure), gaps = coupures (dur > 0) et recouvrements (dur < 0) à l'instant t du tracé où ils se trouvent. */
+  function timeMap(mem) {
+    const fs = (mem && mem.fs) || 1, dur = (mem && mem.duration) || 0, segs = ((mem && mem.segments) || []).slice().sort((a, b) => a.sample0 - b.sample0);
+    let start = null;
+    const md = /^(\d{4})-(\d{2})-(\d{2})$/.exec((mem && mem.startDate) || ''), mt = /^(\d{1,2})[:.](\d{2})[:.](\d{2})(?:[.,](\d+))?$/.exec(String((mem && mem.startTime) || '').trim());
+    if (md && mt) start = new Date(+md[1], +md[2] - 1, +md[3], +mt[1], +mt[2], +mt[3], mt[4] ? Math.round(+('0.' + mt[4]) * 1000) : 0);
+    const B = segs.map((sg, i) => ({ t0: sg.sample0 / fs, t1: i + 1 < segs.length ? segs[i + 1].sample0 / fs : dur, r0: sg.t0 }));
+    const real = t => { if (!B.length) return t; let k = 0; for (let i = 0; i < B.length; i++) if (B[i].t0 <= t + 1e-9) k = i; return B[k].r0 + (t - B[k].t0); };
+    const tOf = r => { if (!B.length) return r >= 0 && r <= dur ? r : null; for (let i = B.length - 1; i >= 0; i--) { const b = B[i]; if (r >= b.r0 - 1e-9 && r <= b.r0 + (b.t1 - b.t0) + 1e-9) return b.t0 + (r - b.r0); } return null; };
+    const gaps = []; for (let i = 1; i < B.length; i++) { const a = B[i - 1], b = B[i], d = b.r0 - (a.r0 + (b.t0 - a.t0)); if (Math.abs(d) > 1e-6) gaps.push({ t: b.t0, dur: d }); }
+    return { start, hasClock: !!start, real, tOf, gaps, span: B.length ? B[B.length - 1].r0 + (B[B.length - 1].t1 - B[B.length - 1].t0) : dur, abs: t => start ? new Date(start.getTime() + real(t) * 1000) : null };
+  }
+  /** v1.1.0 — horloge d'un tracé, enregistrée dans le dossier (rec.clock) pour convertir sans relire le fichier :
+   *  { start: « AAAA-MM-JJTHH:MM:SS.mmm » (heure murale du poste d'acquisition, sans fuseau) ou null,
+   *    blocks: [{ t0, t1, r0 }] } — temps du tracé t0…t1 (s, blocs EDF+D bout à bout) ↔ r0 s après le début */
+  function clockOf(mem) {
+    const fs = (mem && mem.fs) || 1, dur = (mem && mem.duration) || 0, segs = ((mem && mem.segments) || []).slice().sort((a, b) => a.sample0 - b.sample0);
+    const md = /^(\d{4})-(\d{2})-(\d{2})$/.exec((mem && mem.startDate) || ''), mt = /^(\d{1,2})[:.](\d{2})[:.](\d{2})(?:[.,](\d+))?$/.exec(String((mem && mem.startTime) || '').trim());
+    const r3 = x => Math.round(x * 1000) / 1000, ms = mt && mt[4] ? String(Math.round(+('0.' + mt[4]) * 1000)).padStart(3, '0') : '000';
+    const start = md && mt ? `${md[1]}-${md[2]}-${md[3]}T${mt[1].padStart(2, '0')}:${mt[2]}:${mt[3]}.${ms}` : null;
+    const blocks = segs.length ? segs.map((sg, i) => ({ t0: r3(sg.sample0 / fs), t1: r3(i + 1 < segs.length ? segs[i + 1].sample0 / fs : dur), r0: r3(sg.t0) })) : [{ t0: 0, t1: r3(dur), r0: 0 }];
+    return { start, blocks };
+  }
+  const p2 = n => (n < 10 ? '0' : '') + n;
+  /** Date → « 23:37:05 » (dec : dixièmes « 23:37:05,2 ») */
+  function hms(dt, dec) { if (!dt) return ''; let s = p2(dt.getHours()) + ':' + p2(dt.getMinutes()) + ':' + p2(dt.getSeconds()); if (dec) s += ',' + Math.floor(dt.getMilliseconds() / 100); return s; }
+  const dmy = dt => dt ? p2(dt.getDate()) + '/' + p2(dt.getMonth() + 1) + '/' + dt.getFullYear() : '';
+  /** pas de graduation (s) pour une étendue réelle span et nPix pixels (une graduation tous les ~90 px) */
+  function niceStep(span, nPix) { const want = span / Math.max(1, nPix / 90), S = [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 10800, 21600, 43200, 86400]; return S.find(x => x >= want) || 86400; }
+
+  /** v1.1.0 — montage : clé utilisable dans un nom de fichier (cache des calculs) et libellé */
+  const montageKey = m => String(m || 'bipolar').replace(/^ref:/, 'ref_').replace(/[^\w’-]+/g, '_');
+  function montageLabel(m) { m = String(m || ''); return m === 'bipolar' ? 'cascade (bipolaire)' : m === 'mono' ? 'référence d’enregistrement' : m === 'car' ? 'moyenne commune' : /^ref:/.test(m) ? 'référence ' + m.slice(4) : m === 'avg' ? 'référence moyenne' : m; }
+  SV.IEEG = { seizureEvents, montageKey, montageLabel, timeMap, clockOf, hms, dmy, niceStep, BANDS, DEF, parseTSV, parseIni, vhdrInfo, vmrkEvents, decodeBinary, bidsRawInfo, readEDF, openRecording, seizureMarks, unitFactor, parseContact, isSeegChannel, bipolarPairs, montage, derContacts, deriveSignal, matchElectrode, biquad, filterView, fftPlan, fft, decimate, energyRatio, erBatch, pageHinkley, phCurve, epileptogenicity, eiMax, EZT, eiZone };
 });

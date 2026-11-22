@@ -20,7 +20,7 @@
 <script>
 /* ---- Identité de l'application (modifiable ici) : nom, sous-titre, crédit et année affichés sur l'écran
  *      d'accueil, dans l'en-tête et dans les rapports. L'année vaut par défaut l'année courante. ---- */
-window.EPISCOPE_BRAND = { name: 'EpiScope', tagline: 'Visualize seizures', credit: 'Lucas Gauer', author: 'Lucas Gauer', orcid: '0000-0001-8250-1455', version: '1.0.0', year: new Date().getFullYear(), splash: true,
+window.EPISCOPE_BRAND = { name: 'EpiScope', tagline: 'Visualize seizures', credit: 'Lucas Gauer', author: 'Lucas Gauer', orcid: '0000-0001-8250-1455', version: '2.0.0', year: new Date().getFullYear(), splash: true,
   status: 'Prototype recherche, non validé pour un usage clinique.' };
 /* thème (v5.3) : clair, sombre ou automatique (celui du système), appliqué avant le premier affichage */
 (function () { let t = 'auto'; try { t = localStorage.getItem('sv_theme') || 'auto'; } catch (e) { }
@@ -278,8 +278,14 @@ window.EPISCOPE_BRAND = { name: 'EpiScope', tagline: 'Visualize seizures', credi
 <script src="src/imaging/anat.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="segatlas"</script>
 <script src="src/imaging/segatlas.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="provenance"</script>
+<script src="src/provenance.js"></script>
+<script src="src/bids.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="store"</script>
 <script src="src/store.js"></script>
+<script src="src/research.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="history"</script>
+<script src="src/history.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="library"</script>
 <script src="src/library.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="csv"</script>
@@ -340,6 +346,9 @@ window.EPISCOPE_BRAND = { name: 'EpiScope', tagline: 'Visualize seizures', credi
 <script src="src/report_ui.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="views"</script>
 <script src="src/views.js"></script>
+<script src="src/phase_overview.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="safety_ui"</script>
+<script src="src/safety_ui.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="pedigree"</script>
 <script src="src/pedigree.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="clinical_ui"</script>
@@ -425,13 +434,24 @@ window.EPISCOPE_BRAND = { name: 'EpiScope', tagline: 'Visualize seizures', credi
 <script src="src/sleep.js"></script>
 <script src="src/sleep_ui.js"></script>
 <script src="src/seizure_info.js"></script>
+<script src="src/migrate_ui.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="rec_cards"</script>
 <script src="src/rec_cards.js"></script>
+<script src="src/seizure_board.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="people"</script>
 <script src="src/people.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="viewbar"</script>
 <script src="src/viewbar.js"></script>
 <script>if(window.SV&&SV.Hooks)SV.Hooks.current="scroll_keep"</script>
 <script src="src/scroll_keep.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="provenance_ui"</script>
+<script src="src/provenance_ui.js"></script>
+<script>if(window.SV&&SV.Hooks)SV.Hooks.current="staff_deck"</script>
+<script src="src/staff_deck.js"></script>
+<script src="src/staff_edit.js"></script>
+<script src="src/identity_ui.js"></script>
+<script src="src/research_ui.js"></script>
+<script src="src/bids_ui.js"></script>
+<script src="src/video_sync.js"></script>
 </body>
 </html>

@@ -2,9 +2,10 @@
  *
  *   Un enregistrement long (une nuit, 76 min…) contient souvent plusieurs crises. Jusqu'en v4.21 un tracé portait une seule
  *   paire de marques (rec.marks) et un seul jeu de résultats (rec.ei, rec.cei, rec.pei, rec.h2, rec.fp, rec.em, rec.hfo,
- *   rec.quantIds), liés à une seule crise (rec.seizureId). Ici la crise active garde ces champs au premier niveau (le code
- *   de la visionneuse et des méthodes ne change pas) ; les autres crises du tracé sont rangées dans rec.bySz[seizureId] =
- *   { marks, ei, … } et l'on bascule de l'une à l'autre (ieegSetSeizure). Chaque jeu d'analyse enregistré porte
+ *   rec.quantIds), liés à une seule crise (rec.seizureId). v2.0.0 : chaque crise du tracé a son rangement fixe rec.sz[id] =
+ *   { marks, ei, … } (rec.free hors crise) et rec.marks, rec.ei… sont des accès au rangement de la crise active
+ *   (S.bindRec, store.js) ; ieegSetSeizure ne fait que changer rec.seizureId (plus de permutation des champs ; rec.bySz
+ *   reste une vue des autres crises pour le code existant). Chaque jeu d'analyse enregistré porte
  *   q.seizureId ; EImax / cEImax / PEImax voient une « crise » par crise marquée.
  *   Titres : une crise créée au curseur reçoit la date et l'heure du tracé (en-tête EDF / BrainVision) + t, et les titres
  *   « Crise n » de l'exploration sont renumérotés dans l'ordre chronologique (S.renumberSeizures).                     */
@@ -24,9 +25,11 @@
       add(rec.marks); for (const sl of Object.values(rec.bySz || {})) add(sl && sl.marks); return out.sort((a, b) => a[0] - b[0]);
     },
     ieegRecSeizures(rec) { const ids = []; if (rec.seizureId) ids.push(rec.seizureId); for (const k of Object.keys(rec.bySz || {})) if (!ids.includes(k)) ids.push(k); return ids; },
-    ieegStashSeizure(rec) { if (!rec.seizureId) return; rec.bySz = rec.bySz || {}; const slot = rec.bySz[rec.seizureId] = rec.bySz[rec.seizureId] || {}; for (const k of F) slot[k] = rec[k] == null ? null : rec[k]; },
+    // v2.0.0 : rangement fixe par crise (S.bindRec) — rien à déplacer pour un tracé relié
+    ieegStashSeizure(rec) { if (rec._bound || !rec.seizureId) return; rec.bySz = rec.bySz || {}; const slot = rec.bySz[rec.seizureId] = rec.bySz[rec.seizureId] || {}; for (const k of F) slot[k] = rec[k] == null ? null : rec[k]; },
     /** rend active la crise szId du tracé (ses marques et ses résultats passent au premier niveau) */
     ieegSetSeizure(rec, szId) {
+      if (S.recSetSeizure) return S.recSetSeizure(rec, szId);   // v2.0.0 : changer de crise = changer rec.seizureId
       szId = szId || null; if (rec.seizureId === szId) return false;
       rec.bySz = rec.bySz || {}; const slot = szId && rec.bySz[szId];
       if (!rec.seizureId && !slot) { rec.seizureId = szId; return true; }   // marques non attribuées : elles deviennent celles de la crise choisie
@@ -36,7 +39,7 @@
       rec.seizureId = szId; return true;
     },
     /** retire une crise du tracé (ses marques et résultats) sans toucher à la crise du dossier */
-    ieegDropSeizure(rec, szId) { if (rec.seizureId === szId) { const others = this.ieegRecSeizures(rec).filter(x => x !== szId); for (const k of F) rec[k] = fresh(k); rec.seizureId = null; if (others.length) this.ieegSetSeizure(rec, others[0]); } else if (rec.bySz) delete rec.bySz[szId]; },
+    ieegDropSeizure(rec, szId) { if (S.recDropSeizure) { S.recDropSeizure(rec, szId); return; } if (rec.seizureId === szId) { const others = this.ieegRecSeizures(rec).filter(x => x !== szId); for (const k of F) rec[k] = fresh(k); rec.seizureId = null; if (others.length) this.ieegSetSeizure(rec, others[0]); } else if (rec.bySz) delete rec.bySz[szId]; },
     /** début du tracé → Date (EDF « jj.mm.aa hh.mm.ss », ISO, BrainVision « AAAAMMJJhhmmss ») ou null */
     ieegRecStart(rec) {
       const V = this._iev, mem = V && V.rec === rec ? V.mem : null, sd = rec.startDate || (mem && mem.startDate), stt = rec.startTime || (mem && mem.startTime) || '00:00:00';
@@ -49,12 +52,11 @@
     },
     /** date-heure (format datetime-local) de l'instant t du tracé, si le début du tracé est connu */
     ieegClockAt(rec, t) { const d0 = this.ieegRecStart(rec); if (!d0 || t == null) return ''; const d = new Date(d0.getTime() + t * 1000); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; },
-    /** nouvelle crise de l'exploration marquée au curseur : séance du tracé (sinon la première), date = début du tracé + t ;
+    /** nouvelle crise de l'exploration marquée au curseur : date = début du tracé + t ;
      *  elle devient la crise active du tracé, le début est posé à t ; les titres « Crise n » sont renumérotés par date */
     ieegNewSeizureAt(rec, t) {
       const d = this.dossier, ex = this.ieegEx(); if (!d || !ex) return null;
-      let ses = S.sessionsOf(d, ex.id)[0]; if (!ses) ses = S.addSession(d, ex.id, {});
-      const dt = this.ieegClockAt(rec, t), sz = S.addSeizure(d, ses.id, Object.assign({ source: 'ieeg' }, dt ? { datetime: dt } : {}));
+      const dt = this.ieegClockAt(rec, t), sz = S.addSeizure(d, ex.id, Object.assign({ source: 'ieeg' }, dt ? { datetime: dt } : {}));
       S.renumberSeizures(d, ex.id);
       this.ieegSetSeizure(rec, sz.id); rec.marks.onset = Math.round(t * 100) / 100;
       this.touch('seizure', sz.id, sz.label + ' (marquée dans ' + rec.title + ')');

@@ -431,3 +431,121 @@ div.pr-vact.v3 { justify-content: flex-end; margin-top: 8px; }
 .ped-cons { color: var(--text); } .ped-links { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 6px; }
 .ped-lrow { display: flex; align-items: center; gap: 6px; padding: 3px 0; font-size: 12.5px; } .ped-lrow .chip { font-size: 11.5px; }
 .ped-rel { margin-bottom: 6px; } .ped-rel button { white-space: normal; }
+
+/* v1.0.1 — corbeille et versions (safety_ui.js) */
+.sf-t { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sf-t td { padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.sf-t td.acts { text-align: right; white-space: nowrap; } .sf-t td.acts .mini-btn { margin-left: 4px; }
+.sf-hist .sf-hl { max-height: 320px; overflow: auto; } .sf-trash table { max-height: 320px; }
+.sf-libtrash { margin-top: 10px; }
+/* v1.0.1 — frise de navigation de la visionneuse (ieeg_ui.js) */
+.ie-ovw .ie-ovall { position: absolute; left: 6px; bottom: 4px; padding: 1px 6px; font-size: 11px; z-index: 1; }
+.ie-top .ie-cur b { font-family: var(--mono, ui-monospace, monospace); font-weight: 600; }
+.ie-top .ie-clk button:disabled { opacity: 0.4; cursor: not-allowed; }
+.ie-view { grid-template-rows: auto auto minmax(0, 1fr) 80px; }
+/* v1.1.0 — provenance des jeux d'Analyses (provenance_ui.js) */
+.qx-prov { margin: 2px 0 6px; font-size: 12px; } .qx-prov a { cursor: pointer; margin-left: 4px; }
+.prov-body { padding: 6px 16px 14px; } .prov-body table { margin-top: 6px; }
+/* v1.1.0 — plot de référence (ieeg_montage.js) */
+.ie-refp { width: 540px; max-height: 70vh; overflow: auto; }
+.ie-refrow { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin: 3px 0; }
+.ie-refe { width: 46px; flex: none; text-align: right; padding-right: 4px; }
+.ie-refc { font: 11px var(--mono, ui-monospace, monospace); padding: 1px 5px; border: 1px solid var(--line2); border-radius: 4px; background: var(--bg2); cursor: pointer; }
+.ie-refc.wm { border-color: #8a6bd1; } .ie-refc.gm { border-color: #3c8f63; } .ie-refc.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+/* v1.1.0 — diaporama page par page (staff_deck.js) */
+.st-deck .dk-list { max-height: 420px; overflow: auto; }
+.dk-row, .dk-snap { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+.dk-row.off { opacity: 0.5; } .dk-row.off .dk-t { text-decoration: line-through; }
+.dk-eye { width: 26px; } .dk-sec { width: 150px; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; }
+.dk-t { cursor: text; } .dk-t:hover { text-decoration: underline dotted; }
+.pr-notes { position: absolute; right: 16px; bottom: 56px; width: min(460px, 40vw); background: var(--bg2); border: 1px solid var(--line2); border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.25); padding: 8px 10px; z-index: 5; font-size: 13px; }
+.pr-notes-h { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-weight: 600; } .pr-notes textarea { width: 100%; min-height: 120px; font-size: 14px; }
+.pr-main { position: relative; }
+.presentation.snapshot .pr-snote { padding: 6px 28px; font-size: 14px; color: var(--muted); } .presentation.snapshot .pr-snote:empty { display: none; }
+.pr-free .pr-list { font-size: 1.15em; line-height: 1.5; }
+/* v1.1.0 — zone d'identité du patient (identity_ui.js) */
+.idz { border: 1px dashed var(--line, #c9ced6); border-radius: 8px; padding: 6px 10px 8px; margin-bottom: 6px; background: rgba(200, 120, 40, .05); }
+.idz-h { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; }
+.idz-f { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+.idz-f .idz-row { grid-column: 1 / -1; max-width: 50%; min-width: 160px; }
+.idz-f label { display: flex; flex-direction: column; font-size: 12px; }
+.idz.hide .idz-f input { filter: blur(5px); }
+.idz.hide .idz-f input:focus { filter: none; }
+.ptable td.mono, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+/* v1.1.0 — noms de fichiers BIDS (bids_ui.js) */
+.bids-card { border-left: 3px solid #c8782a; }
+.bids-card table.mini td { padding: 1px 6px; font-size: 12px; }
+/* v1.1.0 — staff : Éditer / Commenter les données (staff_edit.js) ; commentaires aussi dans le compte rendu */
+.stcm { margin: 4px 0 8px; }
+.stcm-n { margin: 3px 0; padding: 4px 10px; border-left: 3px solid #c8782a; background: rgba(200, 120, 40, .07); border-radius: 0 6px 6px 0; font-size: .95em; }
+.stcm-n.cur { background: rgba(200, 120, 40, .13); }
+.stcm-h { font-size: .8em; color: #8a5a20; text-transform: none; white-space: nowrap; }
+.stcm-x { margin-left: 6px; white-space: nowrap; }
+.stcm-tools { display: flex; gap: 6px; margin: 2px 0 4px; }
+.stcm-tools.page { margin-bottom: 8px; }
+.pr-mini { font-size: 12px; padding: 1px 8px; border: 1px solid #c8782a; color: #8a5a20; background: #fff; border-radius: 10px; cursor: pointer; }
+.pr-mini:hover { background: #c8782a; color: #fff; }
+.stcm-in { margin: 4px 0 10px; }
+.stcm-in textarea { width: 100%; font: inherit; font-size: 15px; padding: 6px 8px; border: 2px solid #c8782a; border-radius: 6px; }
+.stcm-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.stcm-editing { opacity: .45; }
+.presentation.pr-editing .pr-body { overflow: auto; }
+.presentation.pr-editing [data-ed]:empty::before { content: 'à compléter'; color: #999; font-style: italic; }
+.presentation.pr-editing .pr-t[contenteditable="true"] { outline: 1px dashed rgba(200, 120, 40, .7); outline-offset: 2px; cursor: text; }
+.presentation [data-a=edit].on { background: #c8782a; color: #fff; }
+.idz-h b.mono { white-space: nowrap; }
+/* v1.1.0 — vidéo calée sur l'heure du tracé (video_sync.js) */
+.ie-vid { position: absolute; right: 14px; top: 96px; max-height: calc(100% - 110px); width: 340px; min-width: 220px; max-width: 70%; resize: both; overflow: hidden; z-index: 30; background: #10151d; color: #e6edf6; border: 1px solid #3a4658; border-radius: 8px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45); display: flex; flex-direction: column; }
+.ie-vid-h { display: flex; align-items: center; gap: 6px; padding: 4px 6px; font-size: 12px; cursor: move; user-select: none; }
+.ie-vid-h select { max-width: 150px; font-size: 12px; }
+.ie-vid video { width: 100%; flex: 1; min-height: 120px; background: #000; }
+.ie-vid-st { padding: 3px 8px; font-size: 11.5px; color: #aab6c8; }
+.ie-vidb.on { background: #4c96f0; color: #fff; }
+/* v2.0.0 — carte « Crises rapportées » (Histoire de la maladie) */
+.rep-card .sz-table { width: 100%; border-collapse: collapse; }
+.rep-card .sz-table td { padding: 4px 6px; vertical-align: middle; }
+.rep-card .sz-table td:first-child { white-space: nowrap; }
+.rep-card .sz-table tr + tr td { border-top: 1px solid var(--line, rgba(255,255,255,.08)); }
+.rep-card select.on { border-color: var(--accent, #d9b97a); }
+/* v2.0.0 — vue d'ensemble d'une exploration */
+.ov .ov-nums { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; font-size: 13px; }
+.ov .ov-cr { margin-left: auto; }
+.ov .ov-st { margin-left: 8px; color: var(--muted, #8b95a7); }
+.ov .ov-st.ok { color: var(--ok, #6cc78a); }
+.ov .ov-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 1100px) { .ov .ov-cols { grid-template-columns: 1fr; } }
+.ov .ov-t { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ov .ov-t td { padding: 4px 6px; border-top: 1px solid var(--line, rgba(255,255,255,.08)); vertical-align: middle; }
+.ov-tl { display: block; }
+.ov-tl .ov-day { fill: transparent; }
+.ov-tl .ov-day.odd { fill: rgba(127,127,127,.07); }
+.ov-tl .ov-dl { font: 600 11px sans-serif; fill: var(--text, #d7dce5); text-anchor: middle; }
+.ov-tl .ov-dd { font: 10px sans-serif; fill: var(--muted, #8b95a7); text-anchor: middle; }
+.ov-tl .ov-lane { font: 10px sans-serif; fill: var(--muted, #8b95a7); }
+.ov-tl .ov-rec.ict { fill: #9b5de5; opacity: .85; }
+.ov-tl .ov-rec.int { fill: #5f8fbf; opacity: .7; }
+.ov-tl .ov-sz path { fill: none; stroke: #e63946; stroke-width: 1.6; cursor: pointer; }
+.ov-tl .ov-sz.on path { fill: #e63946; }
+.ov-leg { margin-top: 4px; display: flex; gap: 12px; align-items: center; }
+.ov-leg .ov-k { display: inline-block; width: 18px; height: 8px; border-radius: 2px; margin-right: 3px; }
+.ov-leg .ov-k.ict { background: #9b5de5; } .ov-leg .ov-k.int { background: #5f8fbf; }
+.ov-leg .ov-kd { color: #e63946; }
+.ov-line { margin: 2px 0 8px; }
+/* v2.0.0 — Analyses : critiques puis intercritiques */
+.rc-sec { margin-top: 10px; }
+.rc-sec + .rc-sec { margin-top: 18px; padding-top: 8px; border-top: 1px solid var(--line, rgba(255,255,255,.12)); }
+.rc-sec-h { font-weight: 700; font-size: 14px; margin: 4px 0 2px; }
+.rc-also { padding: 4px 8px; font-size: 13px; }
+/* v2.0.0 — cartes 10-20 intercritiques : veille / sommeil */
+.eeg-mapcard .em-row { display: flex; align-items: flex-start; gap: 10px; }
+.eeg-mapcard .em-row + .em-row { border-top: 1px dashed var(--line, rgba(255,255,255,.12)); padding-top: 6px; margin-top: 4px; }
+.eeg-mapcard .em-rl { min-width: 70px; max-width: 150px; flex: none; font-weight: 600; padding-top: 6px; color: var(--muted, #8b95a7); }
+.ov .form.row4.ex-form { grid-template-columns: 2fr 1fr 1fr 1.5fr 1fr; }
+/* v2.0.0 — tableau des crises : état de chaque crise */
+.sz-st { white-space: normal; }
+.szs { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 9px; margin: 1px 3px 1px 0; border: 1px solid var(--line, rgba(127,127,127,.3)); color: var(--muted, #8b95a7); }
+.szs.ok { color: var(--ok, #2e9d58); border-color: currentColor; }
+.szs.no { color: #d9534f; border-color: currentColor; }
+.szs.mid { color: #c98a1b; border-color: currentColor; }
+.ann-card { border-left: 3px solid #c98a1b; }
+td.nowrap { white-space: nowrap; }

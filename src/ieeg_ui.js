@@ -87,9 +87,10 @@
   const LANE_COLS = [['', 'auto'], ['#ff5a5f', 'rouge'], ['#4c9ff0', 'bleu'], ['#3fbf6f', 'vert'], ['#f2a33a', 'orange'], ['#b07cf2', 'violet'], ['none', 'aucune']];   // couleur d'une voie (ECG en rouge par défaut)
   function trace(g, y, xs, spx, yc, ppu) {
     const n = y.length; if (n < 2) return; let m = 0; for (let i = 0; i < n; i++) m += y[i]; m /= n;
+    ppu *= SV.Wave.sign();   // v1.0.1 : négatif en haut (convention EEG) — une valeur positive descend
     g.beginPath();
-    if (spx >= 0.5) for (let i = 0; i < n; i++) { const x = xs + i * spx, v = yc - (y[i] - m) * ppu; if (i) g.lineTo(x, v); else g.moveTo(x, v); }
-    else { const per = 1 / spx; for (let px = 0; ; px++) { const a = Math.floor(px * per); if (a >= n) break; const b = Math.min(n, Math.floor((px + 1) * per)); let lo = Infinity, hi = -Infinity; for (let i = a; i < b; i++) { const v = y[i]; if (v < lo) lo = v; if (v > hi) hi = v; } const x = xs + px, yh = yc - (hi - m) * ppu, yl = yc - (lo - m) * ppu; if (px) g.lineTo(x, yh); else g.moveTo(x, yh); g.lineTo(x, yl); } }
+    if (spx >= 0.5) for (let i = 0; i < n; i++) { const x = xs + i * spx, v = yc + (y[i] - m) * ppu; if (i) g.lineTo(x, v); else g.moveTo(x, v); }
+    else { const per = 1 / spx; for (let px = 0; ; px++) { const a = Math.floor(px * per); if (a >= n) break; const b = Math.min(n, Math.floor((px + 1) * per)); let lo = Infinity, hi = -Infinity; for (let i = a; i < b; i++) { const v = y[i]; if (v < lo) lo = v; if (v > hi) hi = v; } const x = xs + px, yh = yc + (hi - m) * ppu, yl = yc + (lo - m) * ppu; if (px) g.lineTo(x, yh); else g.moveTo(x, yh); g.lineTo(x, yl); } }
     g.stroke();
   }
 
@@ -149,12 +150,20 @@
           job.progress(0.1, 'lecture');
           const mem = IE.openRecording(await partsOf(g.files)), id = uid('R');
           if (!mem.nSamples) throw new Error('aucun échantillon lisible');
-          const rec = { id, title: niceTitle(g.title), format: mem.kind, files: {}, fs: mem.fs, nch: mem.channels.length, nSamples: mem.nSamples, duration: mem.duration,
+          const rec = { id, clock: IE.clockOf(mem), title: niceTitle(g.title), format: mem.kind, files: {}, fs: mem.fs, nch: mem.channels.length, nSamples: mem.nSamples, duration: mem.duration,
             channels: mem.channels.map(c => ({ name: c.name, type: c.type, status: c.status })), events: mem.events.map(e => ({ onset: e.onset, duration: e.duration || 0, label: e.label })),
             warnings: mem.warnings, line: mem.line || 50, startDate: mem.startDate || '', startTime: mem.startTime || '', marks: Object.assign(IE.seizureMarks(mem.events), { user: [] }), seizureId: null, elecMap: {}, view: null, ei: null, created: ST.now() };
           job.progress(0.6, 'rangement dans le dossier');
-          for (const [k, f] of Object.entries(g.files)) if (f) { const p = `ieeg/${id}/${f.name}`; await L.writeFile(d, p, f); rec.files[k] = p; }
-          rec.kind = this.ieegKind(rec); list.push(rec); memPut(id, mem); last = rec;
+          // v1.1.0 : fichiers rangés sous leur nom BIDS (sub-<code>_ses-…_task-…_run-…) ; le nom d'origine, qui porte souvent
+          // le nom du patient, n'est gardé ni dans le dossier ni sur le disque ; titre neutre (type · date · run)
+          rec.kind = this.ieegKind(rec); const B = SV.BIDS, run = B.runOf(ex, rec); rec.title = B.recTitle(rec, run); rec.source = { format: mem.kind, files: Object.keys(g.files).filter(k => g.files[k]).length, bytes: Object.values(g.files).reduce((a, f) => a + (f ? f.size || 0 : 0), 0) };
+          const names = {}; for (const [k, f] of Object.entries(g.files)) if (f) names[k] = B.recPath(d, ex, rec, k, f.name);
+          for (const [k, f] of Object.entries(g.files)) if (f) {
+            let data = f; const nm = k2 => names[k2] && names[k2].split('/').pop();
+            if (k === 'vhdr') data = B.vhdrRename(new Uint8Array(await f.arrayBuffer()), nm('eeg'), nm('vmrk')); else if (k === 'vmrk') data = B.vhdrRename(new Uint8Array(await f.arrayBuffer()), nm('eeg'));
+            await L.writeFile(d, names[k], data); rec.files[k] = names[k];
+          }
+          ST.bindRec(rec); list.push(rec); memPut(id, mem); last = rec;
           job.done(`${rec.title} : ${rec.nch} voies, ${fmtDur(rec.duration)} à ${nf(rec.fs, 0)} Hz${mem.warnings.length ? ' — ' + mem.warnings[0] : ''}`);
         } catch (e) { console.warn(e); job.fail(e.message); }
       }
@@ -162,9 +171,9 @@
       return last;
     },
     async ieegRemove(r) {
-      const ex = this.ieegEx(); if (!ex || !confirm(`Supprimer le tracé « ${r.title} » et ses fichiers du dossier ?${r.ei && r.ei.quantId ? '\n(Le jeu d’EI enregistré dans Analyses est conservé.)' : ''}`)) return;
+      const ex = this.ieegEx(); if (!ex || !confirm(`Supprimer le tracé « ${r.title} » du dossier ? (Il part dans la corbeille du dossier, avec ses fichiers.)${r.ei && r.ei.quantId ? '\n(Le jeu d’EI enregistré dans Analyses est conservé.)' : ''}`)) return;
       for (const p of Object.values(r.files || {}).concat(Object.values((r.ei && r.ei.erCache) || {}).map(c => c.path))) await L.removeFile(this.dossier, p).catch(() => { });
-      ex.recordings = ex.recordings.filter(x => x !== r); MEM.delete(r.id); this.touch('exploration', ex.id, 'tracé SEEG supprimé'); this.renderQuant();
+      ST.discard(this.dossier, { kind: 'recording', list: 'explorations', id: ex.id, field: 'recordings', item: r }); MEM.delete(r.id); this.touch('exploration', ex.id, 'tracé SEEG supprimé'); this.renderQuant();
     },
     async ieegMem(rec) {
       if (MEM.has(rec.id)) return MEM.get(rec.id);
@@ -194,26 +203,33 @@
       if (!rec) return; let mem;
       try { mem = await this.ieegMem(rec); } catch (e) { console.warn(e); this.toast('Tracé illisible : ' + e.message, 7000); return; }
       this.ieegClose(true);
+      // v1.1.0 : horloge enregistrée dans le dossier ; si la lecture du fichier a changé, marques recalées par leur heure absolue
+      { const ck = IE.clockOf(mem); if (!rec.clock) { rec.clock = ck; ST.stampMarks(rec); this.touch(); } else if (JSON.stringify(rec.clock) !== JSON.stringify(ck)) { const n = ST.rebaseMarks(rec, ck); ST.stampMarks(rec); this.touch(); if (n) this.toast(`Marques recalées sur l’heure absolue (lecture du fichier modifiée) : ${n}`, 5000); } }
       const vw = rec.view || {}, mk = rec.marks || (rec.marks = { onset: null, end: null, user: [] }); mk.user = mk.user || [];
-      const V = this._iev = { rec, mem, light: lsGet('sv_ieeg_light') === '1', show: Object.assign({ sig: true, er: true, un: true, cmap: 'parula', scale: 'global' }, vw.show || {}), montage: vw.montage || 'bipolar', page: (vw.pageSet && vw.page) || 20, hp: vw.hp != null ? vw.hp : 1, lp: vw.lp || 0, notch: vw.notch === false || vw.notch === 0 ? 0 : +vw.notch > 1 ? +vw.notch : (mem.line || rec.line || 50), amp: null, hide: new Set(), scroll: 0, sel: -1, cursor: null, ei: false, er: null, res: null, resBy: new Map(), cache: new Map() };
+      const V = this._iev = { rec, mem, light: lsGet('sv_ieeg_light') === '1', show: Object.assign({ sig: true, er: true, un: true, cmap: 'parula', scale: 'global' }, vw.show || {}), montage: vw.montage || ((this.ieegExOf && this.ieegExOf(rec) || {}).montageDefault) || 'bipolar', page: (vw.pageSet && vw.page) || 20, hp: vw.hp != null ? vw.hp : 1, lp: vw.lp || 0, notch: vw.notch === false || vw.notch === 0 ? 0 : +vw.notch > 1 ? +vw.notch : (mem.line || rec.line || 50), amp: null, hide: new Set(), scroll: 0, sel: -1, cursor: null, ei: false, er: null, res: null, resBy: new Map(), cache: new Map() };
       V.t = mk.onset != null ? Math.max(0, mk.onset - V.page * 0.3) : 0;
+      V.tm = IE.timeMap(mem); V.clk = V.tm.hasClock && lsGet('sv_ieeg_clock') !== 'rel'; V.ovR = null;   // v1.0.1 : heure réelle, étendue de la frise (null = tout le tracé)
       const el = V.el = h('div', 'ie-view');
       el.classList.toggle('light', V.light); el.innerHTML = `<div class="ie-top"><b class="ie-title" title="${esc(rec.title)}">${esc(rec.title)}</b><span class="muted">${mem.channels.length} voies · ${nf(mem.fs, 1)} Hz · ${fmtDur(mem.duration)}</span>${mem.warnings.length ? `<span class="ie-warn" title="${esc(mem.warnings.join('\n'))}">⚠ ${esc(mem.warnings[0])}</span>` : ''}
-          <span class="seg ie-mont"><button data-m="mono">Monopolaire</button><button data-m="bipolar">Bipolaire</button></span>
+          <span class="seg ie-mont" title="Référence des voies"><button data-m="bipolar" title="Cascade : plots voisins d’une même électrode (bipolaire)">Cascade</button><button data-m="mono" title="Référence d’enregistrement (monopolaire, telle qu’enregistrée)">Référence</button><button data-m="car" title="Moyenne commune : chaque plot moins la moyenne des plots SEEG valides">Moyenne</button><button data-m="ref" title="Plot de référence choisi (en général en substance blanche) : chaque plot moins ce plot">Plot ▾</button></span>
           <label>page <select class="ie-page">${[1, 2, 5, 10, 15, 20, 30, 60].map(v => `<option value="${v}">${v} s</option>`).join('')}</select></label>
           <span class="ie-gain" title="Amplitude d’une voie (+ / −)"><button data-g="-1">−</button><span class="ie-amp"></span><button data-g="1">＋</button></span>
           <label>passe-haut <select class="ie-hp">${[[0, 'aucun'], [0.5, '0,5 Hz'], [1, '1 Hz'], [3, '3 Hz'], [5, '5 Hz'], [10, '10 Hz'], [80, '80 Hz (ripples)'], [250, '250 Hz (FR)']].map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
           <label>passe-bas <select class="ie-lp">${[[0, 'aucun'], [30, '30 Hz'], [70, '70 Hz'], [150, '150 Hz'], [300, '300 Hz']].map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
           <label title="Coupe-bande : raie du secteur et son harmonique (50 Hz en Europe, 60 Hz en Amérique du Nord et dans une partie de l’Asie)">secteur <select class="ie-notch">${[[0, 'aucun'], [50, '50 Hz'], [60, '60 Hz']].map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label>
-          <button class="ie-mlb" title="Marques du tracé en liste (signets) : clic pour s’y rendre">Marques ▾</button><span class="spacer"></span><span class="ie-cur"></span>
+          <button class="ie-mlb" title="Marques du tracé en liste (signets) : clic pour s’y rendre">Marques ▾</button><span class="spacer"></span><span class="seg ie-clk" title="Axe du temps : heure réelle de l’enregistrement (début de l’en-tête du fichier, coupures comprises) ou temps depuis le début du tracé"><button data-c="abs">Heure</button><button data-c="rel">t</button></span><span class="ie-cur" title="Instant du curseur (sinon du début de la page)"></span>
           <button class="ie-theme" title="Thème clair / sombre du tracé">${V.light ? '☾' : '☀'}</button><button class="ie-eib" hidden title="Panneau d’analyse">Analyses</button><button class="ie-x" title="Fermer (Échap)">✕</button></div>
         <div class="ie-chips"></div><div class="ie-main"><canvas></canvas></div><div class="ie-ovw" title="Aperçu de l’enregistrement : cliquer ou glisser pour s’y rendre"><canvas></canvas></div><aside class="ie-side" hidden><nav class="ie-mt"></nav><div class="ie-mb"></div></aside><div class="ie-sgrip" title="Glisser : largeur du panneau d’analyse" hidden></div><button class="ie-sidetab" title="Afficher le panneau d’analyse (quantifications, source, sommeil)">‹ Analyses</button>`;
       document.body.appendChild(el);
       V.cv = el.querySelector('.ie-main canvas'); V.ov = el.querySelector('.ie-ovw canvas'); V.side = el.querySelector('.ie-side'); V.sb = el.querySelector('.ie-mb');
-      const q = s => el.querySelector(s), keep = () => { rec.view = Object.assign(rec.view || {}, { montage: V.montage, page: V.page, hp: V.hp, lp: V.lp, notch: V.notch, show: V.show }); V.dirty = true; };
+      const q = s => el.querySelector(s), keep = () => { const exk = this.ieegExOf(rec); if (exk && exk.kind === 'seeg') exk.montageDefault = V.montage; rec.view = Object.assign(rec.view || {}, { montage: V.montage, page: V.page, hp: V.hp, lp: V.lp, notch: V.notch, show: V.show }); V.dirty = true; };
       q('.ie-mlb').onclick = e => this.ieegMarkList(e.currentTarget);
+      const clkSync = () => el.querySelectorAll('.ie-clk button').forEach(b => { b.classList.toggle('on', (b.dataset.c === 'abs') === !!V.clk); b.disabled = b.dataset.c === 'abs' && !V.tm.hasClock; });
+      el.querySelectorAll('.ie-clk button').forEach(b => b.onclick = () => { if (b.dataset.c === 'abs' && !V.tm.hasClock) return; V.clk = b.dataset.c === 'abs'; lsSet('sv_ieeg_clock', V.clk ? 'abs' : 'rel'); clkSync(); this.ieegDraw(); }); clkSync();
+      if (!V.tm.hasClock) q('.ie-clk').title = 'Heure réelle indisponible : l’en-tête du fichier ne donne pas l’heure de début';
       q('.ie-page').value = String(V.page); q('.ie-hp').value = String(V.hp); q('.ie-lp').value = String(V.lp); q('.ie-notch').value = String(V.notch);
-      el.querySelectorAll('.ie-mont button').forEach(b => b.onclick = () => { V.montage = b.dataset.m; keep(); this.ieegSetMontage(); });
+      el.querySelectorAll('.ie-mont button').forEach(b => b.onclick = () => { if (b.dataset.m === 'ref') { this.ieegRefPicker && this.ieegRefPicker(b); return; } V.montage = b.dataset.m; keep(); this.ieegSetMontage(); });
+      V.keepView = keep;
       q('.ie-page').onchange = e => { const c = V.t + V.page / 2; V.page = +e.target.value; V.t = clamp(c - V.page / 2, 0, Math.max(0, mem.duration - V.page)); keep(); rec.view.pageSet = true; this.ieegDraw(); };
       q('.ie-hp').onchange = e => { V.hp = +e.target.value; keep(); V.cache.clear(); this.ieegDraw(); };
       q('.ie-lp').onchange = e => { V.lp = +e.target.value; keep(); V.cache.clear(); this.ieegDraw(); };
@@ -240,7 +256,8 @@
     ieegSetMontage(first) {
       const V = this._iev; V.D = IE.montage(V.mem.channels, V.montage); V.cache.clear(); V.msel = new Set(); V.sel = -1;
       V.elecs = [...new Set(V.D.filter(d => d.seeg).map(d => d.elec))]; V.hasOther = V.D.some(d => !d.seeg);
-      V.el.querySelectorAll('.ie-mont button').forEach(b => b.classList.toggle('on', b.dataset.m === V.montage));
+      V.el.querySelectorAll('.ie-mont button').forEach(b => { const isRef = b.dataset.m === 'ref' && /^ref:/.test(V.montage); b.classList.toggle('on', b.dataset.m === V.montage || isRef); if (b.dataset.m === 'ref') b.textContent = isRef ? 'Réf. ' + V.montage.slice(4) + ' ▾' : 'Plot ▾'; });
+      if (V.D.length && V.D[0].refMissing) this.toast(`Plot de référence ${V.D[0].refMissing} absent de ce tracé : affichage en cascade`, 5000);
       this.ieegLanes(); if (first || V.amp == null || !V.ampManual) this.ieegAutoAmp(); this.ieegChips(); this.ieegDraw(); if (V.ei) this.ieegEIRender();
       if (!first && V.er && V.er.montage !== V.montage && !V.computing && V.rec.ei && V.rec.ei.erCache && V.rec.ei.erCache[V.montage]) this.ieegComputeER(false, true);
     },
@@ -344,7 +361,7 @@
     },
     ieegMarkListClose() { const V = this._iev; if (!V) return; if (V.mlist) V.mlist.remove(); V.mlist = null; if (V.mlClose) window.removeEventListener('pointerdown', V.mlClose, true); V.mlClose = null; },
     ieegAmpLabel() { const V = this._iev, s = V.el.querySelector('.ie-amp'); if (s) s.textContent = (V.amp >= 1000 ? nf(V.amp / 1000, 1) + ' mV' : V.amp + ' µV'); },
-    ieegDraw() { const V = this._iev; if (!V || V._raf) return; V._raf = requestAnimationFrame(() => { V._raf = 0; if (this._iev !== V) return; this.ieegPaint(); this.ieegPaintOverview(); this.ieegCursorLabel(); }); },
+    ieegDraw() { const V = this._iev; if (!V || V._raf) return; V._raf = requestAnimationFrame(() => { V._raf = 0; if (this._iev !== V) return; this.ieegOvFollow(); this.ieegPaint(); this.ieegPaintOverview(); this.ieegCursorLabel(); }); },
     ieegMarks() {
       const V = this._iev, r = V.rec, mk = r.marks || {}, out = [];
       for (const e of r.events || []) out.push({ t: e.onset, label: e.label, kind: 'file' });
@@ -384,8 +401,10 @@
       // grille du temps
       const step = V.page <= 3 ? 0.5 : V.page <= 15 ? 1 : V.page <= 30 ? 5 : 10;
       g.font = '11px ' + MONO; g.textBaseline = 'middle'; g.textAlign = 'center';
-      for (let t = Math.ceil(t0 / step) * step; t <= t0 + V.page + 1e-9; t += step) { const x = Math.round(X(t)) + 0.5; g.strokeStyle = C.grid; g.beginPath(); g.moveTo(x, TOP); g.lineTo(x, H); g.stroke(); g.fillStyle = C.tick; g.fillText(clock(t).replace(/\.0$/, ''), x, 9); }
+      for (let t = Math.ceil(t0 / step) * step; t <= t0 + V.page + 1e-9; t += step) { const x = Math.round(X(t)) + 0.5; g.strokeStyle = C.grid; g.beginPath(); g.moveTo(x, TOP); g.lineTo(x, H); g.stroke(); g.fillStyle = C.tick; g.fillText(V.clk ? IE.hms(V.tm.abs(t), step < 1) : clock(t).replace(/\.0$/, ''), x, 9); }
       if (this.ieegPaintBg) this.ieegPaintBg(g, { X, x0, pw, TOP, H, t0, page: V.page });   // stades du sommeil (sleep_ui.js)
+      // v1.0.1 : crises du tracé teintées (crise active plus marquée) ; libellé en haut de la bande
+      for (const z of this.ieegSeizureSpans()) { const e1 = z.end != null ? z.end : z.on + 1; if (e1 < t0 || z.on > t0 + V.page) continue; const a = clamp(X(z.on), x0, x0 + pw), b = clamp(X(e1), x0, x0 + pw); g.fillStyle = z.active ? 'rgba(255,90,95,0.07)' : 'rgba(255,90,95,0.045)'; g.fillRect(a, TOP, Math.max(1, b - a), H - TOP); if (!z.active && z.on >= t0) { g.fillStyle = 'rgba(255,120,124,0.9)'; g.font = '10.5px system-ui, sans-serif'; g.textAlign = 'left'; g.fillText(z.label, a + 4, TOP + 8); g.textAlign = 'center'; g.font = '11px ' + MONO; } }
       // voies
       const i0 = Math.max(0, Math.floor(t0 * fs)), i1 = Math.min(V.mem.nSamples, Math.ceil((t0 + V.page) * fs) + 1), xs = X(i0 / fs), spx = k / fs, ppu = laneH / V.amp;
       const grp = li => V.grpKey ? V.grpKey[li] : V.D[li].seeg ? V.D[li].elec : '·', LX = V.grpKey ? 100 : 6;   // v5.1 : groupes du montage (ieeg_montage.js)
@@ -401,6 +420,7 @@
         if (V.grpKey) { const GL = this.ieegGroupLines ? this.ieegGroupLines(prev) : [String(prev)]; if (gRow < GL.length) { g.fillStyle = V.light ? '#8a5300' : '#f2b84b'; g.font = '600 11px system-ui, sans-serif'; g.fillText(GL[gRow], 6, yc); } }
         g.fillStyle = d.bad || ex ? C.txtBad : !d.seeg ? C.txtOther : li === V.sel || ms ? C.selTxt : C.txt; g.font = (laneH >= 16 ? '11.5px ' : '10.5px ') + MONO;
         const ml = V.grpKey ? 11 : 12; g.fillText((ex ? '⊘ ' : '') + (d.name.length > ml ? d.name.slice(0, ml - 1) + '…' : d.name), LX, yc);
+        if (d.gapBefore && d.gapBefore.length) { g.save(); g.fillStyle = V.light ? '#a0522d' : '#f2994a'; g.font = '9.5px ' + MONO; g.fillText('↑ ' + d.gapBefore.join(', ') + ' absent' + (d.gapBefore.length > 1 ? 's' : ''), LX, yT + 8); g.restore(); }   // v1.0.1 : plot(s) absent(s) du fichier, pas de paire pontée
         const lv = V.ei && V.meth && V.meth !== 'ei' && this.ieegLaneVal ? this.ieegLaneVal(d.name) : r ? { v: r.ei, hi: r.ei >= IE.EZT.ei, pz: IE.eiZone(r.ei) === 'pz' } : null;
         if (lv) { g.fillStyle = C.barBg; g.fillRect(GUT - 30, yc - 3, 24, 6); g.fillStyle = lv.hi ? '#ff5a5f' : lv.pz ? '#f2a33a' : '#4cc9f0'; g.fillRect(GUT - 30, yc - 3, Math.max(1, 24 * clamp(lv.v, 0, 1)), 6); }
         const lg = VG[d.name] || 1, lc = this.ieegLaneColor(d); if (lg !== 1) { g.fillStyle = C.txtOther; g.font = '9.5px ' + MONO; g.fillText('×' + nf(lg, lg < 1 ? 2 : 1), GUT - (lv ? 58 : 30), yc + 3); }
@@ -432,32 +452,84 @@
       // ascenseur des voies
       if (lanes.length > nVis) { const hT = H - TOP, bh = Math.max(20, hT * nVis / lanes.length), by = TOP + (hT - bh) * V.scroll / Math.max(1, lanes.length - nVis); g.fillStyle = C.scroll; g.fillRect(W - 5, by, 3, bh); }
     },
+    /** v1.0.1 — frise de navigation (bas de la visionneuse) : tout le tracé ou une partie (molette : zoom, glisser : se
+     *  déplacer, double-clic ou ⤢ : tout le tracé) ; règle en heure réelle (date à minuit), coupures et recouvrements EDF+D,
+     *  crises du tracé en bandes (clic : aller au début), enveloppe du signal, carte d'énergie de l'EI en surimpression, page. */
+    ieegOvRange() { const V = this._iev, dur = V.mem.duration || 1; let r = V.ovR; if (!r || r[1] - r[0] >= dur - 1e-6) return [0, dur]; return r; },
+    /** crises du tracé : [{ id, label, on, end, active }] (marques de la crise active et de celles rangées dans rec.bySz) */
+    ieegSeizureSpans() {
+      const V = this._iev, rec = V.rec, d = this.dossier, out = [], lab = id => { const sz = d && id ? (d.seizures || []).find(x => x.id === id) : null; return sz ? sz.label : 'crise'; };
+      const add = (id, mk, active) => { if (mk && mk.onset != null) out.push({ id, label: lab(id), on: mk.onset, end: mk.end != null ? mk.end : null, active }); };
+      add(rec.seizureId, rec.marks, true); for (const [id, sl] of Object.entries(rec.bySz || {})) add(id, sl && sl.marks, false);
+      return out.sort((a, b) => a.on - b.on);
+    },
     ieegPaintOverview() {
       const V = this._iev, cv = V.ov, W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
       const dpr = window.devicePixelRatio || 1; if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
       const C = V.light ? THEME.light : THEME.dark, g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = C.ov; g.fillRect(0, 0, W, H);
-      const GUT = (V.geo && V.geo.GUT) || 108, pw = W - GUT - 8, dur = V.mem.duration || 1, X = t => GUT + t / dur * pw; V.ovGeo = { GUT, pw, dur };
-      g.font = '10.5px system-ui, sans-serif'; g.fillStyle = '#5c6675'; g.textBaseline = 'middle'; g.fillText(V.heat ? 'ER (log)' : 'aperçu', 8, H / 2);
-      if (V.heat && V.er) { const a = X(V.er.t0), b = X(V.er.t0 + V.er.dt * V.er.ers[0].length); g.imageSmoothingEnabled = true; g.drawImage(V.heat, 0, 0, V.heat.width, V.heat.height, a, 3, Math.max(1, b - a), H - 6); }
-      else { // enveloppe (amplitude crête à crête médiane des voies SEEG valides, 600 colonnes), calculée une fois par montage
-        if (!V.env || V.env.m !== V.montage) {
-          const n = V.mem.nSamples, C = 600, step = Math.max(1, Math.floor(n / C)), ds = V.D.filter(x => x.seeg && !x.bad), pick = ds.filter((x, i) => i % Math.max(1, Math.floor(ds.length / 12)) === 0).slice(0, 12), env = new Float32Array(Math.ceil(n / step));
-          const per = pick.map(d => { const x = IE.deriveSignal(V.mem.data, d, 0, n), e = new Float32Array(env.length); for (let c = 0; c < env.length; c++) { let lo = Infinity, hi = -Infinity; for (let i = c * step; i < Math.min(n, (c + 1) * step); i++) { const v = x[i]; if (v < lo) lo = v; if (v > hi) hi = v; } e[c] = hi - lo; } return e; });
-          for (let c = 0; c < env.length; c++) { const v = per.map(e => e[c]).sort((a, b) => a - b); env[c] = v.length ? v[v.length >> 1] : 0; }
-          const srt = Array.from(env).sort((a, b) => a - b); V.env = { m: V.montage, env, mx: srt[Math.floor(srt.length * 0.98)] || 1 };
-        }
-        const { env, mx } = V.env; g.fillStyle = C.ovEnv; for (let c = 0; c < env.length; c++) { const hh = Math.min(1, env[c] / mx) * (H - 8); g.fillRect(GUT + c * pw / env.length, H / 2 - hh / 2, Math.max(1, pw / env.length + 0.5), hh); }
+      const dur = V.mem.duration || 1, [o0, o1] = this.ieegOvRange(), GUT = (V.geo && V.geo.GUT) || 108, pw = W - GUT - 8, X = t => GUT + (t - o0) / (o1 - o0) * pw, RU = 15, BOT = H - 13;
+      V.ovGeo = { GUT, pw, dur, o0, o1 };
+      const ink = V.light ? '#4a5566' : '#9aa6b8', faint = V.light ? 'rgba(20,35,58,0.18)' : 'rgba(220,230,245,0.16)';
+      // enveloppe (amplitude crête à crête médiane de 12 voies SEEG valides, 3000 colonnes sur tout le tracé), calculée une fois par montage
+      if (!V.env || V.env.m !== V.montage) {
+        const n = V.mem.nSamples, NC = 3000, step = Math.max(1, Math.floor(n / NC)), ds = V.D.filter(x => x.seeg && !x.bad), pick = ds.filter((x, i) => i % Math.max(1, Math.floor(ds.length / 12)) === 0).slice(0, 12), env = new Float32Array(Math.ceil(n / step));
+        const per = pick.map(dd => { const x = IE.deriveSignal(V.mem.data, dd, 0, n), e = new Float32Array(env.length); for (let c = 0; c < env.length; c++) { let lo = Infinity, hi = -Infinity; for (let i = c * step; i < Math.min(n, (c + 1) * step); i++) { const v = x[i]; if (v < lo) lo = v; if (v > hi) hi = v; } e[c] = hi - lo; } return e; });
+        for (let c = 0; c < env.length; c++) { const v = per.map(e => e[c]).sort((a, b) => a - b); env[c] = v.length ? v[v.length >> 1] : 0; }
+        const srt = Array.from(env).sort((a, b) => a - b); V.env = { m: V.montage, env, mx: srt[Math.floor(srt.length * 0.98)] || 1, dt: step / V.mem.fs };
       }
+      { const { env, mx, dt } = V.env, c0 = Math.max(0, Math.floor(o0 / dt)), c1 = Math.min(env.length, Math.ceil(o1 / dt)), mid = (RU + BOT) / 2, hmax = BOT - RU - 4; g.fillStyle = C.ovEnv;
+        for (let c = c0; c < c1; c++) { const x = X(c * dt), w = Math.max(1, X((c + 1) * dt) - x + 0.5), hh = Math.min(1, env[c] / mx) * hmax; g.fillRect(x, mid - hh / 2, w, hh); } }
+      if (V.heat && V.er) { const a = X(V.er.t0), b = X(V.er.t0 + V.er.dt * V.er.ers[0].length); g.save(); g.globalAlpha = 0.85; g.imageSmoothingEnabled = true; g.drawImage(V.heat, 0, 0, V.heat.width, V.heat.height, a, RU + 1, Math.max(1, b - a), BOT - RU - 2); g.restore(); }
+      g.save(); g.beginPath(); g.rect(GUT, 0, pw, H); g.clip();
       if (this.ieegOvwBg) this.ieegOvwBg(g, X, H);   // hypnogramme (sleep_ui.js)
       const P = V.ei && (!V.meth || V.meth === 'ei') ? this.ieegEIParams() : null;
       if (V.ei && !P && this.ieegOvwWin) this.ieegOvwWin(g, X, H);
-      if (P) { g.strokeStyle = 'rgba(76,201,240,0.8)'; g.strokeRect(X(P.start) + 0.5, 1.5, Math.max(1, X(P.end) - X(P.start)), H - 3); }
-      for (const m of this.ieegMarks()) { g.strokeStyle = m.kind === 'onset' ? '#ff5a5f' : m.kind === 'end' ? '#4cc9f0' : m.kind === 'user' ? '#7bd389' : m.kind === 'inter' ? '#b07cf2' : 'rgba(242,184,75,0.7)'; const x = Math.round(X(m.t)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
-      g.strokeStyle = '#f2b84b'; g.lineWidth = 1.5; g.strokeRect(X(V.t), 1, Math.max(2, V.page / dur * pw), H - 2); g.lineWidth = 1;
+      if (P) { g.strokeStyle = 'rgba(76,201,240,0.8)'; g.strokeRect(X(P.start) + 0.5, RU + 0.5, Math.max(1, X(P.end) - X(P.start)), BOT - RU - 1); }
+      // crises : bandes (crise active plus marquée), libellé sous la bande ; zones de clic gardées pour la navigation
+      V.ovHits = [];
+      g.font = '10px system-ui, sans-serif'; g.textBaseline = 'middle'; g.textAlign = 'left';
+      for (const z of this.ieegSeizureSpans()) {
+        const a = X(z.on), b = z.end != null ? X(z.end) : a + 3, w = Math.max(3, b - a);
+        g.fillStyle = z.active ? 'rgba(255,90,95,0.32)' : 'rgba(255,90,95,0.16)'; g.fillRect(a, RU, w, BOT - RU);
+        g.fillStyle = z.active ? '#ff5a5f' : 'rgba(255,90,95,0.7)'; g.fillRect(a, RU, 2, BOT - RU);
+        g.fillStyle = z.active ? (V.light ? '#b42318' : '#ff8a8e') : ink; g.fillText((z.active ? '● ' : '') + z.label, a + 3, BOT + 6.5);
+        V.ovHits.push({ x0: a - 3, x1: Math.max(a + w, a + 6 + g.measureText(z.label).width), t: z.on, id: z.id });
+      }
+      // évènements « crise » du fichier sans crise marquée : triangles
+      const known = this.ieegSeizureSpans().map(z => z.on), sm = /(sz|seizure|crise|ictal)/i;
+      for (const e of V.mem.events || []) if (!e.sys && sm.test(e.label || '') && !/fin|end|offset/i.test(e.label) && !known.some(t => Math.abs(t - e.onset) < 30)) { const x = X(e.onset); g.fillStyle = '#f2994a'; g.beginPath(); g.moveTo(x, RU + 1); g.lineTo(x + 4, RU + 8); g.lineTo(x - 4, RU + 8); g.closePath(); g.fill(); V.ovHits.push({ x0: x - 5, x1: x + 5, t: e.onset, label: e.label }); }
+      // coupures (hachures) et recouvrements
+      for (const gp of V.tm.gaps) { const x = Math.round(X(gp.t)) + 0.5; if (gp.dur > 0) { g.strokeStyle = '#f2994a'; g.lineWidth = 3; g.setLineDash([3, 2]); g.beginPath(); g.moveTo(x, RU); g.lineTo(x, BOT); g.stroke(); g.setLineDash([]); g.lineWidth = 1; g.fillStyle = '#f2994a'; g.fillText('⫽ ' + fmtDur(gp.dur), x + 4, RU + 7); } else { g.strokeStyle = 'rgba(242,153,74,0.6)'; g.beginPath(); g.moveTo(x, RU); g.lineTo(x, RU + 6); g.stroke(); } }
+      for (const m of this.ieegMarks()) if (m.kind === 'user' || m.kind === 'inter') { g.strokeStyle = m.kind === 'user' ? '#7bd389' : '#b07cf2'; const x = Math.round(X(m.t)) + 0.5; g.beginPath(); g.moveTo(x, RU); g.lineTo(x, BOT); g.stroke(); }
+      // page affichée
+      g.strokeStyle = '#f2b84b'; g.lineWidth = 2; g.strokeRect(X(V.t), RU - 1, Math.max(3, X(V.t + V.page) - X(V.t)), BOT - RU + 2); g.lineWidth = 1;
+      g.restore();
+      // règle : heure réelle (date à minuit) ou temps du tracé
+      g.fillStyle = V.light ? 'rgba(20,35,58,0.05)' : 'rgba(255,255,255,0.04)'; g.fillRect(GUT, 0, pw, RU); g.strokeStyle = faint; g.beginPath(); g.moveTo(GUT, RU + 0.5); g.lineTo(GUT + pw, RU + 0.5); g.stroke();
+      g.font = '10px ' + MONO; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = ink;
+      const tm = V.tm, rA = tm.real(o0), rB = tm.real(o1), step = IE.niceStep(Math.max(1, rB - rA), pw);
+      if (V.clk && tm.hasClock) {
+        const st = tm.start.getTime() / 1000, tz = -tm.start.getTimezoneOffset() * 60, first = Math.ceil((st + rA + tz) / step) * step - tz - st;
+        let lastDay = null, lastX = -1e9;
+        for (let r = first; r <= rB + 1e-6; r += step) { const t = tm.tOf(r); if (t == null || t < o0 - 1e-6 || t > o1 + 1e-6) continue; const x = X(t), a = new Date((st + r) * 1000), day = IE.dmy(a), mn = a.getHours() === 0 && a.getMinutes() === 0 && a.getSeconds() === 0;
+          g.strokeStyle = faint; g.beginPath(); g.moveTo(Math.round(x) + 0.5, RU - 4); g.lineTo(Math.round(x) + 0.5, RU); g.stroke();
+          const lbl = mn || (lastDay && day !== lastDay) ? day.slice(0, 5) + ' 00:00' : step < 60 ? IE.hms(a) : IE.hms(a).slice(0, 5), wl = g.measureText(lbl).width; if (x - lastX < wl + 10) continue;   // pas de chevauchement (de part et d'autre d'une coupure)
+          if (mn) g.font = 'bold 10px ' + MONO; g.fillText(lbl, x, 7); if (mn) g.font = '10px ' + MONO; lastDay = day; lastX = x; }
+      } else {
+        const st2 = IE.niceStep(o1 - o0, pw); for (let t = Math.ceil(o0 / st2) * st2; t <= o1 + 1e-6; t += st2) g.fillText(clock(t).replace(/\.0$/, ''), X(t), 7);
+      }
+      // gouttière : date, étendue affichée
+      g.textAlign = 'left'; g.font = '10.5px system-ui, sans-serif'; g.fillStyle = ink;
+      const a0 = tm.hasClock ? tm.abs(o0) : null, zoomed = o0 > 1e-6 || o1 < dur - 1e-6;
+      g.fillText(a0 ? IE.dmy(a0) : 'tracé', 8, 8); g.fillStyle = V.light ? '#6b7686' : '#8592a6'; g.fillText((zoomed ? 'zoom · ' : 'tout · ') + fmtDur(Math.max(1, tm.real(o1) - tm.real(o0))), 8, 22);
+      if (V.heat && V.er) g.fillText('ER (log)', 8, 36);
+      const btn = V.el.querySelector('.ie-ovall'); if (btn) btn.hidden = !zoomed;
     },
     ieegCursorLabel() {
       const V = this._iev, s = V.el.querySelector('.ie-cur'); if (!s) return; const on = V.rec.marks && V.rec.marks.onset;
-      const t = V.cursor != null ? V.cursor : V.t; s.textContent = `${V.cursor != null ? 't ' : ''}${clock(t)}${on != null ? ` (${t - on >= 0 ? '+' : '−'}${nf(Math.abs(t - on), 1)} s)` : ''}`;
+      const t = V.cursor != null ? V.cursor : V.t, rel = `${on != null ? ` · ${t - on >= 0 ? '+' : '−'}${nf(Math.abs(t - on), 1)} s / début de crise` : ''}`;
+      if (V.tm && V.tm.hasClock) { const a = V.tm.abs(t); s.innerHTML = `<b>${IE.hms(a, true)}</b> <span class="muted">${IE.dmy(a)} · t ${clock(t)}${rel}</span>`; }
+      else s.textContent = `t ${clock(t)}${rel}`;
     },
     ieegHit(e) {
       const V = this._iev, r = V.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top, G = V.geo; if (!G) return null;
@@ -528,13 +600,24 @@
         V.scroll = clamp(V.scroll + Math.sign(e.deltaY) * 3, 0, Math.max(0, V.lanes.length - (V.geo ? V.geo.nVis : 1))); this.ieegDraw();
       };
     },
+    /** frise : clic = aller (page centrée ; sur une crise : son début), glisser = parcourir, molette = zoom de la frise autour
+     *  du pointeur, double-clic ou ⤢ = tout le tracé ; la frise suit la page quand elle en sort */
     ieegBindOverview() {
-      const V = this._iev, cv = V.ov; let down = false;
-      const go = e => { const r = cv.getBoundingClientRect(), G = V.ovGeo; if (!G) return; const t = (e.clientX - r.left - G.GUT) / G.pw * G.dur; V.t = clamp(t - V.page / 2, 0, Math.max(0, V.mem.duration - V.page)); this.ieegDraw(); };
-      cv.onpointerdown = e => { down = true; cv.setPointerCapture(e.pointerId); go(e); };
-      cv.onpointermove = e => { if (down) go(e); };
-      cv.onpointerup = () => { down = false; };
+      const V = this._iev, cv = V.ov; let down = false, moved = false, x0 = 0;
+      const host = cv.parentElement, all = h('button', 'ie-ovall mini-btn', '⤢ tout le tracé'); all.title = 'Revenir au tracé complet dans la frise (double-clic sur la frise)'; all.hidden = true; host.appendChild(all);
+      all.onclick = e => { e.stopPropagation(); V.ovR = null; this.ieegDraw(); };
+      const tAt = e => { const r = cv.getBoundingClientRect(), G = V.ovGeo; if (!G) return null; return { x: e.clientX - r.left, t: G.o0 + (e.clientX - r.left - G.GUT) / G.pw * (G.o1 - G.o0) }; };
+      const go = t => { V.t = clamp(t - V.page / 2, 0, Math.max(0, V.mem.duration - V.page)); this.ieegDraw(); };
+      cv.onpointerdown = e => { const p = tAt(e); if (!p) return; down = true; moved = false; x0 = p.x; cv.setPointerCapture(e.pointerId); };
+      cv.onpointermove = e => { const p = tAt(e); if (!p) return; const hit = (V.ovHits || []).find(z => p.x >= z.x0 && p.x <= z.x1); cv.style.cursor = hit ? 'pointer' : 'crosshair'; cv.title = hit ? (hit.label ? 'évènement du fichier : ' + hit.label : 'aller au début de la crise') : 'cliquer ou glisser pour s’y rendre · molette : zoom · double-clic : tout le tracé';
+        if (down && (moved || Math.abs(p.x - x0) > 3)) { moved = true; go(p.t); } };
+      cv.onpointerup = e => { if (!down) return; down = false; if (moved) return; const p = tAt(e); if (!p) return; const hit = (V.ovHits || []).find(z => p.x >= z.x0 && p.x <= z.x1); if (hit) { V.t = clamp(hit.t - V.page * 0.3, 0, Math.max(0, V.mem.duration - V.page)); this.ieegDraw(); } else go(p.t); };
+      cv.ondblclick = e => { e.preventDefault(); V.ovR = null; this.ieegDraw(); };
+      cv.onwheel = e => { e.preventDefault(); const p = tAt(e); if (!p) return; const dur = V.mem.duration || 1, [o0, o1] = this.ieegOvRange(), f = e.deltaY > 0 ? 1.4 : 1 / 1.4, minW = Math.min(dur, Math.max(V.page * 2, 20));
+        let w = clamp((o1 - o0) * f, minW, dur), a = p.t - (p.t - o0) * w / (o1 - o0); a = clamp(a, 0, dur - w); V.ovR = w >= dur - 1e-6 ? null : [a, a + w]; this.ieegDraw(); };
     },
+    /** la frise zoomée suit la page affichée */
+    ieegOvFollow() { const V = this._iev; if (!V || !V.ovR) return; const [o0, o1] = V.ovR, w = o1 - o0, dur = V.mem.duration || 1; if (V.t < o0 || V.t + V.page > o1) { const a = clamp(V.t + V.page / 2 - w / 2, 0, Math.max(0, dur - w)); V.ovR = [a, a + w]; } },
     ieegKey(e) {
       const V = this._iev; if (!V) return; const t = e.target; if (t && /INPUT|TEXTAREA|SELECT/.test(t.tagName) && e.key !== 'Escape') return;
       const pg = V.page, max = Math.max(0, V.mem.duration - pg); let done = true;
@@ -629,7 +712,7 @@
       return { montage: V.montage, ders, names: C.names.slice(), ers: C.names.map((n, i) => f.subarray(i * C.len, (i + 1) * C.len)), t0: C.t0, dt: C.dt, range: C.range, opts: null, ms: 0, loaded: C.at };
     },
     async ieegSaveER(V) {
-      const E = V.er, rec = V.rec, len = E.ers[0].length, buf = new Float32Array(E.ers.length * len), path = `ieeg/${rec.id}/er_${V.montage}.f32`;
+      const E = V.er, rec = V.rec, len = E.ers[0].length, buf = new Float32Array(E.ers.length * len), path = `ieeg/${rec.id}/er_${SV.IEEG.montageKey(V.montage)}.f32`;
       E.ers.forEach((er, i) => buf.set(er, i * len));
       try { await L.writeFile(this.dossier, path, new Blob([buf.buffer], { type: 'application/octet-stream' })); rec.ei.erCache = Object.assign(rec.ei.erCache || {}, { [E.montage]: { path, key: this.ieegERKey(this.ieegEIParams(), V.mem), names: E.names, t0: E.t0, dt: E.dt, len, range: E.range, at: ST.now() } }); V.dirty = true; }
       catch (e) { console.warn('cache ER', e); }
@@ -712,6 +795,8 @@
     ieegEIUpdate() { const V = this._iev; if (V.er) this.ieegRunEI(); if (V.ei) this.ieegEIRender(true); this.ieegDraw(); },
     /** correspondance électrodes du tracé → électrodes du schéma ('' : aucune ; absent : automatique) */
     ieegElecMap() { const V = this._iev; return this.ieegMapFor(V.rec, V.elecs); },
+    /** exploration qui porte le tracé rec */
+    ieegExOf(rec) { const d = this.dossier; return d && rec ? d.explorations.find(e => (e.recordings || []).includes(rec)) || null : null; },
     /** correspondance des électrodes du tracé avec le schéma d'implantation, au bas de chaque onglet (crise comme intercritique) */
     ieegMapHtml() {
       const V = this._iev, rec = V.rec, map = this.ieegElecMap(), nMap = V.elecs.filter(e => map[e]).length, schema = (this.elecs || []).map(e => e.name);
@@ -719,11 +804,12 @@
           ${schema.length ? `<div class="hint">Électrode du tracé → électrode du schéma (même nom, « p » pour le prime, LA → A’, RA → A) : c’est elle qui place les valeurs sur les plots en 3D.</div><table class="ie-tab">${V.elecs.map(e => `<tr><td class="mono">${esc(e)}</td><td>→</td><td><select data-e="${esc(e)}"><option value="">— aucune</option>${schema.map(n => `<option value="${esc(n)}"${map[e] === n ? ' selected' : ''}>${esc(n)}${!rec.elecMap[e] && map[e] === n ? ' (auto)' : ''}</option>`).join('')}</select></td></tr>`).join('')}</table>` : '<div class="hint warn">Pas de schéma d’implantation dans cette exploration : les valeurs ne pourront pas être placées sur les plots.</div>'}</details>`;
     },
     ieegMapBind(side) {
-      const V = this._iev; side.querySelectorAll('.ie-map select').forEach(s => s.onchange = () => { V.rec.elecMap = V.rec.elecMap || {}; V.rec.elecMap[s.dataset.e] = s.value; V.dirty = true; if (!V.meth || V.meth === 'ei' || !this.ieegMethRender) this.ieegEIRender(); else this.ieegMethRender(); });
+      const V = this._iev; side.querySelectorAll('.ie-map select').forEach(s => s.onchange = () => { V.rec.elecMap = V.rec.elecMap || {}; V.rec.elecMap[s.dataset.e] = s.value; const exm = this.ieegExOf ? this.ieegExOf(V.rec) : null; if (exm) { exm.elecMap = exm.elecMap || {}; exm.elecMap[s.dataset.e] = s.value; } V.dirty = true; /* v1.1.0 : correspondance gardée aussi pour toute l'exploration */ if (!V.meth || V.meth === 'ei' || !this.ieegMethRender) this.ieegEIRender(); else this.ieegMethRender(); });
     },
     ieegMapFor(rec, prefixes) {
-      const names = (this.elecs || []).map(e => e.name), m = {}; rec.elecMap = rec.elecMap || {};
-      for (const el of prefixes) { const u = rec.elecMap[el]; m[el] = u === '' ? null : u ? (names.includes(u) ? u : null) : IE.matchElectrode(el, names); }
+      // v1.1.0 : correspondance du tracé, sinon celle de l'exploration (posée une fois pour tous ses tracés), sinon automatique
+      const names = (this.elecs || []).map(e => e.name), m = {}; rec.elecMap = rec.elecMap || {}; const exm = (this.ieegExOf && this.ieegExOf(rec) || {}).elecMap || {};
+      for (const el of prefixes) { const u = el in rec.elecMap ? rec.elecMap[el] : exm[el]; m[el] = u === '' ? null : u ? (names.includes(u) ? u : null) : IE.matchElectrode(el, names); }
       return m;
     },
     /** dernier EI d'un tracé, voie par voie, avec la clé du plot (ou de la paire) dans le schéma (sinon le nom du tracé) */
@@ -761,7 +847,7 @@
           <div class="help ie-emxbody"><div class="ctrl-row"><span class="seg ie-emxm-m">${Object.keys(MX).map(k => `<button data-mx="${k}" class="${k === meth ? 'on' : ''}"${counts[k] ? '' : ' disabled'} title="${esc(MX[k].ref)} — ${counts[k]} tracé${counts[k] > 1 ? 's' : ''}">${MX[k].L}</button>`).join('')}</span></div>
             <div class="hint">Le ${X.L} d’une voie est la valeur maximale de ${X.w} parmi les crises choisies (chaque valeur est normalisée à 1 dans sa crise). Les voies sont rapprochées par leurs plots dans le schéma d’implantation.</div>
             <table class="ie-tab ie-emxruns"><tr><th></th><th>tracé</th><th>crise</th><th>montage</th><th>réglages</th><th>≥ ${T}</th></tr>
-            ${recs.map(r => { const rows = this.ieegMaxRows(r, meth), n3 = rows.filter(x => x.v >= X.T).length; return `<tr><td><input type="checkbox" data-r="${r.id}"${sel.has(r.id) ? ' checked' : ''}></td><td>${esc(r.title)}</td><td>${esc(lab(r))}</td><td>${last(r).montage === 'bipolar' ? 'bipolaire' : 'monopolaire'}</td><td class="muted">${setting(r)}</td><td>${n3}</td></tr>`; }).join('')}</table>
+            ${recs.map(r => { const rows = this.ieegMaxRows(r, meth), n3 = rows.filter(x => x.v >= X.T).length; return `<tr><td><input type="checkbox" data-r="${r.id}"${sel.has(r.id) ? ' checked' : ''}></td><td>${esc(r.title)}</td><td>${esc(lab(r))}</td><td>${SV.IEEG.montageLabel(last(r).montage)}</td><td class="muted">${setting(r)}</td><td>${n3}</td></tr>`; }).join('')}</table>
             ${monts.size > 1 ? '<div class="hint warn">Montages différents : les dérivations bipolaires et les plots monopolaires ne se regroupent pas.</div>' : ''}
             <div class="ctrl-row"><label>nom du jeu <input class="emx-name" value="${esc(name)}" style="width:260px"></label><span class="muted">${res.length} voies · <b>${nHi}</b> avec ${X.L} ≥ ${T}${X.PZ != null ? ` (zone épileptogène) · <b>${nPZ}</b> entre ${nf(X.PZ, 1)} et ${T} (propagation)` : ''}${res.some(x => !mapped.has(x.key)) ? ` · ${res.filter(x => !mapped.has(x.key)).length} hors schéma (non placées sur les plots)` : ''}</span></div>
             <div class="ie-tabwrap" style="max-height:48vh"><table class="ie-tab" style="--thr:${Math.round(X.T * 100)}%"><tr><th>voie</th><th>${X.L}</th>${runs.map(r => `<th title="${esc(r.title)}">${esc(lab(r))}</th>`).join('')}<th title="Crises où la valeur de la voie atteint ${T}">≥ ${T}</th></tr>
@@ -781,6 +867,7 @@
           let q = (q0 && card._named && st.quant.find(x => x.id === q0.id)) || st.quant.find(same), isNew = !q;
           if (!q) { q = { id: uid('q'), unit: '', cmap: 'inferno', mode: 'both', min: 0, max: 1 }; st.quant.push(q); }
           Object.assign(q, { name: (name || '').trim() || `${X.L} · ${runs.length} crises`, source: `${X.L} · maximum de ${X.w} sur ${runs.map(lab).join(', ')}`, values, unmatched }, meth === 'ei' ? { eimax: ids } : { smax: { m: meth, ids } });
+          if (this.provRecord) this.provRecord(q, { slot: 'max:' + meth, rec: null, params: { method: meth, runs: ids.length }, runs: ids, summary: { method: meth, n: runs.length } });   // v1.1.0 : provenance
           if (this.viewer) this.viewer.setCellConfig(this.viewer.active, this.quantViewCfg(q), true); this.ui.seeg.quantOpenId = q.id;
           this.seegChanged(); if (this.refreshMarkers) this.refreshMarkers(); this.touch('exploration', ex.id, X.L); m.remove(); if (this.ui.tab === 'quant') this.renderQuant();
           this.toast(`${isNew ? 'Jeu' : 'Jeu mis à jour :'} « ${q.name} » — ${Object.keys(values).length} plots, maximum de ${runs.length} crises ; affiché dans la vue 3D active`, 6000);
@@ -797,7 +884,7 @@
         if (!R) return '';
         const exc = this.ieegExcl(), rows = R.rows.slice().sort((a, b) => b.ei - a.ei || (a.tNd == null) - (b.tNd == null) || a.name.localeCompare(b.name, 'fr', { numeric: true })), nDet = R.rows.filter(r => r.detected).length, nHi = R.rows.filter(r => r.ei >= IE.EZT.ei).length, nPZ = R.rows.filter(r => IE.eiZone(r.ei) === 'pz').length, on = rec.marks && rec.marks.onset;
         const sel = V.sel >= 0 && V.D[V.sel] ? V.D[V.sel].name : null;
-        return `<div class="ie-n0">${R.N0 != null ? `N0 = <b>${clock(R.N0)}</b>${on != null ? ` (${R.N0 - on >= 0 ? '+' : '−'}${nf(Math.abs(R.N0 - on), 1)} s / début marqué)` : ''} · ` : 'aucune détection · '}${nDet} / ${R.rows.length} voies détectées · <b>${nHi}</b> voie${nHi > 1 ? 's' : ''} EI ≥ 0,4 <span class="ie-ezk" title="zone épileptogène">EZ</span> · <b>${nPZ}</b> entre 0,1 et 0,4 <span class="ie-pzk" title="zone de propagation">PZ</span>${E.montage !== V.montage ? ` · <span class="warn">calculé en ${E.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'}</span>` : ''}</div>
+        return `<div class="ie-n0">${R.N0 != null ? `N0 = <b>${clock(R.N0)}</b>${on != null ? ` (${R.N0 - on >= 0 ? '+' : '−'}${nf(Math.abs(R.N0 - on), 1)} s / début marqué)` : ''} · ` : 'aucune détection · '}${nDet} / ${R.rows.length} voies détectées · <b>${nHi}</b> voie${nHi > 1 ? 's' : ''} EI ≥ 0,4 <span class="ie-ezk" title="zone épileptogène">EZ</span> · <b>${nPZ}</b> entre 0,1 et 0,4 <span class="ie-pzk" title="zone de propagation">PZ</span>${E.montage !== V.montage ? ` · <span class="warn">calculé en ${SV.IEEG.montageLabel(E.montage)}</span>` : ''}</div>
           <div class="ie-tabwrap"><table class="ie-tab" style="--thr:40%"><tr><th title="Inclure dans l’EI"></th><th>voie</th><th title="Délai de détection par rapport à N0">délai</th><th>EI</th><th></th></tr>
           ${rows.map(r => `<tr data-n="${esc(r.name)}" class="${r.ei >= IE.EZT.ei ? 'hi' : IE.eiZone(r.ei) === 'pz' ? 'pz' : ''}${r.name === sel ? ' sel' : ''}"><td><input type="checkbox" class="x-inc" checked></td><td class="nm mono">${esc(r.name)}</td><td title="${r.detected ? 'Nd ' + clock(r.tNd) + (r.tNa != null ? ' · alarme ' + clock(r.tNa) : '') : 'pas de détection : fin de crise retenue'}">${r.detected ? '+' + nf(r.tNd - R.N0, 1) + ' s' : '—'}${r.manual ? ' <span class="ie-man" title="détection posée à la main">✎</span>' : ''}</td><td><i class="ie-bar"><b style="width:${Math.round(r.ei * 100)}%"></b></i>${nf(r.ei, 2)}</td><td>${r.manual ? '<a class="x-auto" title="Détection automatique">↺</a>' : ''}</td></tr>`).join('')}
           ${[...exc].filter(([n]) => E.names.includes(n)).map(([n, why]) => `<tr data-n="${esc(n)}" class="exc"><td><input type="checkbox" class="x-inc" title="Réintégrer"></td><td class="nm mono">${esc(n)}</td><td colspan="3">exclue${why !== 'voie' ? ` (plot ${esc(why)})` : ''}</td></tr>`).join('')}</table></div>`;
@@ -817,7 +904,7 @@
       side.innerHTML = `<div class="ie-eih" title="${esc(METHOD)}"><b>Index d’épileptogénicité</b><span class="muted">Bartolomei et al., Brain 2008 ⓘ</span></div>
         <div class="ie-legend"><span>${LG.nd} détection Nd</span><span>${LG.man} posée à la main <span class="m">(Alt + clic)</span></span><span>${LG.na} alarme Na</span><span>${LG.n0} N0 (1re détection)</span><span><svg width="16" height="12"><path d="M1 3C5 4 7 5 9 9S13 3 15 2" stroke="#5ee7ff" fill="none" stroke-width="1.3"/></svg> U<sub>N</sub></span><span>ER <i class="ie-lgbar" style="background:${S.cmapCss(V.show.cmap)}"></i></span></div>
         ${warn ? `<div class="ie-warnbox">⚠ ${esc(warn)}</div>` : ''}
-        <div class="ie-sec"><div class="ie-sh">Fenêtre d’analyse <span class="muted">(${V.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'}${P.auto ? ' · crise annotée' : ' · réglée à la main'})</span></div>
+        <div class="ie-sec"><div class="ie-sh">Fenêtre d’analyse <span class="muted">(${SV.IEEG.montageLabel(V.montage)}${P.auto ? ' · crise annotée' : ' · réglée à la main'})</span></div>
           <div class="ctrl-row"><label title="Début de la fenêtre (début de crise annoté par défaut)">du <input type="number" step="0.5" class="p-start" value="${nf(P.start, 2).replace(/\s/g, '').replace(',', '.')}"> s</label><label title="Fin de la fenêtre (fin de crise annotée par défaut)">au <input type="number" step="0.5" class="p-end" value="${nf(P.end, 2).replace(/\s/g, '').replace(',', '.')}"> s</label><button class="p-fit" title="Fenêtre = début → fin de crise annotés">caler sur la crise</button></div>
           <div class="ctrl-row"><label title="Activité de fond avant le début, d’où part Page–Hinkley (sa moyenne cumulée doit précéder la décharge ; 0 = partir du début de la fenêtre)">référence avant <input type="number" step="1" min="0" class="p-base" value="${P.base}"> s</label><label title="Une voie sans détection prend cet instant comme Nd">fin de crise <input type="number" step="0.5" class="p-szend" value="${nf(P.szEnd, 2).replace(/\s/g, '').replace(',', '.')}"> s</label></div></div>
         <div class="ie-sec"><div class="ie-sh">Page–Hinkley</div>
@@ -861,7 +948,8 @@
       if (!Object.keys(values).length) { this.toast('Aucune voie ne correspond aux électrodes du schéma : compléter la correspondance (en bas du panneau)', 6000); const m = V.side.querySelector('.ie-map'); if (m) { m.open = true; m.scrollIntoView({ block: 'nearest' }); } return; }
       this.ensureSeeg(); const st = this.state; let q = rec.ei.quantId && st.quant.find(x => x.id === rec.ei.quantId), isNew = !q;
       if (!q) { q = { id: uid('q'), name: 'EI · ' + rec.title, unit: '', cmap: 'inferno', mode: 'both', min: 0, max: 1 }; st.quant.push(q); rec.ei.quantId = q.id; }
-      Object.assign(q, { source: `EI Bartolomei 2008 · ${R.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'} · ν ${nf(P.nu)} · λ ${nf(P.lambda, 1)}${P.tau !== IE.DEF.tau || P.H !== IE.DEF.H ? ` · τ ${nf(P.tau, 1)} s · H ${nf(P.H, 1)} s` : ''}`, values, unmatched, ieeg: rec.id, method: 'ei' });
+      Object.assign(q, { source: `EI Bartolomei 2008 · ${SV.IEEG.montageLabel(R.montage)} · ν ${nf(P.nu)} · λ ${nf(P.lambda, 1)}${P.tau !== IE.DEF.tau || P.H !== IE.DEF.H ? ` · τ ${nf(P.tau, 1)} s · H ${nf(P.H, 1)} s` : ''}`, values, unmatched, ieeg: rec.id, method: 'ei' });
+      if (this.provRecord) this.provRecord(q, { slot: 'ei', rec, params: JSON.parse(JSON.stringify(P)), map, summary: { N0: R.N0, montage: R.montage } });   // v1.1.0 : provenance
       if (this.viewer) this.viewer.setCellConfig(this.viewer.active, this.quantViewCfg(q), true); this.ensureSeeg().quantOpenId = q.id;
       this.seegChanged(); if (this.refreshMarkers) this.refreshMarkers(); this.touch('exploration', (this.ieegEx() || {}).id, 'EI'); V.dirty = false;
       this.ieegSaveLabel(); if (this.ui.tab === 'quant') this.renderQuant();

@@ -4,20 +4,34 @@ title: Phase 1 : crises et EEG de scalp
 short: Phase 1 (vidéo-EEG)
 group: path
 order: 20
-ctx: phase1>decrire-une-crise, phase1/crises>decrire-une-crise, phase1/crise>decrire-une-crise, phase1/inter>lintercritique, phase1/analyses>leeg-de-scalp, phase1/synthese>la-synthese-de-la-phase-1, phase1/galerie>leeg-de-scalp
+ctx: phase1>vue-densemble, phase1/apercu>vue-densemble, phase1>decrire-une-crise, phase1/crises>decrire-une-crise, phase1/crise>decrire-une-crise, phase1/inter>lintercritique, phase1/analyses>leeg-de-scalp, phase1/synthese>la-synthese-de-la-phase-1, phase1/galerie>leeg-de-scalp
 lead: La phase 1 réunit les crises enregistrées en vidéo-EEG, leur sémiologie signe par signe, l'EEG de scalp et sa synthèse. C'est le cœur d'EpiScope.
 ---
 
 # Phase 1 : crises et EEG de scalp
 
 !!! bref
-    - **Où ?** Étape **Phase 1** du parcours. Onglets : *Intercritique · Crises · Analyses EEG · Synthèse · Galerie*.
+    - **Où ?** Étape **Phase 1** du parcours. Onglets : *Vue d'ensemble · Intercritique · Crises · Analyses · Synthèse · Galerie*.
     - **Minimum** : décrire les crises habituelles. Le compte rendu d'EEG et les tracés sont un plus.
     - **Temps** : trois à cinq minutes par crise avec la vidéo.
 
+## Vue d'ensemble
+
+L'onglet [[Vue d'ensemble]] s'ouvre en premier. Il réunit ce qu'est l'exploration et où elle en est :
+
+- **libellé, dates de début et de fin, centre, statut** et **notes** (déroulement, sevrage, incidents ; les notes des anciennes « séances » y ont été versées) ;
+- les **compteurs** (crises habituelles et décrites, tracés, vidéos) et l'état du compte rendu (rythme de fond, intercritique, critique, conclusion) ;
+- une **frise** des jours de l'exploration (J1, J2…) : tracés importés en bandes à l'heure réelle (violet : avec crise, bleu : intercritique), crises en losanges (pleins : décrites ; vides : à décrire). Un clic sur une crise l'ouvre. Une crise rapportée rattachée mais datée loin de l'exploration est citée sous la frise sans l'étirer ;
+- la **liste des crises** et celle des **tracés importés**, avec un lien vers les onglets [[Crises]] et [[Analyses]].
+
 ## Les crises de l'exploration
 
-L'onglet [[Crises]] liste les crises de la phase 1 : date et heure, caractère habituel, vigilance, séquence des signes. [[+ Crise]] en ajoute une ; [[ouvrir]] ouvre sa saisie. En bas de l'onglet :
+L'onglet [[Crises]] liste les crises de la phase 1, regroupées par jour d'enregistrement (J1, J2… d'après leur date) : date et heure, caractère habituel, vigilance, séquence des signes. [[+ Crise]] en ajoute une ; [[ouvrir]] ouvre sa saisie ; [[⋯]] › [[Rattacher une crise rapportée du dossier…]] y range une vidéo familiale décrite avant l'hospitalisation (voir [les crises rapportées](10-patients.md#les-crises-rapportees)). En bas de l'onglet :
+
+Chaque crise porte quatre **pastilles d'état** : *sémiologie* (nombre de signes, ou « à décrire »), *vidéo*, *tracé* (début de crise marqué, ou « début ? ») et *analyses*. On voit d'un coup d'œil, sur une vidéo-EEG d'une ou deux semaines, les crises quantifiées mais pas encore décrites, et l'inverse.
+
+- **Crises annotées dans les tracés** : les débuts de crise trouvés dans les fichiers importés (une nuit peut en contenir plusieurs) apparaissent en tête de l'onglet s'ils n'ont pas de fiche. [[créer la fiche]] crée la crise à l'heure du tracé et y marque le début (et la fin si elle est annotée) ; [[rattacher à …]] la relie à la crise déjà saisie à la même heure (à 2 min près). Deux exports qui se recouvrent (la nuit entière et un segment de crise, par exemple) sont signalés, et la crise n'est comptée qu'une fois.
+- **Reprendre la sémiologie** : [[⋯]] d'une crise › [[Reprendre la sémiologie de…]] copie les signes d'une autre crise du dossier (crises stéréotypées, crise rapportée), avec leurs temps ; il reste à ajuster les marqueurs. L'état d'avant reste dans l'historique du dossier.
 
 - **EEG critique** et **post-critique** : description pour l'ensemble des crises, avec des phrases types ([[phrases ▾]]) et un texte proposé ([[proposer]]) ;
 - **Événements enregistrés** : crises épileptiques, crises fonctionnelles dissociatives, autres manifestations (malaise, parasomnie, attaque de panique…) ;
@@ -50,7 +64,7 @@ L'écran d'une crise a trois colonnes et une frise :
 
 ### Avec la vidéo dans EpiScope
 
-[[Vidéo +]] lie une vidéo de la galerie (ou en importe une). Elle s'affiche à gauche de la 3D et pilote le chronomètre : un clic sur l'image met en pause, vous choisissez le signe, il est horodaté au temps de la vidéo ; <kbd>Espace</kbd> reprend ; [[⟲ 0]] fixe t = 0 à l'image affichée. La frise, les flèches et la séquence déplacent la vidéo.
+[[Vidéo +]] lie une vidéo de la galerie (ou en importe une). Elle s'affiche à gauche de la 3D et pilote le chronomètre : un clic sur l'image met en pause, vous choisissez le signe, il est horodaté au temps de la vidéo ; <kbd>Espace</kbd> reprend ; [[⟲ 0]] fixe t = 0 à l'image affichée. La frise, les flèches et la séquence déplacent la vidéo. Si une vidéo calée sur l'heure des tracés couvre le début de la crise, elle est trouvée toute seule, déjà placée au début de la crise (voir [Vidéo et tracé](#video-et-trace)).
 
 ### Corriger la séquence
 
@@ -91,19 +105,19 @@ L'onglet [[Intercritique]] rassemble le compte rendu de l'EEG intercritique :
 
 - **rythme de fond** et **anomalies intercritiques**, avec phrases types ([[phrases ▾]]) et textes proposés d'après la carte ([[proposer]]) ;
 - **épreuves d'activation** : SLI (simple ou détaillée par fréquence), hyperpnée, autres (privation de sommeil, lecture, calcul…) ;
-- **carte 10-20** des pointes et des ondes lentes : intensité 1 à 3 par électrode, rendue en carte d'amplitude, avec la topographie écrite (« frontopolaires et frontales gauches (max. Fp1) ») ;
+- **cartes 10-20** des pointes et des ondes lentes, **en veille et au sommeil** (les anomalies et les foyers diffèrent souvent) : intensité 1 à 3 par électrode, rendue en carte d'amplitude, avec la topographie écrite (« frontopolaires et frontales gauches (max. Fp1) »). Une carte saisie avant la version 2.0, sans vigilance, reste affichée à part avec [[→ veille]] et [[→ sommeil]] pour la ranger ;
 - **tracés et captures** intercritiques, datés, en veille ou en sommeil (<kbd>Ctrl</kbd>+<kbd>V</kbd>).
 
 ![L'intercritique : compte rendu, épreuves d'activation et cartes 10-20.](shot:phase1-inter)
 
 ## L'EEG de scalp
 
-L'onglet [[Analyses EEG]] reçoit les **tracés** eux-mêmes : EDF, EDF+, BDF, BrainVision, exports Brainquick ou Micromed. [[+ Importer un tracé…]], ou glisser les fichiers sur la carte. Chaque tracé est rangé par jour d'enregistrement ; une crise du dossier dont l'heure tombe dans le tracé lui est rattachée d'elle-même.
+L'onglet [[Analyses]] reçoit les **tracés** eux-mêmes : EDF, EDF+, BDF, BrainVision, exports Brainquick ou Micromed. [[+ Importer un tracé…]], ou glisser les fichiers sur la carte. Les tracés sont séparés en **Analyses critiques** (tracés avec crise, synthèse des crises) et **Analyses intercritiques** (pointes, sommeil, sources), chacun rangé par jour d'enregistrement ; un long tracé qui contient des crises est rangé avec les crises et signalé dans l'intercritique. Une crise du dossier dont l'heure tombe dans le tracé lui est rattachée d'elle-même.
 
 Sous chaque tracé apparaissent ses post-traitements : pointes et groupes, hypnogramme, imagerie de source, captures de pages.
 
-!!! attention
-    Le titre d'un tracé reprend le nom du fichier, qui contient parfois le nom du patient. Renommez-le ([[⋯]] de la carte › *Renommer…*) : ce titre apparaît au staff et dans les comptes rendus.
+!!! bref
+    Un tracé importé est rangé sous un **nom BIDS** fondé sur le code du patient (`sub-HFAR0007_ses-scalp1_task-seizure_run-01_eeg.edf`) et reçoit un **titre neutre** (« Crise · 02/06/2021 23:30 · run 01 ») : le nom du fichier d'origine, qui contient souvent le nom du patient, n'est gardé nulle part. Le titre se change au besoin ([[⋯]] de la carte › *Renommer…*).
 
 ![Une carte de tracé : crises reliées, pointes détectées, sommeil, sources.](shot:phase1-analyses)
 
@@ -112,9 +126,26 @@ Sous chaque tracé apparaissent ses post-traitements : pointes et groupes, hypno
 [[Revoir]] ouvre la visionneuse plein écran :
 
 - montage (monopolaire, double banane, transverse, référence moyenne, laplacien), page de 2 à 60 s, gain (<kbd>Ctrl</kbd>+molette), filtres passe-haut, passe-bas et coupe-bande ;
+- polarité de la convention EEG : **négatif vers le haut** (une déflexion négative monte, comme sur les logiciels d'acquisition) ;
 - <kbd>←</kbd> <kbd>→</kbd> : page précédente ou suivante (<kbd>Maj</kbd> : une seconde) ; glisser pour défiler ;
-- clic droit : marquer le début ou la fin d'une crise, poser une marque ;
-- l'aperçu en bas montre tout l'enregistrement ; un clic s'y rend.
+- clic droit : marquer le début ou la fin d'une crise, poser une marque ; [[Marques ▾]] les liste pour s'y rendre ;
+- **heure réelle** : l'axe et le curseur donnent l'heure du poste d'acquisition (avec la date après minuit) ; [[Heure]] | [[t]] bascule vers le temps depuis le début du tracé.
+
+La **frise** en bas montre tout l'enregistrement, avec la règle des heures, l'activité, les crises (bandes rouges, cliquables), les coupures d'un EDF discontinu (hachures, avec leur durée) et la page affichée (cadre jaune). Un clic ou un glisser s'y rend ; la **molette** zoome autour du pointeur ; [[⤢ tout le tracé]] ou un double-clic revient au tracé entier. Le menu *crise* du haut se place sur une crise ; la frise garde la vue d'ensemble.
+
+!!! attention
+    Un enregistrement **discontinu** (EDF+D : pauses, coupures) est affiché bloc après bloc, sans les trous ; l'heure réelle, elle, tient compte des coupures. Chaque marque est enregistrée aussi à son heure réelle, ce qui la garde à sa place même si la lecture du fichier change.
+
+### Vidéo et tracé
+
+Une vidéo de la galerie se **cale** sur l'heure des tracés : on connaît l'heure de son début, et chaque instant de la vidéo correspond à une heure du tracé. Plusieurs vidéos peuvent couvrir un même tracé (plusieurs caméras, fichiers découpés).
+
+- **À l'import** : si le nom du fichier contient la date et l'heure du début (`…20210602_223543…`), la vidéo est calée tout de suite.
+- **Fenêtre « Heure de la vidéo »** (galerie : [[heure de la vidéo…]] ; visionneuse : ⚙ du panneau vidéo) : l'heure du début (`2021-06-02 22:03:43`, ou seulement `22:03:43` avec la date du tracé), le tracé associé, et des **points de synchronisation** — le même évènement repéré dans la vidéo et dans le tracé (artefact de mouvement, début clinique). Un point corrige le décalage ; deux points éloignés ou plus corrigent aussi la dérive de l'horloge de la caméra. La fenêtre indique l'écart de chaque point et où tombe chaque crise : « Crise 1 (22:05:00) → vidéo à 1:17 », ou « … avant le début de la vidéo ».
+- **Dans la visionneuse** : [[▶ Vidéo]] ouvre un panneau (déplaçable par sa barre, redimensionnable par le coin) qui montre la vidéo couvrant le curseur et la suit quand on navigue ; pendant la lecture, c'est le tracé qui suit la vidéo. Hors de toute vidéo, le panneau affiche « Pas de vidéo calée à … ». [[📍 point]] ajoute un point de synchronisation : mettez la vidéo et le curseur du tracé sur le même évènement, puis cliquez.
+- Les vidéos calées apparaissent en **bandes bleues** sur la frise du tracé.
+
+Exemple : tracé commencé à 19:30, vidéo commencée à 22:03:43, crise annotée à 22:01 dans le tracé : la fenêtre signale que la crise est 2 min 43 s avant le début de la vidéo, et le panneau affiche « Pas de vidéo calée à 22:01:00 ».
 
 ![La visionneuse de tracé.](shot:eeg-viewer)
 

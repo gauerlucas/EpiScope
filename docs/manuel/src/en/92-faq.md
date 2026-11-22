@@ -50,7 +50,19 @@ Review the clusters and delete the artefact ones; raise the SpikeNet threshold; 
 In *Prepare*, untick the explorations or seizures not to show, and tick only the useful captures.
 
 **I deleted something by mistake.**
-The record's log tells what and when. For spike and sleep edits, <kbd>Ctrl</kbd>+<kbd>Z</kbd>. Otherwise, go back to the folder's backup.
+Record log › *Record bin* › [[Restore]]: the item comes back exactly in place, with its dependants. To return to an earlier state of the whole record: *Saved versions* › [[Restore…]]. A patient removed from the list: [[Bin]] in the patient list. For spike and sleep edits, <kbd>Ctrl</kbd>+<kbd>Z</kbd>.
+
+**The recording looks inverted compared with the acquisition software.**
+EpiScope follows the EEG convention: negative up. Recording captures made before version 1.1 were drawn positive up; their sheet says so.
+
+**How do I hide names during a projection?**
+[[Hide names]] in the patient list (or in the Identity area): codes replace names everywhere on screen, on this computer, until [[Show names]].
+
+**Where does this result come from? Was it computed with the current method?**
+Click the analysis set's badge: method version, date, author, parameters, recording and window; “outdated” or “old method” if something changed since (see [Provenance of results](@m-seeg#provenance-des-resultats)).
+
+**The video does not match the recording.**
+Open [[▶ Video]] in the viewer, put the video and the cursor on the same event, then [[📍 point]]. With two distant points, the camera clock drift is corrected (see [Video and recording](@phase1#video-et-trace)).
 
 ## Reporting a problem {#signaler-un-probleme}
 

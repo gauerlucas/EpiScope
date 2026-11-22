@@ -80,7 +80,7 @@
     async ieegFPSaveFile() {
       const V = this._iev, F = V.fp, Lr = V.rec.fp.last; if (!F) return; const n = F.freqs.length * F.nT, u = new Int8Array(F.names.length * n);
       F.L.forEach((a, i) => { for (let k = 0; k < n; k++) u[i * n + k] = Math.max(-127, Math.min(127, Math.round(a[k] * Q8))); });
-      const path = `ieeg/${V.rec.id}/fp_${V.montage}.bin`; try { await L.writeFile(this.dossier, path, new Blob([u.buffer], { type: 'application/octet-stream' })); Lr.path = path; } catch (e) { console.warn('empreinte', e); }
+      const path = `ieeg/${V.rec.id}/fp_${SV.IEEG.montageKey(V.montage)}.bin`; try { await L.writeFile(this.dossier, path, new Blob([u.buffer], { type: 'application/octet-stream' })); Lr.path = path; } catch (e) { console.warn('empreinte', e); }
     },
     async ieegFPLoad() {
       const V = this._iev, Lr = V.rec.fp && V.rec.fp.last; if (!Lr || !Lr.path || V.fp || V._fpLoading) return; V._fpLoading = true;
@@ -92,7 +92,7 @@
       } catch (e) { console.warn('empreinte', e); } finally { V._fpLoading = false; }
     },
     ieegFPRows() { const V = this._iev, Lr = V.rec.fp && V.rec.fp.last, ex = this.ieegExcl(); return Lr && Lr.rows ? Lr.rows.filter(r => !ex.has(r.name)) : []; },
-    ieegFPStale() { const V = this._iev, Lr = V.rec.fp && V.rec.fp.last, mk = V.rec.marks || {}; if (!Lr) return ''; if (Lr.onset !== mk.onset) return 'début de crise modifié'; if (Lr.montage !== V.montage) return `calculé en ${Lr.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'}`; return ''; },
+    ieegFPStale() { const V = this._iev, Lr = V.rec.fp && V.rec.fp.last, mk = V.rec.marks || {}; if (!Lr) return ''; if (Lr.onset !== mk.onset) return 'début de crise modifié'; if (Lr.montage !== V.montage) return `calculé en ${SV.IEEG.montageLabel(Lr.montage)}`; return ''; },
     /** voie de l'image temps-fréquence : voie choisie si elle a une image, sinon la voie au plus fort score */
     ieegFPCur() {
       const V = this._iev, F = V.fp; if (!F) return null; const sel = V.sel >= 0 && V.D[V.sel] ? V.D[V.sel].name : null; if (sel && F.idx.has(sel)) return sel;
@@ -185,7 +185,7 @@
       const V = this._iev, rec = V.rec, Lr = rec.fp.last, P = this.ieegFPParams(); if (!Lr || !Lr.rows) return;
       this.ieegFPTime(); const tw = P.tw;
       this.ieegSaveSet('fp', this.ieegFPRows(), r => this.ieegFPVal(r), { name: 'Empreinte · ' + rec.title, min: 0, max: 1, cmap: 'inferno', what: 'empreinte', extra: () => ({ thr: 0.99 }),
-        source: `Empreinte de la ZE (Grinenko 2018, détection simplifiée) · ${Lr.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'} · début ${clock(Lr.onset)} (−20 → +20 s, référence ${clock(Lr.base[0])}–${clock(Lr.base[1])}) · act. rapide ≥ ${nf(P.faThr, 2)} dès ${nf(P.faLo, 0)} Hz · suppression ≤ −${nf(P.supThr, 2)}, aire ≥ ${nf(P.supArea * 100, 1)} % · score (pointes + act. rapide + suppression) / 3 ; 1 = empreinte complète${tw ? ` · pondéré par le délai à la 1re activité rapide (précoce ≤ ${nf(P.early, 1)} s, τ ${nf(P.tau, 1)} s)` : ''}` });
+        source: `Empreinte de la ZE (Grinenko 2018, détection simplifiée) · ${SV.IEEG.montageLabel(Lr.montage)} · début ${clock(Lr.onset)} (−20 → +20 s, référence ${clock(Lr.base[0])}–${clock(Lr.base[1])}) · act. rapide ≥ ${nf(P.faThr, 2)} dès ${nf(P.faLo, 0)} Hz · suppression ≤ −${nf(P.supThr, 2)}, aire ≥ ${nf(P.supArea * 100, 1)} % · score (pointes + act. rapide + suppression) / 3 ; 1 = empreinte complète${tw ? ` · pondéré par le délai à la 1re activité rapide (précoce ≤ ${nf(P.early, 1)} s, τ ${nf(P.tau, 1)} s)` : ''}` });
     },
     ieegFPCSV() {
       const V = this._iev, rec = V.rec, Lr = rec.fp.last, P = this.ieegFPParams(); if (!Lr || !Lr.rows) return; const map = this.ieegElecMap();
@@ -286,7 +286,7 @@
       const T = IM.emTiming(rows, { early: P.early, tau: P.tau, lmax: lats[lats.length - 1], step: lats[1] - lats[0] }); rows.forEach((r, i) => Object.assign(r, T.rows[i])); Lr.timing = { d0: T.d0, nEarly: T.nEarly, nLate: T.nLate, early: P.early, tau: P.tau };
     },
     async ieegEMSaveFile() {
-      const V = this._iev, C = V.em, Lr = V.rec.em.last; if (!C) return; const path = `ieeg/${V.rec.id}/em_${V.montage}.json`;
+      const V = this._iev, C = V.em, Lr = V.rec.em.last; if (!C) return; const path = `ieeg/${V.rec.id}/em_${SV.IEEG.montageKey(V.montage)}.json`;
       try { await L.writeFile(this.dossier, path, new Blob([JSON.stringify({ v: 1, names: C.names, t0: C.t0, dt: C.dt, E: C.E.map(a => Array.from(a, v => Math.round(v * 1000) / 1000)) })], { type: 'application/json' })); Lr.path = path; } catch (e) { console.warn('EM', e); }
     },
     async ieegEMLoad() {
@@ -297,7 +297,7 @@
     ieegEMRows() { const V = this._iev, Lr = V.rec.em && V.rec.em.last, ex = this.ieegExcl(); return Lr && Lr.rows ? Lr.rows.filter(r => !ex.has(r.name)) : []; },
     /** valeur d'une voie (tri, jeu, barre) : t pondéré par le délai (défaut) ou t */
     ieegEMVal(r) { return this.ieegEMParams().tw && r.tw != null ? r.tw : Math.max(0, r.t); },
-    ieegEMStale() { const V = this._iev, Lr = V.rec.em && V.rec.em.last, mk = V.rec.marks || {}, P = this.ieegEMParams(); if (!Lr) return ''; if (Lr.onset !== mk.onset) return 'début de crise modifié'; const b = this.ieegEMBand(P); if (Lr.band[0] !== b[0] || Lr.band[1] !== b[1]) return 'bande modifiée'; const rq = Lr.req || {}; if (rq.b0 != null && (rq.b0 !== P.b0 || rq.b1 !== P.b1)) return 'référence modifiée'; if (rq.dur != null && P.dur > rq.dur) return 'fenêtre allongée'; if (Lr.montage !== V.montage) return `calculé en ${Lr.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'}`; return ''; },
+    ieegEMStale() { const V = this._iev, Lr = V.rec.em && V.rec.em.last, mk = V.rec.marks || {}, P = this.ieegEMParams(); if (!Lr) return ''; if (Lr.onset !== mk.onset) return 'début de crise modifié'; const b = this.ieegEMBand(P); if (Lr.band[0] !== b[0] || Lr.band[1] !== b[1]) return 'bande modifiée'; const rq = Lr.req || {}; if (rq.b0 != null && (rq.b0 !== P.b0 || rq.b1 !== P.b1)) return 'référence modifiée'; if (rq.dur != null && P.dur > rq.dur) return 'fenêtre allongée'; if (Lr.montage !== V.montage) return `calculé en ${SV.IEEG.montageLabel(Lr.montage)}`; return ''; },
     ieegEMRender(onlyRes) {
       const V = this._iev, side = V.sb, rec = V.rec, P = this.ieegEMParams(), mk = rec.marks || {}, Lr = rec.em.last, band = this.ieegEMBand(P);
       if (Lr && !V.em) this.ieegEMLoad();
@@ -365,7 +365,7 @@
     ieegEMSaveSet() {
       const V = this._iev, rec = V.rec, Lr = rec.em.last, P = this.ieegEMParams(); if (!Lr || !Lr.rows) return null; const rows = this.ieegEMRows(), mx = Math.max(1, ...rows.map(r => r.t)), corrL = { bonf: 'Bonferroni', fdr: 'FDR', none: 'sans correction' };
       return this.ieegSaveSet('em', rows, r => this.ieegEMVal(r), { name: `EM ${nf(Lr.band[0], 0)}–${nf(Lr.band[1], 0)} Hz · L ${nf(P.lat, 1)} s · ${rec.title}`, unit: 't', min: 0, max: Math.ceil(mx), rescale: true, cmap: 'inferno', what: 'EM', extra: () => ({ thr: Lr.tCrit, em: { lat: P.lat, dur: P.dur, band: Lr.band, tCrit: Lr.tCrit } }),
-        source: `Cartes d’épileptogénicité (David 2011) · ${Lr.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'} · ${nf(Lr.band[0], 0)}–${nf(Lr.band[1], 0)} Hz, blocs de 0,2 s · fenêtre [${nf(P.lat, 1)} ; ${nf(P.lat + P.dur, 1)}] s contre [${nf(Lr.base[0], 1)} ; ${nf(Lr.base[1], 1)}] s · t de Welch, seuil t ${nf(Lr.tCrit, 2)} (p ${nf(P.p, 3)}, ${corrL[P.corr]})${P.tw ? ` · t pondéré par le délai (précoce ≤ ${nf(P.early, 1)} s, τ ${nf(P.tau, 1)} s)` : ''} · début ${clock(Lr.onset)}` });
+        source: `Cartes d’épileptogénicité (David 2011) · ${SV.IEEG.montageLabel(Lr.montage)} · ${nf(Lr.band[0], 0)}–${nf(Lr.band[1], 0)} Hz, blocs de 0,2 s · fenêtre [${nf(P.lat, 1)} ; ${nf(P.lat + P.dur, 1)}] s contre [${nf(Lr.base[0], 1)} ; ${nf(Lr.base[1], 1)}] s · t de Welch, seuil t ${nf(Lr.tCrit, 2)} (p ${nf(P.p, 3)}, ${corrL[P.corr]})${P.tw ? ` · t pondéré par le délai (précoce ≤ ${nf(P.early, 1)} s, τ ${nf(P.tau, 1)} s)` : ''} · début ${clock(Lr.onset)}` });
     },
     /** carte sur l'IRM : t des plots (jeu enregistré) étalés dans le cerveau du patient → image dérivée (calque des coupes) */
     async ieegEMMap() {

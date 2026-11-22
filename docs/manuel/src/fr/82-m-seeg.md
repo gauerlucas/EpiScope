@@ -50,6 +50,21 @@ Détecteur Delphos (ondelettes, normalisation, forme des îlots) : pointes, ripp
 
 Chaque résultat enregistré devient un **jeu d'analyse** : une valeur par plot ou par paire, affichée en sphères colorées en 3D, sur la parcellation (valeur maximale ou moyenne de la région) et dans les coupes. Des valeurs calculées ailleurs (Excel, CSV) s'importent de la même façon.
 
+## Provenance des résultats
+
+Un résultat calculé en 2026 doit rester interprétable en 2028, même si la méthode a changé entre-temps. Chaque jeu enregistré garde donc une **fiche de provenance**, qui ne se modifie plus :
+
+- la méthode et sa **version**, la version d'EpiScope, la date et l'auteur ;
+- les entrées : le tracé (empreinte SHA-256 du fichier), la fenêtre analysée (en temps du tracé et en heure réelle), les marques de début et de fin, le **montage** (cascade, référence, moyenne ou plot de référence), les voies exclues, la correspondance voies → électrodes ;
+- tous les paramètres, valeurs par défaut comprises, et les valeurs obtenues.
+
+La pastille du jeu dit où il en est : **à jour** ; **périmé** (le tracé, la fenêtre, le montage ou la correspondance ont changé depuis le calcul) ; **ancienne méthode** (la méthode a changé de version depuis : le résultat reste consultable, un nouveau calcul le complète sans l'effacer) ; **valeurs modifiées à la main** ; **antérieure** (jeu enregistré avant la version 1.1, sans fiche complète). Un clic sur la pastille ouvre l'historique : les calculs successifs du même jeu, chacun avec sa fiche.
+
+!!! methode
+    Toute modification de la sortie d'une méthode fait monter son numéro de version (contrôlé par des tests automatiques sur des signaux de référence) et figure dans le journal des modifications d'EpiScope. Une version publiée d'EpiScope n'est jamais modifiée : un ancien calcul peut toujours être rejoué avec la version qui l'a produit.
+
+La base de référence de la sémiologie porte elle aussi une empreinte ; si la base du poste diffère de la base livrée, un avertissement le signale, et chaque crise garde la base et la version du modèle avec lesquelles elle a été calculée.
+
 ## Pour aller plus loin
 
 {refs: isnard2018}

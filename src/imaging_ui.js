@@ -44,7 +44,7 @@
           const vol = await SV.Nifti.read(u8);   // contrôle et en-tête
           if (!gz) u8 = await SV.Nifti.gzip(u8);
           const g = Object.assign(guessFromName(f.name), o.modality ? { modality: o.modality } : {}, o.timepoint ? { timepoint: o.timepoint } : {}), date = g.date || (f.lastModified ? new Date(f.lastModified).toISOString().slice(0, 10) : '');
-          const im = S.addImaging(d, { modality: g.modality, timepoint: g.timepoint, date, label: f.name, source: f.name, bytes: u8.length, dims: vol.dims, pixdim: vol.pixdim.map(v => +v.toFixed(3)), nt: vol.nt || 1 });
+          const im = S.addImaging(d, { modality: g.modality, timepoint: g.timepoint, date, label: SV.BIDS.imagingLabel({ modality: g.modality, timepoint: g.timepoint, date }), source: 'NIfTI', bytes: u8.length, dims: vol.dims, pixdim: vol.pixdim.map(v => +v.toFixed(3)), nt: vol.nt || 1 });
           im.file = `imaging/${im.id}.nii.gz`;
           await L.writeFile(d, im.file, u8);
           if (!S.refImaging(d) || (!d.imaging.some(x => x.ref) && im.modality === 'T1' && im.timepoint === 'preop')) { for (const x of d.imaging) x.ref = false; im.ref = true; }

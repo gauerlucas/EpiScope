@@ -15,7 +15,7 @@ st.events = st.events.concat([{ id: 99, sign_id: 'fear', t: 30, dt: 1, dur: 3, s
 assert.ok(S.fromWorkspace(d, s2.id, st).changed); assert.equal(S.byId(d.seizures, s2.id).events.length, c2.events.length + 1); assert.equal(S.byId(d.seizures, s2.id).eeg_onset, -12);
 assert.deepEqual(S.lesionRegions(d), [145]);
 assert.ok(!S.fromWorkspace(d, s2.id, S.toWorkspace(d, s2.id)).changed, 'pas de changement');
-// exploration sans crise : la première saisie crée séance + crise
+// exploration sans crise : la première saisie crée la crise
 const ex3 = S.addExploration(d, { kind: 'seeg' }); const w3 = S.toWorkspace(d, { explorationId: ex3.id }); assert.equal(w3.events.length, 0);
 w3.stims.push({ id: 's1', elec: 'A', c1: 1, c2: 2 }); let r3 = S.fromWorkspace(d, { explorationId: ex3.id }, w3); assert.ok(r3.changed && !r3.ctx.seizureId); assert.equal(ex3.stims.length, 1);
 w3.events.push({ id: 1, sign_id: 'fear', t: 0, dt: 1, dur: 3 }); r3 = S.fromWorkspace(d, r3.ctx, w3); assert.ok(r3.ctx.seizureId); assert.equal(S.seizuresOfExploration(d, ex3.id).length, 1);
@@ -54,8 +54,8 @@ S.remove(d2, 'exploration', d2.explorations[0].id); assert.equal(d2.seizures.len
   assert.equal(S.implantations(d).find(it => it.ex === a).nPlan, 2, 'trajectoires prévues comptées (gabarit et patient)');
   S.remove(d, 'exploration', a.id); S.remove(d, 'exploration', b.id); }
 // v5 : titres « Crise n » renumérotés dans l'ordre chronologique (les titres libres sont gardés)
-{ const ex = S.addExploration(d, { kind: 'seeg', label: 'SEEG test' }), ses = S.addSession(d, ex.id, { date: '2024-01-10' });
-  const z1 = S.addSeizure(d, ses.id, { datetime: '2024-01-12T15:00' }), z2 = S.addSeizure(d, ses.id, { datetime: '2024-01-11T03:00' }), z3 = S.addSeizure(d, ses.id, { datetime: '2024-01-13T08:00', label: 'Crise nocturne' });
+{ const ex = S.addExploration(d, { kind: 'seeg', label: 'SEEG test' });
+  const z1 = S.addSeizure(d, ex.id, { datetime: '2024-01-12T15:00' }), z2 = S.addSeizure(d, ex.id, { datetime: '2024-01-11T03:00' }), z3 = S.addSeizure(d, ex.id, { datetime: '2024-01-13T08:00', label: 'Crise nocturne' });
   assert.equal(z1.label, 'Crise 1'); assert.equal(z2.label, 'Crise 2');
   assert.equal(S.renumberSeizures(d, ex.id), 2, 'deux titres renumérotés'); assert.equal(z2.label, 'Crise 1'); assert.equal(z1.label, 'Crise 2'); assert.equal(z3.label, 'Crise nocturne', 'titre libre gardé');
   assert.equal(S.renumberSeizures(d, ex.id), 0, 'stable'); S.remove(d, 'exploration', ex.id); }

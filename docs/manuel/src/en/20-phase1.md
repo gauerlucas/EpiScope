@@ -10,13 +10,27 @@ lead: Phase 1 gathers the seizures recorded on video-EEG, their semiology sign b
 # Phase 1: seizures and scalp EEG
 
 !!! bref
-    - **Where?** The **Phase 1** stage of the pathway. Tabs: *Interictal · Seizures · EEG analyses · Summary · Gallery*.
+    - **Where?** The **Phase 1** stage of the pathway. Tabs: *Overview · Interictal · Seizures · Analyses · Summary · Gallery*.
     - **Minimum**: describe the habitual seizures. The EEG report and recordings are a bonus.
     - **Time**: three to five minutes per seizure with the video.
 
+## Overview {#vue-densemble}
+
+The [[Overview]] tab opens first. It gathers what the investigation is and where it stands:
+
+- **label, start and end dates, centre, status** and **notes** (course, drug withdrawal, incidents; the notes of the former “sessions” were moved here);
+- the **counters** (habitual and described seizures, recordings, videos) and the report status (background, interictal, ictal, conclusion);
+- a **timeline** of the investigation days (D1, D2…): imported recordings as bars at real time (purple: with a seizure, blue: interictal), seizures as diamonds (filled: described; empty: to describe). Clicking a seizure opens it. An attached reported seizure dated far from the investigation is listed under the timeline without stretching it;
+- the **list of seizures** and the list of **imported recordings**, with links to the [[Seizures]] and [[Analyses]] tabs.
+
 ## The seizures of the exploration {#les-crises-de-lexploration}
 
-The [[Seizures]] tab lists the phase 1 seizures: date and time, habitual or not, vigilance, sequence of signs. [[+ Seizure]] adds one; [[open]] opens its entry screen. At the bottom of the tab:
+The [[Seizures]] tab lists the phase 1 seizures, grouped by recording day (D1, D2… from their date): date and time, habitual or not, vigilance, sequence of signs. [[+ Seizure]] adds one; [[open]] opens its entry screen; [[⋯]] › [[Attach a reported seizure of the record…]] files there a home video described before admission (see [reported seizures](10-patients.md#les-crises-rapportees)). At the bottom of the tab:
+
+Each seizure carries four **status chips**: *semiology* (number of signs, or “to describe”), *video*, *recording* (seizure onset marked, or “onset?”) and *analyses*. Over one or two weeks of video-EEG, the seizures quantified but not yet described, and the reverse, are visible at a glance.
+
+- **Seizures annotated in the recordings**: seizure onsets found in the imported files (a night may hold several) appear at the top of the tab when they have no seizure entry. [[create the seizure]] creates the seizure at the recording time and marks the onset there (and the end if annotated); [[attach to …]] links it to the seizure already entered at the same time (within 2 min). Two overlapping exports (the whole night and a seizure segment, for example) are flagged, and the seizure is counted only once.
+- **Copying the semiology**: [[⋯]] of a seizure › [[Copy the semiology of…]] copies the signs of another seizure of the record (stereotyped seizures, reported seizure), with their timing; the markers then only need adjusting. The previous state stays in the record history.
 
 - **Ictal EEG** and **postictal** EEG: one description for all seizures, with standard sentences ([[sentences ▾]]) and a suggested text ([[propose]]);
 - **Recorded events**: epileptic seizures, functional (dissociative) seizures, other events (faint, parasomnia, panic attack…);
@@ -49,7 +63,7 @@ A seizure screen has three columns and a timeline:
 
 ### With the video inside EpiScope
 
-[[Video +]] links a video from the gallery (or imports one). It is shown to the left of the 3D view and drives the stopwatch: clicking the picture pauses it, you choose the sign, and it is time-stamped at the video time; <kbd>Space</kbd> resumes; [[⟲ 0]] sets t = 0 at the displayed frame. The timeline, the arrow keys and the sequence move the video.
+[[Video +]] links a video from the gallery (or imports one). It is shown to the left of the 3D view and drives the stopwatch: clicking the picture pauses it, you choose the sign, and it is time-stamped at the video time; <kbd>Space</kbd> resumes; [[⟲ 0]] sets t = 0 at the displayed frame. The timeline, the arrow keys and the sequence move the video. If a video aligned on the recordings’ clock covers the seizure onset, it is found automatically, already positioned at the onset (see [Video and recording](#video-et-trace)).
 
 ### Correcting the sequence {#corriger-la-sequence}
 
@@ -90,19 +104,19 @@ The [[Interictal]] tab holds the interictal EEG report:
 
 - **background rhythm** and **interictal abnormalities**, with standard sentences ([[sentences ▾]]) and texts suggested from the map ([[propose]]);
 - **activation procedures**: photic stimulation (simple or detailed by frequency), hyperventilation, others (sleep deprivation, reading, mental arithmetic…);
-- **10-20 map** of spikes and slow waves: intensity 1 to 3 per electrode, rendered as an amplitude map, with the topography written out ("left frontopolar and frontal (max. Fp1)");
+- **10-20 maps** of spikes and slow waves, **during wakefulness and during sleep** (abnormalities and foci often differ): intensity 1 to 3 per electrode, rendered as an amplitude map, with the topography written out ("left frontopolar and frontal (max. Fp1)"). A map entered before version 2.0, without vigilance, stays displayed apart with [[→ wake]] and [[→ sleep]] to file it;
 - interictal **recordings and screenshots**, dated, awake or asleep (<kbd>Ctrl</kbd>+<kbd>V</kbd>).
 
 ![Interictal EEG: report, activation procedures and 10-20 maps.](shot:phase1-inter)
 
 ## Scalp EEG {#leeg-de-scalp}
 
-The [[EEG analyses]] tab receives the **recordings** themselves: EDF, EDF+, BDF, BrainVision, Brainquick or Micromed exports. [[+ Import a recording…]], or drop the files on the card. Each recording is filed by recording day; a seizure of the record whose time falls within the recording is linked to it automatically.
+The [[Analyses]] tab receives the **recordings** themselves: EDF, EDF+, BDF, BrainVision, Brainquick or Micromed exports. [[+ Import a recording…]], or drop the files on the card. Recordings are split into **Ictal analyses** (recordings with a seizure, seizure summary) and **Interictal analyses** (spikes, sleep, sources), each filed by recording day; a long recording containing seizures is filed with the seizures and flagged in the interictal part. A seizure of the record whose time falls within the recording is linked to it automatically.
 
 Under each recording appear its post-processing results: spikes and clusters, hypnogram, source imaging, page captures.
 
-!!! attention
-    A recording's title is taken from the file name, which sometimes contains the patient's name. Rename it ([[⋯]] on the card › *Rename…*): this title appears at the MDT meeting and in the reports.
+!!! bref
+    An imported recording is stored under a **BIDS name** based on the patient's code (`sub-HFAR0007_ses-scalp1_task-seizure_run-01_eeg.edf`) and gets a **neutral title** (“Seizure · 02/06/2021 23:30 · run 01”): the original file name, which often contains the patient's name, is kept nowhere. The title can be changed if needed ([[⋯]] on the card › *Rename…*).
 
 ![A recording card: linked seizures, detected spikes, sleep, sources.](shot:phase1-analyses)
 
@@ -111,9 +125,26 @@ Under each recording appear its post-processing results: spikes and clusters, hy
 [[Review]] opens the full-screen viewer:
 
 - montage (monopolar, double banana, transverse, average reference, Laplacian), page of 2 to 60 s, gain (<kbd>Ctrl</kbd>+wheel), high-pass, low-pass and notch filters;
+- EEG polarity convention: **negative up** (a negative deflection goes up, as in acquisition software);
 - <kbd>←</kbd> <kbd>→</kbd>: previous or next page (<kbd>Shift</kbd>: one second); drag to scroll;
-- right-click: mark seizure onset or end, place a marker;
-- the overview at the bottom shows the whole recording; click to go there.
+- right-click: mark seizure onset or end, place a marker; [[Markers ▾]] lists them to jump there;
+- **wall-clock time**: the axis and the cursor show the acquisition computer's time (with the date after midnight); [[Clock]] | [[t]] switches to the time since the start of the recording.
+
+The **timeline** at the bottom shows the whole recording, with the time ruler, the activity, the seizures (red bands, clickable), the gaps of a discontinuous EDF (hatched, with their duration) and the displayed page (yellow frame). Click or drag to go there; the **wheel** zooms around the pointer; [[⤢ whole recording]] or a double-click returns to the whole recording. The *seizure* menu at the top jumps to a seizure; the timeline keeps the overview.
+
+!!! attention
+    A **discontinuous** recording (EDF+D: pauses, gaps) is displayed block after block, without the holes; the wall-clock time takes the gaps into account. Every marker is also stored at its wall-clock time, which keeps it in place even if the way the file is read changes.
+
+### Video and recording {#video-et-trace}
+
+A gallery video can be **aligned** on the recordings’ clock: its start time is known, and each instant of the video corresponds to a time in the recording. Several videos can cover the same recording (several cameras, split files).
+
+- **On import**: if the file name contains the start date and time (`…20210602_223543…`), the video is aligned straight away.
+- **“Video time” window** (gallery: [[video time…]]; viewer: ⚙ on the video panel): the start time (`2021-06-02 22:03:43`, or just `22:03:43` with the recording's date), the linked recording, and **synchronisation points** — the same event found in the video and in the recording (movement artefact, clinical onset). One point corrects the offset; two or more distant points also correct the drift of the camera clock. The window shows the difference of each point and where each seizure falls: “Seizure 1 (22:05:00) → video at 1:17”, or “… before the start of the video”.
+- **In the viewer**: [[▶ Video]] opens a panel (moved by its title bar, resized by its corner) that shows the video covering the cursor and follows it as you navigate; during playback, the recording follows the video. Outside any video, the panel shows “No aligned video at …”. [[📍 point]] adds a synchronisation point: put the video and the recording cursor on the same event, then click.
+- Aligned videos appear as **blue bands** on the recording's timeline.
+
+Example: recording started at 19:30, video started at 22:03:43, seizure marked at 22:01 in the recording: the window reports that the seizure is 2 min 43 s before the start of the video, and the panel shows “No aligned video at 22:01:00”.
 
 ![The recording viewer.](shot:eeg-viewer)
 

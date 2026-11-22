@@ -146,7 +146,7 @@
       const W = this.ui.ce || {}, real = r.spec && hasReal(r.spec), twin = real && ex.electrodes.some(s => s !== r.spec && nn(s.name) === nn(r.spec.name)), keepSpec = real && !twin && (r.spec.target || (r.spec.plan && r.spec.plan.tip));
       if (real && !confirm(`Supprimer la reconstruction de ${r.name} ? Ses plots réels sont retirés de ${ex.label}${keepSpec ? ' (l’électrode prévue du schéma reste)' : ''}.`)) return;
       const det = ex.ctDetect; if (r.it && det) det.items.splice(det.items.indexOf(r.it), 1);
-      if (real) { if (keepSpec) delete r.spec.real; else ex.electrodes.splice(ex.electrodes.indexOf(r.spec), 1); }
+      if (real) { if (keepSpec) delete r.spec.real; else SV.Store.discard(this.dossier, { kind: 'électrode', label: r.spec.name, list: 'explorations', id: ex.id, field: 'electrodes', item: r.spec }); }
       else if (det && det.validated) det.dirty = true;
       W.sel = null; W.selRow = null; const st = this.slvState(); if (st.elec === r.key && this.exitElectrodeCheck) this.exitElectrodeCheck();
       this.toast(`${r.name} supprimée${real ? ' (plots réels retirés de ' + ex.label + ')' : ''}`, 3000);

@@ -50,7 +50,7 @@
             ${(ex.esi || []).length ? `<label><input type="checkbox" data-k="esi"${on ? ' checked' : ''}> imagerie de source (${ex.esi.length} résultat${ex.esi.length > 1 ? 's' : ''} : pointes après l’intercritique, début de crise après chaque crise)</label>` : ''}
             ${hasSeeg ? `<label><input type="checkbox" data-k="seeg"${on ? ' checked' : ''}> SEEG : ${ex.stims.length} stimulation${ex.stims.length > 1 ? 's' : ''}, ${ex.thermo.length} thermocoagulation${ex.thermo.length > 1 ? 's' : ''}, ${ex.quant.length} quantification${ex.quant.length > 1 ? 's' : ''}</label>` : ''}</div></div>`;
       };
-      card.innerHTML = `<div class="modal-head"><span>${m ? 'Compte rendu du staff du ' + fmtDate(m.date) : 'Rapport'} — ${esc(d.patient.pseudo)}</span><button class="close">✕</button></div>
+      card.innerHTML = `<div class="modal-head"><span>${m ? 'Compte rendu du staff du ' + fmtDate(m.date) : 'Rapport'} — ${esc(this.dname(d))}</span><button class="close">✕</button></div>
         <div class="help rd-body">
           ${!m ? `<label class="rd-scope"><input type="radio" name="rdscope" value="seizure"${cur ? '' : ' disabled'}> <b>Crise ouverte seule</b> <span class="muted">${cur ? esc(S.contextOf(d, cur.id).exploration.label + ' · ' + cur.label) : '(aucune crise ouverte)'}</span></label>
           <label class="rd-scope"><input type="radio" name="rdscope" value="dossier" checked> <b>Dossier du patient</b> <span class="muted">choisissez le contenu :</span></label>` : `<div class="hint">Le compte rendu reprend les rapports des explorations discutées (crises, synthèse, implantation, SEEG), puis le staff : concordance, hypothèses, décisions et conclusion.</div>`}
@@ -61,7 +61,7 @@
             ${ms.length ? `<div class="rd-ex"><span class="rd-h"><b>Staffs</b></span><div class="rd-sub">${ms.map(x => `<label class="chip"><input type="checkbox" data-mt="${x.id}"${!m || x.id === m.id ? ' checked' : ''}> ${fmtDate(x.date)} · ${esc(V.meeting[x.kind])}</label>`).join('')}</div></div>` : ''}
             ${d.procedures.length || d.outcomes.length ? `<label><input type="checkbox" data-g="surgery"${!m || m.kind === 'post_surgery' ? ' checked' : ''}> Chirurgie et devenir (${d.procedures.length} procédure${d.procedures.length > 1 ? 's' : ''}, ${d.outcomes.length} suivi${d.outcomes.length > 1 ? 's' : ''})</label>` : ''}
           </div>
-          <div class="rd-opts"><b>Images</b> <label><input type="checkbox" data-o="images" checked> vues 3D (réseaux des hypothèses, implantation, SEEG, chirurgie)</label> <label title="une vue latérale et médiale après chaque signe : rapport plus long à produire et plus lourd"><input type="checkbox" data-o="dynamics"> dynamique à chaque signe</label> <label><input type="checkbox" data-o="params"> paramètres du modèle</label></div>
+          <div class="rd-opts"><b>Identité</b> <label title="pour un rapport qui sort du service : le code du sujet remplace le nom, sans date de naissance"><input type="checkbox" data-o="anon"${this.anon ? ' checked' : ''}> masquer le nom du patient (code ${esc(S.subjectLabel(d) || '—')})</label></div><div class="rd-opts"><b>Images</b> <label><input type="checkbox" data-o="images" checked> vues 3D (réseaux des hypothèses, implantation, SEEG, chirurgie)</label> <label title="une vue latérale et médiale après chaque signe : rapport plus long à produire et plus lourd"><input type="checkbox" data-o="dynamics"> dynamique à chaque signe</label> <label><input type="checkbox" data-o="params"> paramètres du modèle</label></div>
         </div><div class="modal-foot"><button class="primary ok">Générer le rapport</button><button class="cancel">Annuler</button></div>`;
       const close = () => box.remove();
       card.querySelector('.close').onclick = card.querySelector('.cancel').onclick = close;
@@ -78,7 +78,7 @@
         const g = k => { const x = card.querySelector(`[data-g=${k}]`); return !!(x && x.checked); }, o = k => !!card.querySelector(`[data-o=${k}]`).checked;
         const opts = { staff: m, patient: g('patient'), chrono: g('chrono'), surgery: g('surgery'), images: o('images'), dynamics: o('dynamics'), params: o('params'), ex: {}, meetings: [...card.querySelectorAll('[data-mt]')].filter(x => x.checked).map(x => x.dataset.mt) };
         card.querySelectorAll('.rd-ex[data-ex]').forEach(row => { const q = k => { const x = row.querySelector(`[data-k=${k}]`); return !!(x && x.checked); }; if (!q('ex')) return; opts.ex[row.dataset.ex] = { synth: q('synth'), cr: q('cr'), esi: q('esi'), implant: q('implant'), seeg: q('seeg'), seizures: [...row.querySelectorAll('[data-sz]')].filter(x => x.checked).map(x => x.dataset.sz) }; });
-        close();
+        close(); this._reportAnon = o('anon');
         if (sc === 'seizure') this.report(); else this.dossierReport(opts);
       };
       box.appendChild(card); document.body.appendChild(box); box.hidden = false;
@@ -203,13 +203,13 @@
           if (opts.params) body.push(`<h2 ${anchor('params', 'Paramètres du modèle')}>Paramètres du modèle</h2>${R.paramsLine(Object.assign({}, SV.Model.DEFAULT_PARAMS || {}, this.state.params || {}), '')}<p class="m">Paramètres par défaut ou propres à chaque crise (réglages de l’espace de travail).</p>`);
           const tocHtml = toc.length > 2 ? `<nav class="toc"><b>Sommaire</b><ul>${toc.filter(t => (t.lv || 2) <= 3).map(t => `<li class="l${t.lv || 2}"><a href="#${t.id}">${esc(t.txt)}</a></li>`).join('')}</ul></nav>` : '';
           const P = d.patient, st = S.stage(d), head = Object.assign(this.brandHead(), {
-            title: m ? `Staff du ${fmtDate(m.date)} — ${P.pseudo}` : `Dossier — ${P.pseudo}`,
+            title: m ? `Staff du ${fmtDate(m.date)} — ${this.dname(d, this._reportAnon)}` : `Dossier — ${this.dname(d, this._reportAnon)}`,
             subtitle: m ? 'Compte rendu de réunion de concertation' : 'Rapport du parcours pré-chirurgical',
             meta: [st.text, `${d.explorations.length} exploration${d.explorations.length > 1 ? 's' : ''}`, `${d.seizures.length} crise${d.seizures.length > 1 ? 's' : ''}`, 'atlas VEP' + (this.patientAnat ? ' · anatomie du patient calculée' : ''), `base ${this.db.meta.version || ''}`],
           });
-          return R.wrap(head, tocHtml + body.join('\n'));
+          return R.wrap(head, tocHtml + this.cmInjectHtml(body.join('\n'), m ? m.date : null));   // v1.1.0 : commentaires de staff à leur place
         });
-        const name = (opts.staff ? `Staff_${(d.patient.pseudo || 'patient')}_${opts.staff.date || ''}` : `EpiScope_dossier_${d.patient.pseudo || 'patient'}`).replace(/[^\w\-]+/g, '_') + '.html';
+        const name = (opts.staff ? `Staff_${this.fileStem(d)}_${opts.staff.date || ''}` : `EpiScope_dossier_${this.fileStem(d)}`).replace(/[^\w\-]+/g, '_') + '.html';
         this.download(name, SV.I18n.html(html), 'text/html');
         job.done('Rapport téléchargé : ouvrez-le puis Imprimer → PDF');
       } catch (e) { console.error(e); job.fail(e.message); }
@@ -330,10 +330,16 @@
       H.lat = lat.length ? `<p>${esc(lat.join(' · '))}</p>` : '';
       const hx = [['Premières crises à', S.onsetText(P)], ['Mode de début', C.onsetMode ? (Cl.ONSET_MODE || {})[C.onsetMode] || '' : ''], ['Étiologie', S.etiologyText(P)], ['Type(s) de crises', C.seizureTypes], ['Manifestations subjectives', C.subjective], ['Manifestations objectives', C.objective], ['Perte de contact', C.contact ? (Cl.CONTACT || {})[C.contact] || '' : ''], ['Durée', C.duration], ['Post-critique', C.postictal], ['Horaire', C.timing ? (Cl.TIMING || {})[C.timing] || '' : ''], ['Facteurs déclenchants', C.triggers], ['Généralisations tonico-cloniques', C.fbtcs], ['Plus longue période sans crise', C.longestFree]].filter(([, v]) => v);
       const fq = dated(C.freqHistory);
-      H.hx = hx.length || P.history || fq.length ? `${P.history ? `<p>${esc(P.history).replace(/\n/g, '<br>')}</p>` : ''}${hx.length ? `<table>${hx.map(([l, v]) => `<tr><td style="width:30%">${esc(l)}</td><td>${esc(v).replace(/\n/g, '<br>')}</td></tr>`).join('')}</table>` : ''}${fq.length ? `<h4>Fréquence des crises</h4>${datedTable(fq)}` : ''}` : '';
+      H.hx = hx.length || P.history || fq.length ? `${P.history ? `<p data-ed="patient:-:history">${esc(P.history).replace(/\n/g, '<br>')}</p>` : ''}${hx.length ? `<table data-cm="patient:-:hxtable">${hx.map(([l, v]) => `<tr><td style="width:30%">${esc(l)}</td><td>${esc(v).replace(/\n/g, '<br>')}</td></tr>`).join('')}</table>` : ''}${fq.length ? `<h4>Fréquence des crises</h4>${datedTable(fq)}` : ''}` : '';
       const aed = (d.aedHistory || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
       H.tt = P.aeds || aed.length || C.intolerances ? `${P.aeds ? `<div class="tblock"><p class="tb-h"><b>Traitement actuel</b>${P.aedsSince ? ` <span class="m">(depuis ${esc(S.fmtPartial(P.aedsSince))})</span>` : ''}</p>${txtBlock(P.aeds)}</div>` : ''}${aed.length ? `<table><tr><th>début</th><th>fin</th><th>traitement</th><th>effet</th></tr>${aed.map(a => `<tr><td class="mono">${esc(S.fmtPartial(a.date || ''))}</td><td class="mono">${esc(S.fmtPartial(a.end || ''))}</td><td>${esc(a.text)}</td><td class="m">${esc(a.effect || '')}</td></tr>`).join('')}</table>` : ''}${para('Intolérances', C.intolerances)}` : '';
       const ex = dated(C.examHistory); H.exam = ex.length ? datedTable(ex) : C.neuroExam ? txtBlock(C.neuroExam) : '';
+      // v1.1.0 : ancres des commentaires et de l'édition depuis le staff (staff_edit.js) — data-ed : champ texte modifiable ;
+      // data-cm : bloc commentable seulement ; les mêmes chaînes servent dans le compte rendu (cmInjectHtml)
+      const W = (attr, v) => v ? `<div ${attr}>${v}</div>` : v;
+      H.life = W('data-ed="clin:-:lifestyle"', H.life); H.antPers = W('data-cm="patient:-:antPers"', H.antPers); H.antMed = W('data-ed="clin:-:antecedentsText"', H.antMed);
+      H.comorb = W(co.length ? 'data-cm="patient:-:comorb"' : 'data-ed="clin:-:comorbidities"', H.comorb); H.family = W('data-cm="patient:-:family"', H.family);
+      H.lat = W('data-cm="patient:-:lat"', H.lat); H.tt = W('data-cm="patient:-:tt"', H.tt); H.exam = W(ex.length ? 'data-cm="patient:-:examhist"' : 'data-ed="clin:-:neuroExam"', H.exam);
       return H;
     },
     reportHistory(d, o) {
@@ -355,7 +361,7 @@
       let html = '<h3>Bilans</h3>';
       for (const [k, l] of Object.entries(V.exam)) {
         const L = X.filter(x => x.kind === k).sort((a, b) => String(a.date).localeCompare(String(b.date))); if (!L.length) continue;
-        html += `<h4>${esc(l.charAt(0).toUpperCase() + l.slice(1))}</h4><ul>${L.map(x => `<li><b>${fmtDate(x.date)}</b>${x.title ? ' — ' + esc(x.title) : ''}${x.kind === 'neuropsy' ? `<ul>${V.neuroDomains.filter(([dk]) => (x.domains || {})[dk]).map(([dk, dl]) => `<li><b>${esc(dl)}</b> : ${esc(x.domains[dk])}</li>`).join('')}</ul>` : x.text ? `<br>${esc(x.text).replace(/\n/g, '<br>')}` : ''}${x.conclusion ? `<br><i>${esc(x.conclusion)}</i>` : ''}${x.side && x.kind !== 'psy' && x.kind !== 'fmri' ? ` <span class="m">(${esc({ L: 'gauche', R: 'droite', B: 'bilatéral', N: 'non latéralisant' }[x.side] || '')})</span>` : ''}${x.kind === 'fmri' && x.langDom ? ` <span class="m">(dominance du langage : ${esc(V.langDom[x.langDom] || x.langDom)})</span>` : ''}${(x.attachments || []).length ? `<br><span class="m">pièces jointes : ${x.attachments.map(a => esc(a.name)).join(', ')}</span>` : ''}${this.reportCapsHtml(d.gallery.filter(g => g.examId === x.id))}</li>`).join('')}</ul>`;
+        html += `<h4>${esc(l.charAt(0).toUpperCase() + l.slice(1))}</h4><ul>${L.map(x => `<li data-cm="exam:${esc(x.id)}"><b>${fmtDate(x.date)}</b>${x.title ? ' — ' + esc(x.title) : ''}${x.kind === 'neuropsy' ? `<ul>${V.neuroDomains.filter(([dk]) => (x.domains || {})[dk]).map(([dk, dl]) => `<li><b>${esc(dl)}</b> : <span data-ed="exam:${esc(x.id)}:domains.${dk}">${esc(x.domains[dk])}</span></li>`).join('')}</ul>` : x.text ? `<br><span data-ed="exam:${esc(x.id)}:text">${esc(x.text).replace(/\n/g, '<br>')}</span>` : ''}${x.conclusion ? `<br><i data-ed="exam:${esc(x.id)}:conclusion">${esc(x.conclusion)}</i>` : ''}${x.side && x.kind !== 'psy' && x.kind !== 'fmri' ? ` <span class="m">(${esc({ L: 'gauche', R: 'droite', B: 'bilatéral', N: 'non latéralisant' }[x.side] || '')})</span>` : ''}${x.kind === 'fmri' && x.langDom ? ` <span class="m">(dominance du langage : ${esc(V.langDom[x.langDom] || x.langDom)})</span>` : ''}${(x.attachments || []).length ? `<br><span class="m">pièces jointes : ${x.attachments.map(a => esc(a.name)).join(', ')}</span>` : ''}${this.reportCapsHtml(d.gallery.filter(g => g.examId === x.id))}</li>`).join('')}</ul>`;
       }
       return html;
     },
@@ -383,8 +389,9 @@
       return `<table><tr><th>date</th><th>étape</th><th>détail</th></tr>${rows.map(r => `<tr><td class="mono">${r[0] ? fmtDate(r[0]) : '—'}</td><td>${esc(r[1])}</td><td class="m">${esc(r[2])}</td></tr>`).join('')}</table>`;
     },
     reportSessions(ex) {
-      const d = this.dossier, ses = S.sessionsOf(d, ex.id); if (!ses.length) return '';
-      return `<p class="m">${ses.map(s => `${esc(s.label)} ${fmtDate(s.date)} : ${S.seizuresOfSession(d, s.id).length} crise(s)${(s.files || []).length ? ' · ' + esc(s.files.map(f => f.name || f).join(', ')) : ''}`).join(' — ')}</p>${ex.notes ? `<p>${esc(ex.notes)}</p>` : ''}`;
+      // v2.0.0 : plus de séances — crises par jour d'enregistrement (J1, J2…)
+      const d = this.dossier, days = S.seizureDays(d, ex.id).filter(x => x.day); if (!days.length && !ex.notes) return '';
+      return `${days.length ? `<p class="m">${days.map(x => `${x.n > 0 ? 'J' + x.n + ' ' : ''}${fmtDate(x.day)} : ${x.seizures.length} crise(s)`).join(' — ')}</p>` : ''}${ex.notes ? `<p>${esc(ex.notes).replace(/\n/g, '<br>')}</p>` : ''}`;
     },
     /** synthèse des crises d'une exploration : crises (consensus), comparaison des séquences, latéralisation, hypothèses
      *  récurrentes du modèle (et leurs réseaux), origines candidates (et leur carte) ; SR : vues de synthesis (synthShots) */
@@ -418,7 +425,7 @@
       let conc = `<table class="conc"><tr><th>Système</th>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}<th>Σ</th></tr>`; let nrow = 0;
       for (const sys of SYSTEMS) for (const side of ['L', 'R']) { const k = sys + ':' + side, cells = cols.map(c => (man[k] && man[k][c.key] && man[k][c.key].v !== undefined) ? man[k][c.key] : (auto[k] && auto[k][c.key]) || null); if (!cells.some(c => c && c.v && c.v !== '0')) continue; nrow++; const sc = cells.reduce((s, c) => s + (c ? LV_SCORE[c.v] || 0 : 0), 0); conc += `<tr><td>${esc(SYS_FR[sys])} ${side === 'L' ? 'G' : 'D'}</td>${cells.map(c => `<td class="lv${c && c.v ? ' v' + ({ '++': 'pp', '+': 'p', '0': 'z', '−': 'm', '?': 'q' }[c.v]) : ''}">${c && c.v ? esc(c.v) : ''}${c && c.note ? `<div class="nt">${esc(c.note)}</div>` : ''}</td>`).join('')}<td><b>${sc > 0 ? '+' + sc : sc}</b></td></tr>`; }
       conc += '</table>'; this._scope = sc0;
-      html += `<h${lv + 1}>Concordance anatomo-électro-clinique</h${lv + 1}>${nrow ? conc : '<p class="m">—</p>'}`;
+      html += `<h${lv + 1} data-cm="page:concord">Concordance anatomo-électro-clinique</h${lv + 1}>${nrow ? conc : '<p class="m">—</p>'}`;
       // captures présentées (cochées dans « Préparer », sinon toutes celles des explorations prises en compte)
       const shown = this.presentGalleryList ? this.presentGalleryList(m, scope).filter(g => !g.examId) : [];
       if (shown.length && (focus || (m.galleryIds || []).length)) html += `<h${lv + 1}>Captures présentées</h${lv + 1}>${this.reportCapsHtml(shown)}`;
@@ -428,18 +435,18 @@
       for (let i = 0; i < hyps.length; i++) {
         const H = hyps[i], lin = d.hypotheses.filter(x => x.lineage === H.lineage).sort((a, b) => a.version - b.version);
         const shots = opts.images && H.ez.length ? await this._hypothesisShots(H, i, { scale: 2 }) : [];
-        html += `<div class="hyp" style="border-left-color:${SV.hypCss(i)}"><h${lv + 2}><span style="color:${SV.hypCss(i)}">H${i + 1}</span> ${esc(H.title)} <small class="m">v${H.version} · ${esc(V.hypStatus[H.status])} · ${esc(V.confidenceText[H.confidence] || '')}</small></h${lv + 2}>
+        html += `<div class="hyp" style="border-left-color:${SV.hypCss(i)}"><h${lv + 2} data-cm="page:hyp:${esc(H.id)}"><span style="color:${SV.hypCss(i)}">H${i + 1}</span> ${esc(H.title)} <small class="m">v${H.version} · ${esc(V.hypStatus[H.status])} · ${esc(V.confidenceText[H.confidence] || '')}</small></h${lv + 2}>
           <p><b>Zone épileptogène</b> : ${H.ez.map(r => `<span class="regchip ez">${L(r)}</span>`).join('') || '—'}${H.prop.length ? '<br><b>Propagation</b> : ' + H.prop.map(r => `<span class="regchip">${L(r)}</span>`).join('') : ''}</p>
           ${H.argsFor.filter(a => a.text).length ? '<p><b>Pour</b> : ' + H.argsFor.filter(a => a.text).map(a => esc(a.text)).join(' ; ') + '</p>' : ''}${H.argsAgainst.filter(a => a.text).length ? '<p><b>Contre</b> : ' + H.argsAgainst.filter(a => a.text).map(a => esc(a.text)).join(' ; ') + '</p>' : ''}
           ${lin.length > 1 ? `<p class="m">Historique : ${lin.map(x => `v${x.version} (${esc(V.hypStatus[x.status])}, ${fmtDate((S.byId(d.meetings, x.meetingId) || {}).date || x.created)})`).join(' → ')}</p>${this.hypDiff(lin[lin.length - 2], H)}` : ''}
-          ${H.notes ? '<p>' + esc(H.notes) + '</p>' : ''}${shots.length ? `<div class="imgs">${shots.map((u, k) => R.IMG(u, `Staff_H${i + 1}_${k ? 'medial' : 'lateral'}`)).join('')}</div>` : ''}</div>`;
+          ${H.notes ? `<p data-ed="hypothesis:${esc(H.id)}:notes">` + esc(H.notes) + '</p>' : ''}${shots.length ? `<div class="imgs">${shots.map((u, k) => R.IMG(u, `Staff_H${i + 1}_${k ? 'medial' : 'lateral'}`)).join('')}</div>` : ''}</div>`;
       }
       // décisions
       html += `<h${lv + 1}>Décisions</h${lv + 1}>`;
       if (!dec.length) html += '<p class="m">—</p>';
       for (const x of dec) {
         const ex = x.createdExplorationId && S.byId(d.explorations, x.createdExplorationId), pr = x.procedureId && S.byId(d.procedures, x.procedureId), dh = d.hypotheses.filter(H => x.hypothesisIds.includes(H.id));
-        html += `<div class="hyp" style="border-left-color:#f2b84b"><h${lv + 2}>${esc(V.decision[x.type])}${x.text ? ' — ' + esc(x.text) : ''} <small class="m">${esc(V.decisionStatus[x.status])}${x.date ? ' · ' + fmtDate(x.date) : ''}</small></h${lv + 2}>
+        html += `<div class="hyp" style="border-left-color:#f2b84b"><h${lv + 2} data-cm="page:dec:${esc(x.id)}">${esc(V.decision[x.type])}${x.text ? ' — <span data-ed="decision:' + esc(x.id) + ':text">' + esc(x.text) + '</span>' : ''} <small class="m">${esc(V.decisionStatus[x.status])}${x.date ? ' · ' + fmtDate(x.date) : ''}</small></h${lv + 2}>
           ${dh.length ? `<p><b>Hypothèses</b> : ${dh.map(H => esc(H.title)).join(' · ')}</p>` : ''}`;
         if (['surgery', 'litt'].includes(x.type) && x.targets.length && this.surgeryShots) {
           const cov = this.surgeryCoverage(x.targets, dh);
@@ -455,7 +462,7 @@
         if (pr) html += `<p class="m">→ procédure : ${esc(this.surgeryLabel ? this.surgeryLabel(pr) || V.procedure[pr.type] : V.procedure[pr.type])}${pr.date ? ' le ' + fmtDate(pr.date) : ' (date à préciser)'}</p>`;
         html += '</div>';
       }
-      if (m.conclusion) html += `<h${lv + 1}>Conclusion</h${lv + 1}><p>${esc(m.conclusion).replace(/\n/g, '<br>')}</p>`;
+      if (m.conclusion) html += `<h${lv + 1} data-cm="page:concl">Conclusion</h${lv + 1}><p data-ed="meeting:${esc(m.id)}:conclusion">${esc(m.conclusion).replace(/\n/g, '<br>')}</p>`;
       return html;
     },
     async reportSurgery(d, opts) {

@@ -13,16 +13,18 @@ ok(S.onsetText({ onsetAge: 1, onsetAgeUnit: 'y' }) === '1 an', 'singulier');
 ok(Math.abs(S.onsetYears({ onsetAge: 6, onsetAgeUnit: 'm' }) - 0.5) < 0.01, 'années depuis mois');
 ok(S.onsetYears({ onsetAge: 4 }) === 4, 'unité par défaut : ans');
 
-// ---------------------------------------------------------------- arbre : au plus un père et une mère, deux conjoints, demi-fratrie
+// ---------------------------------------------------------------- arbre (v3, dessin libre) : deux parents au plus, générations voisines, parents unis
+// (v1.0.1 : réécrit pour l'éditeur v3 — l'ancienne API addParents / addPartner / addChild n'existe plus)
 const P = { sex: 'M' }, ped = Pd.migrate(null), me = ped.persons.find(p => p.proband);
 ok(!!me, 'cas index créé');
-const [fa, mo] = Pd.Ed.addParents(ped, me), n0 = ped.persons.length, [fa2, mo2] = Pd.Ed.addParents(ped, me);
-ok(fa === fa2 && mo === mo2 && ped.persons.length === n0, 'un père et une mère, pas de doublon');
-const sp1 = Pd.Ed.addPartner(ped, me), sp2 = Pd.Ed.addPartner(ped, me), sp3 = Pd.Ed.addPartner(ped, me);
-ok(sp1 && sp2 && !sp3, 'au plus deux conjoints');
-const c1 = Pd.Ed.addChild(ped, me, sp1.id), c2 = Pd.Ed.addChild(ped, me, sp2.id);
-ok(c1 && c2 && Pd.partnersOf(ped, me.id).length === 2, 'enfants de deux unions');
-const hs = Pd.Ed.addHalfSibling(ped, me, 'mother'); ok(hs && hs.motherId === mo.id && hs.fatherId !== fa.id, 'demi-frère par la mère');
+const fa = Pd.Ed.person(ped, { sex: 'M', gen: me.gen - 1, x: me.x - 60 }), mo = Pd.Ed.person(ped, { sex: 'F', gen: me.gen - 1, x: me.x + 60 });
+ok(Pd.Ed.addFiliation(ped, fa.id, me.id).ok && Pd.Ed.addFiliation(ped, mo.id, me.id).ok, 'un père et une mère');
+ok(Pd.Ed.addFiliation(ped, fa.id, me.id).ok && Pd.parentsOf(ped, me.id).length === 2, 'pas de doublon');
+const x3 = Pd.Ed.person(ped, { sex: 'M', gen: me.gen - 1, x: me.x + 180 }); ok(!!Pd.Ed.addFiliation(ped, x3.id, me.id).err, 'pas de troisième parent');
+ok(!!Pd.findLink(ped, 'union', fa.id, mo.id), 'les deux parents d’un enfant sont unis');
+ok(!!Pd.Ed.addFiliation(ped, me.id, fa.id).err, 'un parent est dans la rangée au-dessus');
+const sib = Pd.Ed.person(ped, { sex: 'F', gen: me.gen, x: me.x + 120 }); Pd.Ed.addFiliation(ped, mo.id, sib.id);
+ok(Pd.siblingsOf(ped, me.id).includes(sib.id), 'demi-sœur par la mère');
 const lay = Pd.layout(ped, P); ok(lay && lay.nodes && lay.nodes.length >= ped.persons.length - 1, 'disposition de tous les individus');
 ok(/<svg/.test(Pd.svg(ped, P)), 'SVG');
 

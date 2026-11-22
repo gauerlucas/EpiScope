@@ -15,6 +15,13 @@
   const num = (v, d) => { const x = parseFloat(String(v).replace(',', '.')); return isFinite(x) ? x : d; };
 
   const M = {
+    /** v2.0.0 — « rien ne se perd » : un élément retiré d'une liste de l'exploration ouverte (stimulations, thermocoagulations,
+     *  jeux d'analyses) passe par la corbeille du dossier (restaurable) ; la liste de l'espace de travail suit */
+    wsDiscard(field, item, kind, label) {
+      const ST = SV.Store, d = this.dossier, c = d && this.ctx ? ST.resolveCtx(d, this.ctx) : null, ex = c && c.exploration;
+      if (d && ex && ex.id !== ST.REPORTED && Array.isArray(ex[field]) && ex[field].includes(item)) ST.discard(d, { kind, label: label || item.name || '', list: 'explorations', id: ex.id, field, item });
+      if (this.state[field] && this.state[field].includes(item)) { const i = this.state[field].indexOf(item); this.state[field].splice(i, 1); }
+    },
     // ------------------------------------------------------------------ état et utilitaires
     ensureSeeg() {
       const st = this.state; st.stims = st.stims || []; st.thermo = st.thermo || []; st.quant = st.quant || [];
@@ -255,7 +262,7 @@
       sg.form = { mode: s.mode, mA: s.mA, pulse: s.pulse, dur: s.dur, step: sg.form.step, clin: !!s.clin, clinType: s.clin ? S.clinTypeOf(s) : '', clinText: s.clinText || '', habitual: !!s.habitual, ad: !!s.ad, adDur: s.adDur == null ? '' : s.adDur, sz: !!s.sz, szHabitual: !!s.szHabitual, eeg: s.eeg || '', ccep: (s.ccep || []).slice(), note: s.note || '' };
       this.renderStims(); this.refreshMarkers();
     },
-    stimDelete(id) { const sg = this.ensureSeeg(); this.state.stims = this.state.stims.filter(s => s.id !== id); if (sg.editing === id) { sg.editing = null; sg.form = this.stimDefaultForm(sg.form.mode); } this.seegChanged(); this.renderStims(); this.refreshMarkers(); },
+    stimDelete(id) { const sg = this.ensureSeeg(), it = this.state.stims.find(s => s.id === id); if (it) this.wsDiscard('stims', it, 'stimulation', `${it.elec}${it.c1}-${it.c2}`); if (sg.editing === id) { sg.editing = null; sg.form = this.stimDefaultForm(sg.form.mode); } this.seegChanged(); this.renderStims(); this.refreshMarkers(); },
     stimsText() {
       const lines = [`EpiScope — stimulations corticales — ${this.state.name || 'cas'}`];
       for (const s of this.state.stims.slice().sort((a, b) => (a.t || '').localeCompare(b.t || ''))) { const r = this.resolvePair(s); lines.push(`${hhmm(s.t)} ${r ? r.key : s.elec + s.c1 + '-' + s.c2} ${S.STIM_MODES[s.mode].fr} ${S.fmtA(s.mA)} ${s.pulse} ms ${s.dur} s — ${S.stimSummary(s)}${s.note ? ' — ' + s.note : ''}`); }
@@ -282,7 +289,7 @@
       $('tcAdd').onclick = () => this.thermoAddRanges($('tcText').value); $('tcText').onkeydown = ev => { if (ev.key === 'Enter') this.thermoAddRanges($('tcText').value); };
       $('tcElec').onchange = ev => { sg.thermoElec = ev.target.value; this.renderThermo(); }; $('tcDate').onchange = ev => { sg.thermoDate = ev.target.value; };
       box.querySelectorAll('#tcPairs .pchip').forEach(b => b.onclick = () => { const c1 = +b.dataset.c1; this.thermoToggle(e, c1, c1 + 1); });
-      box.querySelectorAll('[data-rm]').forEach(a => a.onclick = () => { this.state.thermo = this.state.thermo.filter(t => { const r = this.resolvePair(t); return !r || r.key !== a.dataset.rm; }); this.seegChanged(); this.renderThermo(); this.refreshMarkers(); });
+      box.querySelectorAll('[data-rm]').forEach(a => a.onclick = () => { this.state.thermo.filter(t => { const r = this.resolvePair(t); return r && r.key === a.dataset.rm; }).forEach(t => this.wsDiscard('thermo', t, 'thermocoagulation', a.dataset.rm)); this.seegChanged(); this.renderThermo(); this.refreshMarkers(); });
       box.querySelectorAll('.tcnote').forEach(i => i.onchange = () => { const t = this.state.thermo.find(x => { const r = this.resolvePair(x); return r && r.key === i.dataset.key; }); if (t) { t.note = i.value.trim(); this.seegChanged(); this.refreshMarkers(); } });
       if ($('tcCopy')) $('tcCopy').onclick = () => { navigator.clipboard && navigator.clipboard.writeText(this.thermoText()).then(() => this.toast('Liste copiée')); };
       if ($('tcClear')) $('tcClear').onclick = () => { if (confirm('Retirer toutes les thermocoagulations ?')) { this.state.thermo = []; this.seegChanged(); this.renderThermo(); this.refreshMarkers(); } };
@@ -357,7 +364,7 @@
         $c('.qx-eye').onclick = () => { if (shown) this.quantHide(q, true); else { this.viewer.setCellConfig(this.viewer.active, this.quantViewCfg(q), true); sg.quantOpenId = q.id; } this.refreshMarkers(); this.renderQuant(); };
         $c('.qx-more').onclick = e => { const b = e.currentTarget.getBoundingClientRect(); this.popupMenu([{ head: q.name }, { label: 'Afficher dans toutes les vues', run: () => { this.viewer.setAllCells(this.quantViewCfg(q)); this.refreshMarkers(); this.renderQuant(); } }, { label: 'Masquer partout', run: () => { this.quantHide(q); this.refreshMarkers(); this.renderQuant(); } }, { sep: true },
           { label: 'Renommer…', run: () => { const t = prompt('Nom du jeu', q.name); if (t && t.trim()) { q.name = t.trim(); upd(); this.renderQuant(); } } }, { label: 'Exporter (CSV)', run: () => this.quantCSV(q) }, { sep: true },
-          { label: 'Supprimer le jeu…', danger: true, run: () => { if (!confirm(`Supprimer le jeu « ${q.name} » ?`)) return; this.quantHide(q); this.state.quant = this.state.quant.filter(x => x !== q); upd(); this.renderQuant(); } }], b.right - 230, b.bottom + 4); };
+          { label: 'Supprimer le jeu…', danger: true, run: () => { if (!confirm(`Supprimer le jeu « ${q.name} » ?`)) return; this.quantHide(q); this.wsDiscard('quant', q, 'jeu d’analyses', q.name); upd(); this.renderQuant(); } }], b.right - 230, b.bottom + 4); };
         card.querySelectorAll('.qx-v').forEach(r => r.onclick = () => this.quantSelect(r.dataset.k, q));
         const all = $c('.qx-all'); if (all) all.onclick = () => { sg.quantAll = sg.quantAll === q.id ? null : q.id; this.renderQuant(); };
         const cf = $c('.qx-cfg'); if (cf) cf.onclick = () => { sg.quantCfg = sg.quantCfg === q.id ? null : q.id; this.renderQuant(); };
@@ -394,6 +401,7 @@
       const sg = this.ensureSeeg(), imp = sg.quantImport; if (!imp || !imp.preview.n) return;
       const q = { id: uid('q'), name: imp.name, unit: imp.unit, cmap: imp.cmap, mode: imp.mode, min: imp.min, max: imp.max, source: imp.fileName + (imp.sheets.length > 1 ? ' / ' + imp.sheets[imp.sheet].name : ''), values: imp.preview.values, unmatched: imp.preview.unmatched };
       this.state.quant.push(q); sg.quantImport = null; sg.quantOpenId = q.id;
+      if (this.provRecord) this.provRecord(q, { slot: 'import', rec: null, params: { file: q.source, column: imp.valCol }, file: q.source });   // v1.1.0 : provenance
       this.viewer.setCellConfig(this.viewer.active, this.quantViewCfg(q), true);
       this.seegChanged(); this.refreshMarkers(); this.renderQuant(); this.toast(`Jeu « ${q.name} » importé (${Object.keys(q.values).length} plots) et affiché dans la vue active`, 4000);
     },

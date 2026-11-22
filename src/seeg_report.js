@@ -166,7 +166,7 @@
           // ---- en-tête
           const days = ex.start && ex.end ? Math.round((Date.parse(ex.end) - Date.parse(ex.start)) / 864e5) + 1 : null;
           body += `<div class="callout"><p><b>Monitoring vidéo-SEEG prolongé</b>${ex.start ? ' du ' + fmtDate(ex.start) : ''}${ex.end ? ' au ' + fmtDate(ex.end) : ''}${days ? ` (${days} jours)` : ''}${ex.center ? ' · ' + esc(ex.center) : ''}</p>
-            <p><b>Patient${F ? 'e' : ''}</b> : ${esc(P.pseudo)}${P.birthYear ? ', ' + (F ? 'née' : 'né(e)') + ' en ' + esc(P.birthYear) : ''}${P.handedness ? ', ' + esc(V.handedness[P.handedness]) : ''}</p>
+            <p><b>Patient${F ? 'e' : ''}</b> : ${esc(this.dname(d))}${P.birthYear ? ', ' + (F ? 'née' : 'né(e)') + ' en ' + esc(P.birthYear) : ''}${P.handedness ? ', ' + esc(V.handedness[P.handedness]) : ''}</p>
             <p><b>Objet de la demande</b> : ${esc(Rp.object || 'bilan pré-chirurgical de phase 2 (SEEG) d’une épilepsie pharmacorésistante')}</p>
             ${(Rp.treatment || P.aeds) ? `<p><b>Traitement à l’admission</b> : ${esc(Rp.treatment || P.aeds).replace(/\n/g, '<br>')}</p>` : ''}${Rp.conditions ? `<p><b>Conditions</b> : ${esc(Rp.conditions)}</p>` : ''}</div>`;
           // chapitres numérotés au fil du compte rendu (« Synthèse des crises » et « Autres analyses » seulement s'il y a lieu)
@@ -238,10 +238,10 @@
           const filled = FIELDS.filter(([k]) => k !== 'thermoAfter' && (Rp[k] || '').trim());
           body += `<h2 id="s7">Synthèse et conclusion</h2>${Rp.summary ? `<p>${esc(Rp.summary).replace(/\n/g, '<br>')}</p>` : ''}${filled.length ? `<dl class="zones">${filled.map(([k, l]) => `<dt>${esc(l)}</dt><dd>${esc(Rp[k]).replace(/\n/g, '<br>')}</dd>`).join('')}</dl>` : '<p class="m">Rubriques de synthèse à compléter (SEEG › Rapport SEEG).</p>'}`;
           job.progress(0.95, 'mise en page');
-          const head = Object.assign(this.brandHead(), { title: `${ex.label} — ${P.pseudo}`, subtitle: 'Compte rendu de monitoring vidéo-SEEG', meta: [`${els.length} électrodes`, `${szs.length} crise${szs.length > 1 ? 's' : ''}`, `${st.length} stimulations`, `${ex.thermo.filter(t => S.thermoStatusOf(t) === 'done').length} thermocoagulations`, this.patientAnat ? 'anatomie du patient' : 'gabarit fsaverage'], foot: 'Compte rendu préparé avec EpiScope à partir des données saisies ; à relire et signer par le médecin responsable.' });
+          const head = Object.assign(this.brandHead(), { title: `${ex.label} — ${this.dname(d)}`, subtitle: 'Compte rendu de monitoring vidéo-SEEG', meta: [`${els.length} électrodes`, `${szs.length} crise${szs.length > 1 ? 's' : ''}`, `${st.length} stimulations`, `${ex.thermo.filter(t => S.thermoStatusOf(t) === 'done').length} thermocoagulations`, this.patientAnat ? 'anatomie du patient' : 'gabarit fsaverage'], foot: 'Compte rendu préparé avec EpiScope à partir des données saisies ; à relire et signer par le médecin responsable.' });
           return R.wrap(head, body);   // sommaire latéral construit dans le document (titres des chapitres et des crises)
         });
-        this.download(`SEEG_${(d.patient.pseudo || 'patient')}_${ex.label}`.replace(/[^\w\-]+/g, '_') + '.html', SV.I18n.html(html), 'text/html');
+        this.download(`SEEG_${this.fileStem(d)}_${ex.label}`.replace(/[^\w\-]+/g, '_') + '.html', SV.I18n.html(html), 'text/html');
         job.done('Rapport SEEG téléchargé : ouvrez-le puis Imprimer → PDF');
       } catch (e) { console.error(e); job.fail(e.message); }
       finally {

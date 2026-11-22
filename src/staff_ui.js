@@ -48,7 +48,10 @@
     staffScope(m) {
       const d = this.dossier, exs = S.explorationsSorted(d);
       const ids = m.scope && m.scope.length ? m.scope : exs.filter(e => !m.date || !e.start || String(e.start) <= String(m.date)).map(e => e.id);
-      const off = new Set(m.scopeOff || []), seizures = []; for (const ex of exs) if (ids.includes(ex.id)) for (const sz of S.seizuresOfExploration(d, ex.id)) if (sz.events.length && !off.has(sz.id)) seizures.push({ sz, ex });
+      const off = new Set(m.scopeOff || []), seizures = [];
+      // v2.0.0 : crises rapportées non rattachées (vidéo familiale, témoignage) datées avant le staff — vues avant les explorations
+      const rep = S.reportedEx(d); for (const sz of S.reportedSeizures(d)) if (sz.events.length && !off.has(sz.id) && (!m.date || !sz.datetime || String(sz.datetime).slice(0, 10) <= String(m.date))) seizures.push({ sz, ex: rep });
+      for (const ex of exs) if (ids.includes(ex.id)) for (const sz of S.seizuresOfExploration(d, ex.id)) if (sz.events.length && !off.has(sz.id)) seizures.push({ sz, ex });
       return { ids, seizures, explorations: exs.filter(e => ids.includes(e.id)) };
     },
     /** modèle de chaque crise (mis en cache sur le contenu de la crise) */
@@ -115,7 +118,7 @@
     renderStaff() {
       const d = this.dossier, box = $('scr-staff'); if (!d) return;
       const m = this.currentMeeting();
-      if (!m) { box.innerHTML = `<div class="scr-inner"><div class="card"><div class="hint">Aucune réunion pour ${esc(d.patient.pseudo)} : « ＋ » dans la barre du parcours → Staff.</div></div></div>`; return; }
+      if (!m) { box.innerHTML = `<div class="scr-inner"><div class="card"><div class="hint">Aucune réunion pour ${esc(this.dname(d))} : « ＋ » dans la barre du parcours → Staff.</div></div></div>`; return; }
       this.ui.meetingId = m.id;
       const ms = d.meetings.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
       const scope = this.staffScope(m), cons = this.consensus(scope); this._cons = cons; this._scope = scope;
@@ -126,7 +129,8 @@
         <div class="card"><div class="form row4 stform"><label>Date <input type="date" data-f="date" value="${esc(m.date)}"></label><label>Type <select data-f="kind">${opts(V.meeting, m.kind)}</select></label>
           <label>Statut <select data-f="status">${opts({ draft: 'brouillon (en préparation)', final: 'validé' }, m.status)}</select></label></div><div class="st-ppl"><span class="lbl">Participants</span><span class="ppl-chips" id="stPpl"></span></div>
           <div class="form stform"><label>Question posée <input data-f="question" value="${esc(m.question || '')}" placeholder="ex. indication et schéma d’une SEEG ? résection temporale antérieure droite d’emblée ?"></label></div>
-          <div class="scope"><span class="muted">Crises prises en compte :</span> ${S.explorationsSorted(d).map(ex => { const zs = S.seizuresOfExploration(d, ex.id).filter(z => z.events.length), on = scope.ids.includes(ex.id), off = new Set(m.scopeOff || []), n = zs.filter(z => !off.has(z.id)).length;
+          <div class="scope"><span class="muted">Crises prises en compte :</span> ${(() => { const zs = S.reportedSeizures(d).filter(z => z.events.length && (!m.date || !z.datetime || String(z.datetime).slice(0, 10) <= String(m.date))), off = new Set(m.scopeOff || []); if (!zs.length) return '';
+            return `<span class="scope-ex"><span class="chip" title="crises décrites hors exploration (vidéo familiale, témoignage), non rattachées">Crises rapportées (${zs.filter(z => !off.has(z.id)).length}/${zs.length})</span><span class="scope-sz">${zs.map(z => `<label class="chip sm${off.has(z.id) ? '' : ' on'}" title="${esc(z.label)}${z.datetime ? ' · ' + esc(String(z.datetime).replace('T', ' ')) : ''}"><input type="checkbox" data-scsz="${z.id}"${off.has(z.id) ? '' : ' checked'}> ${esc(z.label)}${z.habitual === 'yes' ? ' ●' : ''}</label>`).join('')}</span></span>`; })()}${S.explorationsSorted(d).map(ex => { const zs = S.seizuresOfExploration(d, ex.id).filter(z => z.events.length), on = scope.ids.includes(ex.id), off = new Set(m.scopeOff || []), n = zs.filter(z => !off.has(z.id)).length;
             return `<span class="scope-ex"><label class="chip"><input type="checkbox" data-scope="${ex.id}"${on ? ' checked' : ''}> ${esc(ex.label)} (${on && n < zs.length ? n + '/' : ''}${zs.length})</label>${on && zs.length ? `<span class="scope-sz">${zs.map(z => `<label class="chip sm${off.has(z.id) ? '' : ' on'}" title="${esc(z.label)}${z.datetime ? ' · ' + esc(String(z.datetime).replace('T', ' ')) : ''}${z.habitual === 'yes' ? ' · habituelle' : ''}"><input type="checkbox" data-scsz="${z.id}"${off.has(z.id) ? '' : ' checked'}> ${esc(z.label)}${z.habitual === 'yes' ? ' ●' : ''}</label>`).join('')}</span>` : ''}</span>`; }).join('')}</div></div>
         <div class="st-grid">
           <div class="st-col"><div class="card"><div class="card-h">Synthèse</div><div id="stSynth"></div></div></div>
@@ -273,7 +277,7 @@
           }
           b.querySelectorAll('[data-add]').forEach(x => x.onclick = () => { H[x.dataset.add].push({ text: '', ref: null }); this.touch('hypothesis', H.id, H.title); this.renderHypotheses(m); const ins = $('stHyps').querySelectorAll(`.hypc.open .${x.dataset.add === 'argsFor' ? 'a-for' : 'a-against'} input`); if (ins.length) ins[ins.length - 1].focus(); });
           b.querySelector('[data-a=shots]').onclick = async () => { const imgs = await this.hypothesisShots(H, idx); b.querySelector('.hyp-shots').innerHTML = imgs.map(u => `<img src="${u}">`).join(''); };
-          b.querySelector('[data-a=del]').onclick = () => { if (!confirm(`Supprimer la version ${H.version} de « ${H.title} » ?`)) return; const prev = H.supersedes && S.byId(d.hypotheses, H.supersedes); if (prev && prev.status === 'revised') prev.status = 'proposed'; S.remove(d, 'hypothesis', H.id); this.touch(); this.renderHypotheses(m); this.renderConcordance(m); };
+          b.querySelector('[data-a=del]').onclick = () => { if (!confirm(`Supprimer la version ${H.version} de « ${H.title} » ?`)) return; S.remove(d, 'hypothesis', H.id); this.touch(); this.renderHypotheses(m); this.renderConcordance(m); };
         }
         c.querySelectorAll('[data-f]').forEach(el => { el[el.tagName === 'SELECT' ? 'onchange' : 'oninput'] = () => { H[el.dataset.f] = el.value; this.touch('hypothesis', H.id, H.title); if (el.tagName === 'SELECT') this.renderHypotheses(m); }; });
         c.querySelector('[data-a=toggle]').onclick = () => { this.ui.openHyp = open ? null : H.id; this.renderHypotheses(m); };
@@ -345,7 +349,6 @@
     /** exploration SEEG programmée, liée à la décision ; les hypothèses proposées passent « en test » */
     decisionCreateExploration(x) {
       const d = this.dossier, ex = S.addExploration(d, { kind: 'seeg', status: 'planned', start: '', entryHypothesisIds: x.hypothesisIds.slice() }); ex.start = '';
-      S.addSession(d, ex.id, { date: '' });
       x.createdExplorationId = ex.id; x.status = 'planned';
       for (const H of d.hypotheses.filter(H => x.hypothesisIds.includes(H.id))) if (H.status === 'proposed') H.status = 'testing';
       this.touch(); return ex;
@@ -361,7 +364,7 @@
     // ---------------------------------------------------------------- textes et compte rendu
     meetingText(m) {
       const d = this.dossier, P = d.patient, L = r => this.atlas.label(r), hyps = this.meetingHypotheses(m), dec = d.decisions.filter(x => x.meetingId === m.id), scope = this.staffScope(m), cons = this.consensus(scope);
-      const lines = [`${V.meeting[m.kind].toUpperCase()} — ${P.pseudo} — ${fmtDate(m.date)}`, m.participants ? 'Participants : ' + m.participants : '', m.question ? 'Question posée : ' + m.question : ''];
+      const lines = [`${V.meeting[m.kind].toUpperCase()} — ${this.dname(d)} — ${fmtDate(m.date)}`, m.participants ? 'Participants : ' + m.participants : '', m.question ? 'Question posée : ' + m.question : ''];
       for (const ex of scope.explorations) { const szs = S.seizuresOfExploration(d, ex.id); lines.push(`${ex.label} (${fmtDate(ex.start)}${ex.end ? ' → ' + fmtDate(ex.end) : ''}) : ${szs.length} crise(s), ${szs.filter(z => z.habitual === 'yes').length} habituelle(s)${ex.kind === 'seeg' ? `, ${ex.electrodes.length} électrodes, ${ex.stims.length} stimulations, ${ex.thermo.length} paires thermocoagulées` : ''}.`); }
       for (const { sz, ex } of scope.seizures.slice(0, 10)) lines.push(`  ${ex.label} · ${sz.label}${sz.habitual === 'yes' ? ' (habituelle)' : ''} : ${sz.events.slice().sort((a, b) => a.t - b.t).map(e => (this.db.signById.get(e.sign_id) || {}).label_fr + (e.side ? ' ' + { L: 'G', R: 'D', B: 'bil' }[e.side] : '')).join(' → ')}`);
       if (cons.n) lines.push(`Latéralisation clinique : G ${Math.round(cons.pL * 100)} % / D ${100 - Math.round(cons.pL * 100)} %.`);

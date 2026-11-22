@@ -25,10 +25,10 @@ lead: Six étapes, dix minutes. À la fin, vous aurez un patient, une crise déc
 
 2. **Créer un patient** <span class="time">30 s</span>
 
-    Cliquez sur [[+ Nouveau patient]] et tapez un pseudonyme (par exemple `STR-0042`). Le dossier s'ouvre sur sa **Synthèse**, et le parcours du patient commence par une **Phase 1**.
+    Cliquez sur [[+ Nouveau patient]] et tapez le nom et le prénom (par exemple `DUPONT Jeanne`). La première fois, EpiScope demande le préfixe des codes de la bibliothèque (`HFAR` par défaut). Le patient reçoit son code (`HFAR0001`), le dossier s'ouvre sur sa **Synthèse**, et le parcours du patient commence par une **Phase 1**.
 
     !!! attention
-        N'utilisez pas le nom du patient comme pseudonyme si le répertoire est partagé avec d'autres équipes ou si vous comptez envoyer le dossier.
+        Le nom n'est enregistré que dans la zone *Identité* du dossier ; les fichiers portent le code. Pour envoyer un dossier hors du service, utilisez l'export **anonymisé**.
 
 3. **Décrire une crise** <span class="time">4 min</span>
 

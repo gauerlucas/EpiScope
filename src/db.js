@@ -38,6 +38,8 @@
       this.s2bMap = raw.s2b_map || [];
       this.s2b = raw.s2b || [];
       this.s2bFilter = raw.s2b_filter || 'spontaneous';
+      // v1.1.0 : empreinte du contenu (signes, priors, régions, liens, Semio2Brain) — deux bases identiques ont le même id
+      this.id = SV.Prov ? SV.Prov.hashJSON({ signs: raw.signs || [], priors: raw.priors || [], regions: raw.regions || [], edges: raw.edges || [], s2b_map: raw.s2b_map || [], s2b: raw.s2b || [], s2b_filter: this.s2bFilter }) : '';
       this._index();
     }
 

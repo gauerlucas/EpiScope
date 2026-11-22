@@ -87,7 +87,7 @@
       V.h2Heat = null;
     },
     async ieegH2SaveFile() {
-      const V = this._iev, F = V.h2F, Lr = V.rec.h2.last; if (!F || !Lr) return; const path = `ieeg/${V.rec.id}/h2_${V.montage}.json`, R = a => a ? Array.from(a, v => Math.round(v * 1000) / 1000) : null;
+      const V = this._iev, F = V.h2F, Lr = V.rec.h2.last; if (!F || !Lr) return; const path = `ieeg/${V.rec.id}/h2_${SV.IEEG.montageKey(V.montage)}.json`, R = a => a ? Array.from(a, v => Math.round(v * 1000) / 1000) : null;
       try { await L.writeFile(this.dossier, path, new Blob([JSON.stringify({ v: 1, kind: Lr.kind, names: F.names, t0: F.t0, dt: F.dt, frames: F.frames || null, outW: F.outW ? F.outW.map(R) : null, strW: F.strW.map(R) })], { type: 'application/json' })); Lr.path = path; }
       catch (e) { console.warn('connectivité h²', e); }
     },
@@ -154,7 +154,7 @@
       if (Lr && !V.h2F) this.ieegH2Load();
       const resHtml = () => {
         if (!Lr || !Lr.rows) return ''; const rows = Lr.rows.filter(r => !ex.has(r.name)).sort((a, b) => ict ? b.out - a.out || b.str - a.str : b.str - a.str), mx = Math.max(1e-9, ...rows.map(r => ict ? r.out : r.str));
-        const stale = Lr.montage !== V.montage ? ` · <span class="warn">calculé en ${Lr.montage === 'bipolar' ? 'bipolaire' : 'monopolaire'}</span>` : Math.abs(Lr.start - P.start) > 1e-6 || Math.abs(Lr.end - P.end) > 1e-6 || Lr.band !== P.band ? ' · <span class="warn">réglages modifiés : recalculer</span>' : '';
+        const stale = Lr.montage !== V.montage ? ` · <span class="warn">calculé en ${SV.IEEG.montageLabel(Lr.montage)}</span>` : Math.abs(Lr.start - P.start) > 1e-6 || Math.abs(Lr.end - P.end) > 1e-6 || Lr.band !== P.band ? ' · <span class="warn">réglages modifiés : recalculer</span>' : '';
         return `<div class="ie-n0">${rows.length} voies · ${Lr.nW} fenêtres de ${nf(Lr.win, 1)} s · ${esc(bandFr(Lr.band))}${stale}</div>
           ${Lr.glob ? '<canvas class="ie-h2plot" title="Connectivité globale au fil des fenêtres (clic : aller à cet instant, et fenêtre affichée en 3D)"></canvas>' : ''}
           <div class="ie-tabwrap"><table class="ie-tab" style="--thr:101%"><tr><th>voie</th>${ict ? '<th title="Degré sortant moyen : liens h² ≥ seuil dont la voie précède l’autre">sortant</th><th title="Degré entrant moyen">entrant</th><th title="h² moyen des liens de la voie">h² moyen</th>' : '<th title="Force : h² moyen de tous les liens de la voie (les deux sens, toutes fenêtres)">force</th><th title="Force sortante : la voie explique les autres">sortante</th><th title="Force entrante">entrante</th>'}</tr>

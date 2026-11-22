@@ -30,8 +30,9 @@ with sync_playwright() as p:
     pg.goto('file://' + os.path.join(ROOT, 'dist', 'EpiScope.html'))
     pg.wait_for_timeout(2500)
     pg.on('dialog', lambda d: d.accept('TEST-APP') if d.type == 'prompt' else d.accept())
-    pg.click('#pNew'); pg.wait_for_timeout(1200)   # v3 : pas de crise sans patient
+    pg.click('#pNew'); pg.wait_for_selector('.ls-ok', timeout=5000); pg.click('.ls-ok'); pg.wait_for_timeout(1500)   # v3 : pas de crise sans patient ; v1.1.0 : réglages de la bibliothèque au premier patient
     pg.evaluate("()=>SV.app.newSeizureIn(SV.app.dossier.explorations[0])"); pg.wait_for_timeout(1200)
+    if pg.evaluate("!!document.querySelector('#szInfoDlg .z-ok')"): pg.click('#szInfoDlg .z-ok'); pg.wait_for_timeout(800)   # v1.0.1 : fiche de la crise (v5.5) avant la sémiologie
     print('mode viewer:', pg.evaluate('SV.app.viewer.mode'))
     pg.screenshot(path=os.path.join(OUT, 'empty.png'))
     # charge un cas par l'API

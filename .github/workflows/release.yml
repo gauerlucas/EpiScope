@@ -57,10 +57,11 @@ jobs:
       - name: Application (dist/EpiScope.html)
         run: python tools/build.py
 
-      - name: Tests rapides
+      - name: Garde-fou et tests
         run: |
-          node tools/tests/test_plan_traj.mjs
-          node tools/tests/test_store.mjs
+          python tools/check_no_data.py
+          pip install pydicom numpy
+          node tools/tests/run_all.mjs
 
       - name: Fichiers de la version
         run: |

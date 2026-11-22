@@ -1,0 +1,28 @@
+# EpiScope — à chaque envoi et chaque demande de fusion : garde-fou des données, tests Node, construction de l'application.
+name: Tests EpiScope
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Aucune donnée de patient dans le dépôt
+        run: python tools/check_no_data.py
+      - name: Dépendances des tests
+        run: pip install pydicom numpy
+      - name: Tests Node
+        run: node tools/tests/run_all.mjs
+      - name: Construction de l'application
+        run: |
+          python tools/build.py
+          node -e "const s=require('fs').readFileSync('dist/EpiScope.html','utf8');for(const m of s.matchAll(/<script>([\s\S]*?)<\/script>/g)){try{new Function(m[1])}catch(e){console.error('script invalide',e.message);process.exit(1)}}console.log('dist/EpiScope.html', (s.length/1e6).toFixed(1),'Mo')"

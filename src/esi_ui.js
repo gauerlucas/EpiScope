@@ -63,7 +63,7 @@
   function wavePng(avg, fs, pre, T, light) {
     const W = 300, H = 112, cv = document.createElement('canvas'); cv.width = W * 2; cv.height = H * 2; const g = cv.getContext('2d'); g.scale(2, 2);
     g.fillStyle = light ? '#ffffff' : '#0b0f16'; g.fillRect(0, 0, W, H); const n = avg[0].length, X = k => 4 + (k / (n - 1)) * (W - 8);
-    let mx = 1e-12; for (const a of avg) for (const v of a) mx = Math.max(mx, Math.abs(v)); const Y = v => H / 2 - v / mx * (H / 2 - 8);
+    let mx = 1e-12; for (const a of avg) for (const v of a) mx = Math.max(mx, Math.abs(v)); const Y = v => SV.Wave.y(v / mx, H / 2, H / 2 - 8);   // v1.0.1 : négatif en haut
     g.strokeStyle = light ? 'rgba(20,35,58,.22)' : 'rgba(220,230,245,.22)'; g.lineWidth = 0.8; for (const a of avg) { g.beginPath(); for (let k = 0; k < n; k++) { const y = Y(a[k]); if (k) g.lineTo(X(k), y); else g.moveTo(X(k), y); } g.stroke(); }
     const gf = T.gfp, gm = Math.max(1e-12, ...gf); g.strokeStyle = light ? '#19518e' : '#cdb98f'; g.lineWidth = 1.8; g.beginPath(); for (let k = 0; k < n; k++) { const y = H - 4 - gf[k] / gm * (H * 0.42); if (k) g.lineTo(X(k), y); else g.moveTo(X(k), y); } g.stroke();
     const vl = (k, col, dash, lab) => { g.strokeStyle = col; g.setLineDash(dash); g.lineWidth = 1.2; g.beginPath(); g.moveTo(X(k) + 0.5, 2); g.lineTo(X(k) + 0.5, H - 2); g.stroke(); g.setLineDash([]); g.fillStyle = col; g.font = '600 9px Arial'; g.fillText(lab, X(k) + 3, 11); };
@@ -732,7 +732,7 @@
       if (win) { g.fillStyle = rgba(col, 0.2); g.fillRect(X(win[0]), 2, X(win[1]) - X(win[0]), yb - 2); g.strokeStyle = '#c92a2a'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(X(t), 2); g.lineTo(X(t), yb); g.stroke(); }   // crise : fenêtre analysée, trait au début
       else { g.fillStyle = rgba(col, 0.38); g.fillRect(X(t - 0.075), 2, X(t + 0.075) - X(t - 0.075), yb - 2); }
       g.font = '9.5px Menlo, monospace'; g.textBaseline = 'middle';
-      lanes.forEach((li, j) => { const d = V.D[li], yc = 4 + j * lh + lh / 2, y = this.ieegSeg(d, i0, i1), gn = ((this.ieegVw().gain || {})[d.name]) || 1; g.fillStyle = '#334'; g.fillText(d.name, 3, yc); g.strokeStyle = this.ieegLaneColor(d) || '#14233a'; g.lineWidth = 0.7; g.beginPath(); let m = 0; for (const v of y) m += v; m /= y.length || 1; for (let i = 0; i < y.length; i++) { const x = G + i / (y.length - 1 || 1) * dur * pps, yy = yc - (y[i] - m) * ppu * gn; if (i) g.lineTo(x, yy); else g.moveTo(x, yy); } g.stroke(); });
+      lanes.forEach((li, j) => { const d = V.D[li], yc = 4 + j * lh + lh / 2, y = this.ieegSeg(d, i0, i1), gn = ((this.ieegVw().gain || {})[d.name]) || 1; g.fillStyle = '#334'; g.fillText(d.name, 3, yc); g.strokeStyle = this.ieegLaneColor(d) || '#14233a'; g.lineWidth = 0.7; g.beginPath(); let m = 0; for (const v of y) m += v; m /= y.length || 1; for (let i = 0; i < y.length; i++) { const x = G + i / (y.length - 1 || 1) * dur * pps, yy = SV.Wave.y(y[i] - m, yc, ppu * gn); if (i) g.lineTo(x, yy); else g.moveTo(x, yy); } g.stroke(); });
       g.fillStyle = '#556'; g.font = '9.5px system-ui, sans-serif'; g.fillText(`${clock(t0)} · 10 s, lu à 20 s/page · ${amp >= 1000 ? nf(amp / 1000, 1) + ' mV' : amp + ' µV'} par voie · ${V.montage === 'banana' ? 'double banane' : V.montage === 'avg' ? 'référence moyenne' : V.montage === 'lap' ? 'laplacien' : V.montage === 'trans' ? 'transverse' : V.montage}`, G, H - 7);
       return { url: cv.toDataURL('image/jpeg', 0.86), t };
     },
@@ -913,7 +913,7 @@
         row.querySelector('.esi-keep').onclick = () => { r.keep = !r.keep; this.touch('exploration', ex.id, r.keep ? 'source retenue pour le staff' : 'source non retenue'); this.renderQuant(); };
         row.querySelector('.esi-more').onclick = e => { const b = e.currentTarget.getBoundingClientRect(), rec = (ex.recordings || []).find(x => x.id === r.recId);
           this.popupMenu([{ head: r.title }, rec ? { label: 'Ouvrir le tracé', run: () => this.recOpenAt(rec, r.traceT) } : null, { label: 'Renommer…', run: () => { const t = prompt('Titre', r.title); if (t && t.trim()) { r.title = t.trim(); this.touch('exploration', ex.id, 'imagerie de source'); this.renderQuant(); } } },
-            { sep: true }, { label: 'Supprimer', danger: true, run: () => { ex.esi = ex.esi.filter(x => x !== r); if (this.ui.esiShown === r.id) this.esiHide(); this.touch('exploration', ex.id, 'imagerie de source supprimée'); this.renderQuant(); } }].filter(Boolean), b.left - 180, b.bottom + 4); }; });
+            { sep: true }, { label: 'Supprimer', danger: true, run: () => { SV.Store.discard(this.dossier, { kind: 'imagerie de source', label: r.label || r.kind || '', list: 'explorations', id: ex.id, field: 'esi', item: r }); if (this.ui.esiShown === r.id) this.esiHide(); this.touch('exploration', ex.id, 'imagerie de source supprimée'); this.renderQuant(); } }].filter(Boolean), b.left - 180, b.bottom + 4); }; });
     },
     /** résultats retenus pour le staff et les rapports : les étoilés de chaque sorte (pointes, crises) s'il y en a, sinon tous */
     esiKept(list) { const pick = L => L.some(r => r.keep) ? L.filter(r => r.keep) : L; return [...pick(list.filter(r => r.kind === 'spike')), ...pick(list.filter(r => r.kind !== 'spike'))]; },
