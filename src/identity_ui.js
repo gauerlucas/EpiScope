@@ -35,8 +35,9 @@
           <label>Chiffres du numéro <select class="ls-dig"${locked ? ' disabled title="des codes ont déjà été attribués : le nombre de chiffres ne change plus"' : ''}>${[3, 4, 5].map(n => `<option${n === (st.digits || 4) ? ' selected' : ''}>${n}</option>`).join('')}</select></label>
           <label class="span2">Nom du centre <input class="ls-center" value="${esc(st.center || '')}" placeholder="ex. service de neurochirurgie pédiatrique"></label></div>
           <div class="hint ls-ex"></div>${locked ? `<div class="hint">${used.length} code${used.length > 1 ? 's' : ''} déjà attribué${used.length > 1 ? 's' : ''} ; prochain numéro : ${Math.max(st.next || 1, 1 + Math.max(0, ...used.map(u => u.n || 0)))}.</div>` : ''}
+          <div class="ls-models"></div>
           <div class="btnrow"><button class="primary ls-ok">Enregistrer</button>${first ? '' : '<button class="ls-cancel">Annuler</button>'}</div></div></div>`;
-        document.body.appendChild(m);
+        document.body.appendChild(m); if (!first && this.sn2SettingsRow) this.sn2SettingsRow(m.querySelector('.ls-models'));
         const ex = () => { m.querySelector('.ls-ex').textContent = 'Exemple : ' + S.makeSubject(m.querySelector('.ls-site').value, Math.max(1, st.next || 1), +m.querySelector('.ls-dig').value).label; };
         m.querySelector('.ls-site').oninput = ex; m.querySelector('.ls-dig').onchange = ex; ex();
         const done = v => { m.remove(); res(v); };

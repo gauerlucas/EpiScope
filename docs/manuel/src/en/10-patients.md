@@ -62,7 +62,7 @@ The **identity** (last name, first name, date of birth, hospital ID) is entered 
 The first view of the record fits on one screen:
 
 - at the top, the **timeline** of the pathway: explorations, seizures, investigations, meetings, surgery and outcome on one strip, with the patient's age; the wheel or dragging zooms and pans;
-- the **Patient** card: *Identity* area (last and first name, date of birth, hospital ID, on three lines), sex, language dominance, age at first seizures, MRI, **current seizure frequency** ([[Update today]] button), treatment;
+- the **Patient** card: *Identity* area (last and first name, date of birth, hospital ID, on three lines), sex, language dominance, age at first seizures, MRI, **current seizure frequency** ([[Update today]] button), treatment, and the **pathway status** (pending, operated, declined with its reason, lost to follow-up): entered explicitly for research queries, with the suggestion drawn from the record (procedure performed, “no surgery” decision) applied in one click;
 - the **Pathway** card: each stage summarised in two lines, with [[open →]];
 - the **Imaging**, **Investigations** and **Implantations** cards.
 
@@ -74,7 +74,7 @@ Three tabs, to fill in whichever order suits you:
 
 - **History and context**: past history as *no / yes / ?* with details (the [[no to all]] button answers "no" to lines left empty), notable medical and surgical history, lifestyle, comorbidities, and the **family tree** (see below).
 - **History of present illness**: age and mode of onset, aetiology (confirmed or suspected), MRI, seizure types, subjective and objective manifestations, triggers, seizure frequency over time, current and past treatments with their effect.
-- **Development & examination**: pregnancy and birth (with weight, length and head circumference charts), psychomotor milestones, dated neurological examination, handedness (Edinburgh inventory, pointing test, dominant eye) and language dominance.
+- **Development & examination**: pregnancy and birth (with weight, length and head circumference charts), psychomotor milestones, dated neurological examination, handedness (Edinburgh inventory, pointing test, dominant eye) and language dominance. The **Current development** card starts with the **developmental comorbidities** to tick (intellectual disability and its severity, autism spectrum disorder, infantile spasms, language delay, severe behavioural disorders): one click goes from *not recorded* to *yes* then *no* — for a query, “not recorded” is not “no”; free text stays below.
 
 ### Reported seizures {#les-crises-rapportees}
 

@@ -84,6 +84,26 @@
       ['III', 'Amélioration notable', [['IIIA', 'réduction notable des crises'], ['IIIB', 'intervalles libres prolongés, plus de la moitié du suivi et au moins 2 ans']]],
       ['IV', 'Pas d’amélioration notable', [['IVA', 'réduction significative des crises'], ['IVB', 'pas de changement appréciable'], ['IVC', 'aggravation']]],
     ],
+    /** v2.1.0 — histologie en vocabulaire fermé (plusieurs codes possibles : double pathologie), texte libre à côté.
+     *  FCD : classification ILAE 2022 (Najm et al., Epilepsia 2022 ; types I–III de 2011, mMCD, MOGHE) ; sclérose
+     *  hippocampique : ILAE 2013 (Blümcke et al.) ; tumeurs épileptogènes (LEAT) : OMS 2021 (CNS5). Codes stables, libellés
+     *  traduisibles : une requête porte sur le code. */
+    histology: [
+      ['fcd', 'dysplasie corticale focale (ILAE 2022)', [['fcd1a', 'FCD Ia'], ['fcd1b', 'FCD Ib'], ['fcd1c', 'FCD Ic'], ['fcd2a', 'FCD IIa'], ['fcd2b', 'FCD IIb'], ['fcd3a', 'FCD IIIa (avec sclérose hippocampique)'], ['fcd3b', 'FCD IIIb (avec tumeur)'], ['fcd3c', 'FCD IIIc (avec malformation vasculaire)'], ['fcd3d', 'FCD IIId (avec lésion acquise précoce)'], ['fcd3ns', 'FCD III sans précision'], ['fcdns', 'FCD sans précision'], ['mmcd', 'mMCD (malformation corticale légère)'], ['moghe', 'MOGHE (malformation légère avec hyperplasie oligodendrogliale)']]],
+      ['hs', 'sclérose hippocampique (ILAE 2013)', [['hs1', 'HS ILAE type 1'], ['hs2', 'HS ILAE type 2'], ['hs3', 'HS ILAE type 3'], ['hsns', 'HS sans précision du type'], ['gliosisOnly', 'gliose seule, sans sclérose']]],
+      ['leat', 'tumeur épileptogène (LEAT, OMS 2021)', [['gg', 'gangliogliome'], ['dnet', 'tumeur neuroépithéliale dysembryoplasique (DNET)'], ['ag', 'gliome angiocentrique'], ['plnty', 'PLNTY'], ['mvnt', 'tumeur neuronale multinodulaire et vacuolisante (MVNT)'], ['pxa', 'xanthoastrocytome pléomorphe'], ['myb', 'astrocytome diffus MYB / MYBL1 (dont isomorphe)'], ['pgnt', 'tumeur glioneuronale papillaire'], ['leatns', 'autre LEAT']]],
+      ['other', 'autres', [['cavernoma', 'cavernome'], ['avm', 'malformation artério-veineuse'], ['tuber', 'tuber cortical (sclérose tubéreuse)'], ['hh', 'hamartome hypothalamique'], ['pmg', 'polymicrogyrie'], ['heterotopia', 'hétérotopie'], ['scar', 'cicatrice gliale (traumatique, vasculaire, infectieuse)'], ['rasmussen', 'encéphalite de Rasmussen'], ['encephalitis', 'autre encéphalite'], ['sws', 'angiomatose de Sturge-Weber'], ['tumor', 'autre tumeur'], ['normal', 'pas de lésion identifiée'], ['nonContributive', 'prélèvement non contributif']]],
+    ],
+    /** v2.1.0 — comorbidités développementales (pédiatrie), à côté du texte libre : '' = non renseigné, 'no', 'yes' ;
+     *  déficience intellectuelle : sévérité DSM-5 au choix */
+    devComorb: [['id', 'déficience intellectuelle', 'DI'], ['asd', 'trouble du spectre de l’autisme', 'TSA'], ['spasms', 'spasmes infantiles (antécédent)', 'spasmes'], ['language', 'retard de langage', 'langage'], ['behavior', 'troubles graves du comportement', 'comportement']],
+    devValue: { '': 'non renseigné', no: 'non', yes: 'oui' },
+    idSeverity: { yes: 'oui, sévérité non précisée', mild: 'légère', moderate: 'moyenne', severe: 'sévère', profound: 'profonde' },
+    /** v2.1.0 — statut final du parcours, explicite (une requête ne le déduit plus des décisions) */
+    pathwayStatus: { '': 'non renseigné', evaluation: 'en attente / en cours d’évaluation', operated: 'opéré', declined: 'récusé', lost: 'perdu de vue' },
+    declineReason: { noEz: 'pas d’hypothèse localisatrice', multifocal: 'épilepsie multifocale ou bilatérale', eloquent: 'zone épileptogène en région fonctionnelle', risk: 'rapport bénéfice / risque défavorable', comorbid: 'comorbidité ou contre-indication', refusal: 'refus du patient ou de la famille', improved: 'amélioration ou rémission', other: 'autre motif' },
+    /** v2.1.0 — contacts dans la résection : origine de l'appartenance */
+    resectHow: { manual: 'à la main', cavity: 'cavité segmentée' },
     /** aide-mémoire : classification ILAE du devenir (Wieser et al. 2001), en jours de crise par an */
     ilaeMemo: [['1', 'libre de crises, sans aura'], ['2', 'auras seulement, aucune autre crise'], ['3', '1 à 3 jours de crise par an, ± auras'], ['4', '4 jours de crise par an jusqu’à 50 % de réduction des jours de crise initiaux, ± auras'], ['5', 'moins de 50 % de réduction à 100 % d’augmentation des jours de crise initiaux, ± auras'], ['6', 'plus de 100 % d’augmentation des jours de crise initiaux, ± auras']],
   };
@@ -92,9 +112,9 @@
   function newDossier(p) {
     const d = {
       format: 'episcope-dossier', schema: SCHEMA, minReader: '2.0.0', id: uid('P'), created: now(), updated: now(), revision: 0,
-      patient: Object.assign({ pseudo: '', sex: '', birthYear: '', birthMonth: '', handedness: '', dominant: 'L', dominanceMethod: '', onsetAge: '', etiology: '', etiologies: [], etiologyDetail: '', mri: '', frequency: '', aeds: '', history: '', notes: '', clin: newClin() }, p || {}),
+      patient: Object.assign({ pseudo: '', sex: '', birthYear: '', birthMonth: '', handedness: '', dominant: 'L', dominanceMethod: '', onsetAge: '', etiology: '', etiologies: [], etiologyDetail: '', mri: '', frequency: '', aeds: '', history: '', notes: '', clin: newClin(), dev: newDev() }, p || {}),
       explorations: [], seizures: [], imaging: [], anatomy: null, lesions: [], meetings: [], hypotheses: [], decisions: [], procedures: [], outcomes: [], exams: [], gallery: [], aedHistory: [], rois: [], sliceViews: {},
-      settings: { anatomy: 'template' }, ui: {}, journal: [], trash: [], results: [], subject: null, identity: newIdentity(), staffNotes: [], syncLinks: [],
+      settings: { anatomy: 'template' }, ui: {}, journal: [], trash: [], results: [], subject: null, identity: newIdentity(), staffNotes: [], syncLinks: [], pathway: newPathway(),
     };
     return d;
   }
@@ -102,6 +122,9 @@
   /** zone d'identité : seul endroit des données identifiantes (jamais dans un nom de fichier, un export de recherche, un
    *  instantané de staff ou un rapport anonymisé) ; le pseudonyme (patient.pseudo) reste le libellé d'affichage */
   function newIdentity() { return { lastName: '', firstName: '', birthDate: '', ipp: '', notes: '' }; }
+  function newDev() { return { id: '', asd: '', spasms: '', language: '', behavior: '' }; }
+  function newPathway() { return { status: '', reason: '', date: '', text: '', at: '' }; }
+  function newResection() { return { explorationId: null, contacts: [], cavity: null }; }
   /** préfixe de site : lettres et chiffres, 1 à 8, en majuscules (étiquette BIDS « sub- ») */
   const cleanSite = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
   /** code du sujet : { site, n, code (numéro sur digits chiffres), label = site + code, at } */
@@ -360,6 +383,7 @@
     d.identity = Object.assign(newIdentity(), d.identity || {}); if (d.subject && !d.subject.label) d.subject = null;
     d.staffNotes = Array.isArray(d.staffNotes) ? d.staffNotes : [];
     d.syncLinks = Array.isArray(d.syncLinks) ? d.syncLinks : [];
+    normalizeResearch(d);
     // notes de page saisies avec la première version de l'édition du staff → commentaires accrochés à la page
     for (const m of d.meetings || []) { const it = m.deck && m.deck.items; if (!it) continue; for (const [k, v] of Object.entries(it)) if (v && v.note) { d.staffNotes.push({ id: uid('N'), target: 'page:' + k, meetingId: m.id, text: v.note, at: m.updated || now(), by: '' }); delete v.note; } }
     // v1.1.0 : jeux d'Analyses enregistrés avant la provenance → résultat « antérieur » (valeurs gardées, origine inconnue)
@@ -435,7 +459,7 @@
   function addImaging(d, o) { const im = Object.assign({ id: uid('I'), modality: 'T1', timepoint: 'preop', date: '', label: '', file: '', bytes: 0, dims: null, pixdim: null, ref: false, coreg: null, notes: '', added: now() }, o || {}); d.imaging.push(im); log(d, 'add', 'imaging', im.id, (V.modality[im.modality] || im.modality) + ' ' + (im.date || '')); return im; }
   function addLesion(d, o) { const l = Object.assign({ id: uid('L'), label: '', type: 'other', side: '', regions: [], source: 'manual', confidence: 'medium', imagingId: null, notes: '' }, o || {}); d.lesions.push(l); log(d, 'add', 'lesion', l.id, l.label || V.lesionType[l.type]); return l; }
   function addMeeting(d, o) { const m = Object.assign({ id: uid('M'), date: today(), kind: 'post_phase1', explorationId: null, participants: '', summary: '', concordance: { cells: {}, notes: '', columns: null }, hypothesisIds: [], decisionIds: [], galleryIds: [], conclusion: '', status: 'draft', created: now() }, o || {}); d.meetings.push(m); log(d, 'add', 'meeting', m.id, V.meeting[m.kind] + ' ' + m.date); return m; }
-  function addProcedure(d, o) { const p = Object.assign({ id: uid('R'), type: 'resection', template: '', date: today(), side: '', target: '', regions: [], extent: {}, histology: '', complications: '', notes: '', decisionId: null }, o || {}); d.procedures.push(p); log(d, 'add', 'procedure', p.id, V.procedure[p.type]); return p; }
+  function addProcedure(d, o) { const p = Object.assign({ id: uid('R'), type: 'resection', template: '', date: today(), side: '', target: '', regions: [], extent: {}, histology: '', histologyCodes: [], resection: newResection(), complications: '', notes: '', decisionId: null }, o || {}); d.procedures.push(p); log(d, 'add', 'procedure', p.id, V.procedure[p.type]); return p; }
   function addOutcome(d, o) { const x = Object.assign({ id: uid('O'), date: today(), months: '', monthsManual: false, procedureId: null, engel: '', ilae: '', aeds: '', notes: '' }, o || {}); d.outcomes.push(x); log(d, 'add', 'outcome', x.id, 'Engel ' + (x.engel || '?')); return x; }
   function addExam(d, o) { const x = Object.assign({ id: uid('X'), kind: 'veeg', date: today(), title: '', text: '', conclusion: '', side: '', domains: {}, explorationId: null, imagingIds: [], attachments: [], added: now() }, o || {}); (d.exams = d.exams || []).push(x); log(d, 'add', 'exam', x.id, (V.exam[x.kind] || x.kind) + ' ' + (x.date || '')); return x; }
   /** capture d'écran d'un tracé (galerie) : fichier rangé dans gallery/<id>.<ext> */
@@ -822,7 +846,9 @@
   /** étape du parcours (pour la liste des patients) */
   function stage(d) {
     const ex = explorationsSorted(d), last = ex[ex.length - 1], proc = d.procedures.slice().sort(sortDate).pop(), out = d.outcomes.slice().sort(sortDate).pop();
-    const meet = d.meetings.slice().sort(sortDate).pop();
+    const meet = d.meetings.slice().sort(sortDate).pop(), W = d.pathway || {};
+    if (W.status === 'declined') return { key: 'declined', text: 'récusé' + (W.reason ? ' · ' + V.declineReason[W.reason] : '') };   // v2.1.0 : statut explicite
+    if (W.status === 'lost') return { key: 'lost', text: 'perdu de vue' };
     if (out) return { key: 'followup', text: 'suivi · Engel ' + (out.engel || '?') };
     if (proc) return { key: 'operated', text: V.procedure[proc.type] + ' ' + (proc.date || '') };
     const pending = d.decisions.filter(x => x.status === 'proposed' || x.status === 'planned').pop();
@@ -914,6 +940,86 @@
   function bundlePolicy(path, light) { if (/^(\.lock|dossier\.conflict|history\/|trash\/)/.test(path)) return false;   // v1.0.1 : ni l'historique ni la corbeille dans une archive
     if (light && (/^(imaging|ieeg|derivatives\/esi)\//.test(path) || /^ses-[^/]+\/(ieeg|eeg|anat|pet)\//.test(path))) return false; if (light && /^gallery\/[^/]+\.(mp4|webm|mov|m4v|ogv|mkv|avi|wmv|mpg|mpeg|flv|3gp|mts|m2ts|ts)$/i.test(path)) return false; return true; }   // archive légère : sans les images d'origine, les tracés SEEG ni les vidéos (vignettes gardées)
 
-  SV.Store = { onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
+  // ---------------------------------------------------------------- v2.1.0 : données de recherche dans le dossier
+  // Histologie fermée, comorbidités développementales, statut du parcours, contacts dans la résection, région VEP de chaque
+  // plot figée à la validation, transformation vers MNI (affine ou non linéaire) : nées des besoins de la recherche, rangées
+  // dans le dossier pour qu'une requête les lise telles qu'elles ont été établies, sans les recalculer.
+  const HISTO = new Map(); for (const [g, , L] of V.histology) for (const [k, t] of L) HISTO.set(k, { group: g, label: t });
+  const DEV_KEYS = V.devComorb.map(x => x[0]);
+  function normalizeResearch(d) {
+    const P = d.patient; P.dev = Object.assign(newDev(), P.dev && typeof P.dev === 'object' ? P.dev : {});
+    for (const k of DEV_KEYS) if (!(P.dev[k] in (k === 'id' ? Object.assign({ '': 1, no: 1 }, V.idSeverity) : V.devValue))) P.dev[k] = '';
+    d.pathway = Object.assign(newPathway(), d.pathway && typeof d.pathway === 'object' ? d.pathway : {}); if (!(d.pathway.status in V.pathwayStatus)) d.pathway.status = '';
+    if (d.pathway.status !== 'declined' || !(d.pathway.reason in V.declineReason)) d.pathway.reason = '';
+    for (const p of d.procedures || []) {
+      p.histologyCodes = Array.isArray(p.histologyCodes) ? [...new Set(p.histologyCodes.filter(k => HISTO.has(k)))] : [];
+      p.resection = Object.assign(newResection(), p.resection && typeof p.resection === 'object' ? p.resection : {});
+      p.resection.contacts = (Array.isArray(p.resection.contacts) ? p.resection.contacts : []).filter(c => c && c.e && +c.k >= 1).map(c => ({ e: String(c.e), k: +c.k, how: c.how in V.resectHow ? c.how : 'manual' }));
+    }
+  }
+  /** histologie : libellé, groupe, texte d'une procédure (codes puis texte libre) */
+  const histologyLabel = k => (HISTO.get(k) || { label: k }).label, histologyGroup = k => (HISTO.get(k) || {}).group || '';
+  const histologyText = p => [...(p.histologyCodes || []).map(histologyLabel), p.histology || ''].filter(Boolean).join(' ; ');
+  /** comorbidités développementales : « DI moyenne, TSA » (oui seulement) ; null = rien de renseigné */
+  function devText(P, short) {
+    const D = (P && P.dev) || {}; if (!DEV_KEYS.some(k => D[k])) return null;
+    return V.devComorb.filter(([k]) => D[k] && D[k] !== 'no').map(([k, t, s]) => (short ? s : t) + (k === 'id' && D.id !== 'yes' ? ' ' + V.idSeverity[D.id] : '')).join(', ');
+  }
+  /** statut du parcours suggéré par le dossier (procédures, décision « pas de chirurgie ») : une aide, jamais écrite seule */
+  function pathwaySuggest(d) {
+    const td = today(), done = d.procedures.filter(p => p.date && String(p.date) <= td).sort(sortDate), last = done[done.length - 1];
+    if (last) return { status: 'operated', why: `${V.procedure[last.type] || last.type} du ${last.date}`, procedureId: last.id };
+    const no = d.decisions.filter(x => x.type === 'none' && x.status !== 'cancelled').sort(sortDate).pop();
+    if (no) { const m = no.meetingId && byId(d.meetings, no.meetingId); return { status: 'declined', why: `décision « pas de chirurgie »${m ? ' du staff du ' + m.date : no.date ? ' du ' + no.date : ''}` }; }
+    if (d.explorations.length || d.meetings.length || d.procedures.length) return { status: 'evaluation', why: d.procedures.length ? 'intervention programmée' : 'bilan en cours' };
+    return { status: '', why: '' };
+  }
+  function setPathway(d, o) {
+    const W = d.pathway = Object.assign(newPathway(), d.pathway, o || {}); if (!(W.status in V.pathwayStatus)) W.status = ''; if (W.status !== 'declined') W.reason = '';
+    W.at = now(); log(d, 'edit', 'dossier', d.id, 'statut du parcours : ' + V.pathwayStatus[W.status] + (W.reason ? ' (' + V.declineReason[W.reason] + ')' : '')); return W;
+  }
+  /** contacts dans la résection : exploration SEEG de référence (choisie, sinon la dernière avec des électrodes réelles) */
+  function resectionExploration(d, p) {
+    const R = p.resection || {}, ex = R.explorationId ? byId(d.explorations, R.explorationId) : null; if (ex) return ex;
+    const L = explorationsSorted(d).filter(e => e.kind === 'seeg' && (e.electrodes || []).some(s => s.real && s.real.contacts)); return L[L.length - 1] || null;
+  }
+  const contactName = (spec, k) => String(spec.name || '').replace(/’/g, "'") + k;
+  /** contacts réséqués d'une procédure, résolus sur les électrodes : [{ spec, k, name, how, region }] (contacts disparus ignorés) */
+  function resectedContacts(d, p) {
+    const ex = resectionExploration(d, p); if (!ex) return []; const out = [];
+    for (const c of (p.resection && p.resection.contacts) || []) { const spec = (ex.electrodes || []).find(s => s.id === c.e); if (!spec) continue; out.push({ spec, k: c.k, name: contactName(spec, c.k), how: c.how, region: contactRegion(spec, c.k) }); }
+    return out;
+  }
+  /** remplace (how = 'cavity' : seulement les contacts déduits de la cavité ; les ajouts à la main restent) ou bascule un contact */
+  function setResected(d, p, list, how) {
+    const R = p.resection = Object.assign(newResection(), p.resection); const keep = how === 'cavity' ? R.contacts.filter(c => c.how === 'manual') : [];
+    const seen = new Set(keep.map(c => c.e + ':' + c.k)); R.contacts = keep.concat(list.filter(c => !seen.has(c.e + ':' + c.k)).map(c => ({ e: c.e, k: +c.k, how: how || 'manual' })));
+    log(d, 'edit', 'procedure', p.id, `contacts dans la résection : ${R.contacts.length}`); return R.contacts;
+  }
+  function toggleResected(d, p, e, k) {
+    const R = p.resection = Object.assign(newResection(), p.resection), i = R.contacts.findIndex(c => c.e === e && c.k === +k);
+    if (i >= 0) R.contacts.splice(i, 1); else R.contacts.push({ e, k: +k, how: 'manual' }); log(d, 'edit', 'procedure', p.id, `contacts dans la résection : ${R.contacts.length}`); return i < 0;
+  }
+  /** région VEP de chaque plot, figée à la validation : spec.real.regions[k-1] = { code, name } ; regionsMeta = atlas, anatomie */
+  function stampContactRegions(d, spec, labels, meta) {
+    if (!spec || !spec.real || !Array.isArray(labels)) return false;
+    spec.real.regions = labels.map(l => ({ code: +l.code || 0, name: String(l.name || '') }));
+    spec.real.regionsMeta = Object.assign({ atlas: 'VEP', anatomyDate: d.anatomy && d.anatomy.date || null, space: 'patient', at: now() }, meta || {}); return true;
+  }
+  const contactRegion = (spec, k) => { const r = spec && spec.real && spec.real.regions; return r && r[k - 1] ? r[k - 1] : null; };
+  /** 'ok' | 'missing' (pas encore étiqueté) | 'stale' (anatomie recalculée depuis : les régions figées restent, à réétiqueter si voulu) */
+  function contactRegionStatus(d, spec) {
+    const R = spec && spec.real; if (!R || !R.contacts) return null; if (!R.regions || R.regions.length !== R.contacts.length) return 'missing';
+    return d.anatomy && d.anatomy.date && R.regionsMeta && R.regionsMeta.anatomyDate && R.regionsMeta.anatomyDate !== d.anatomy.date ? 'stale' : 'ok';
+  }
+  /** coordonnées MNI305 d'un point du T1 du patient : transformation non linéaire si elle a été calculée et retenue, sinon affine */
+  function toMNI(d, p) {
+    const A = d && d.anatomy, M = A && A.mni; if (!A || !p) return null;
+    if (M && M.method !== 'affine' && SV.Warp && M.steps && M.steps.length) return SV.Warp.applyChain(M.steps, p);
+    const T = A.toTemplate; if (!T) return null; return [T[0] * p[0] + T[1] * p[1] + T[2] * p[2] + T[3], T[4] * p[0] + T[5] * p[1] + T[6] * p[2] + T[7], T[8] * p[0] + T[9] * p[1] + T[10] * p[2] + T[11]];
+  }
+  const mniMethod = d => { const M = d && d.anatomy && d.anatomy.mni; return d && d.anatomy && d.anatomy.toTemplate ? (M && M.method && M.method !== 'affine' ? M.method : 'affine') : null; };
+
+  SV.Store = { newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
     projectLocked, ensureProject, projectsOf, switchProject, addProject, renameProject, removeProject, projectElectrodes, revertToPlan, THERMO_ORDER, THERMO_COL, thermoStatusOf, importImplantation, compareImplantations, explorationsSorted, secretsOf, scrub, bindRec, bindRecs, recSetSeizure, recDropSeizure, REC_F, reportedSeizures, reportedAll, explorationOverview, annotatedSeizures, recordingOverlaps, copySemiology, EEG_MAP_KEYS, seizureDays, moveSeizure, migrate3, REPORTED, reportedEx, seizuresOfExploration, allSeizures, contextOf, lesionRegions, refImaging, deriveIlae, ilaeText, stage, summary, log, resolveCtx, toWorkspace, fromWorkspace, migrateCase, bundlePolicy, user: '' };
 });

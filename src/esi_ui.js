@@ -489,7 +489,7 @@
       const V = this._iev, rec = V.rec, dur = V.mem.duration, mk = rec.marks || {}; rec[slot] = rec[slot] || {};
       const P = rec[slot].params || (rec[slot].params = slot === 'esp' ? { start: 0, end: Math.min(dur, 3600), k: 5, corr: 0.85, f1: 1, f2: sc(V) ? 35 : 45 } : { off: 0, len: sc(V) ? 3 : 2, band: 'auto', f1: 4, f2: 8 });
       if (slot === 'esp') { if (!P.det) P.det = 'janca'; if (P.k1 == null) P.k1 = 3.65; if (P.thr == null) P.thr = 0.5;
-        if (P.v !== 6) { if (sc(V)) P.det = 'spikenet'; P.v = 6; } if (!sc(V) && P.det === 'spikenet') P.det = 'janca'; }   // v5.6 : SpikeNet au scalp, Janča en SEEG
+        if (P.v !== 6) { if (sc(V)) P.det = 'spikenet'; P.v = 6; } if (!sc(V) && /^spikenet/.test(P.det)) P.det = 'janca'; }   // v5.6 : SpikeNet au scalp, Janča en SEEG
       if (slot !== 'esp' && mk.onset == null) P.noOnset = true; else delete P.noOnset; return P;
     },
     esiKey() { const V = this._iev; return sc(V) ? 'scalp' : 'seeg'; },
@@ -502,15 +502,16 @@
       try {
         const a = clamp(+P.start || 0, 0, V.mem.duration), b = clamp(+P.end || V.mem.duration, a + 5, V.mem.duration), X = this.esiRaw(V, ch, a, b);
         const O = { det: P.det, k1: +P.k1 || 3.65, line: V.notch || V.mem.line || V.rec.line || 50, minCh: sc(V) ? 2 : 1 }; let SN = null;
-        if (P.det === 'spikenet') { const C19 = this.esiSnChans(V);
-          if (C19.n < 15) { this.toast(`SpikeNet demande les 19 électrodes 10-20 en référentiel (${C19.n} trouvées, 4 manquantes au plus) : détecteur de Janča utilisé`, 7000); O.det = 'janca'; }
+        if (P.det === 'spikenet2' && !(await this.sn2Weights())) { this.toast('SpikeNet2 : poids non installés dans cette bibliothèque (Réglages › Poids de SpikeNet2…). Aucune détection lancée.', 7000); this.sn2Dialog(); return; }
+        if (P.det === 'spikenet' || P.det === 'spikenet2') { const C19 = this.esiSnChans(V);
+          if (C19.n < 15) { this.toast(`${P.det === 'spikenet2' ? 'SpikeNet2' : 'SpikeNet'} demande les 19 électrodes 10-20 en référentiel (${C19.n} trouvées, 4 manquantes au plus) : détecteur de Janča utilisé`, 7000); O.det = 'janca'; }
           else { SN = await this.esiSpikeNetScan(V, C19, a, b, O.line, P); if (this._iev !== V || V.mcancel) return; O.times = SN.ev.map(e => Math.round(e.t * fs)); O.amps = SN.ev.map(e => e.p); O.srch = 0.4; } }
         const R = SV.Work && SV.Work.available ? await SV.Work.run(['esi'], 'ESI.spikeScan', [X, fs, +P.f1, +P.f2, +P.k, O], [], p => { if (!SN) { V.mprog = p; this.ieegMProg(); } }) : E.spikeScan(X, fs, +P.f1, +P.f2, +P.k, O);
         if (this._iev !== V || V.mcancel) return;
         // crises marquées du tracé écartées (−5 s, +30 s) : l'analyse des pointes reste intercritique
         const SW = this.ieegSzWins ? this.ieegSzWins(rec).map(([u, v]) => [Math.max(u, a), Math.min(v, b)]).filter(([u, v]) => v > u) : [], inSz = t => SW.some(([u, v]) => t >= u && t <= v), keep = R.ev.map((e, i) => inSz(a + e.t / fs) ? -1 : i).filter(i => i >= 0);
         R.ev = keep.map(i => R.ev[i]); R.topo = keep.map(i => R.topo[i]);
-        let vetoed = null; const FW = SN && P.adapt && rec.esp.adapt; if (FW) { const N = SV.SpikeNet, J = this.asset('spikenet1'), W = { w: Float64Array.from(FW.wd), b: FW.bd }, ok = R.ev.map(e => { const f = this.esiSnFeat(J, V.snD, a + e.t / fs); return !f || N.head(W, f) >= (+P.thr || 0.5); });   // filtre propre au patient
+        let vetoed = null; const FW = SN && !SN.model && P.adapt && rec.esp.adapt; if (FW) { const N = SV.SpikeNet, J = this.asset('spikenet1'), W = { w: Float64Array.from(FW.wd), b: FW.bd }, ok = R.ev.map(e => { const f = this.esiSnFeat(J, V.snD, a + e.t / fs); return !f || N.head(W, f) >= (+P.thr || 0.5); });   // filtre propre au patient
           vetoed = ok.filter(x => !x).length; R.ev = R.ev.filter((_, i) => ok[i]); R.topo = R.topo.filter((_, i) => ok[i]); }
         let A0 = a, ev = R.ev.map(e => ({ t: a + e.t / fs, c: e.c, amp: e.amp, pol: e.pol, d: R.det })), topo = R.topo, spans = [[a, b]], dets = [R.det];
         const man = mode === 'replace' && old && old.events ? old.events.filter(e => e.m && !e.x && e.t >= a && e.t <= b) : [];   // ajouts à la main gardés
@@ -525,7 +526,7 @@
         const cl = E.clusterTopos(topo.map(t => Float32Array.from(t)), +P.corr || 0.85, 3), multi = dets.length > 1;
         const evs = ev.map(e => Object.assign({ t: r3(e.t), c: ch[e.c].name, amp: Math.round(e.amp * 10) / 10, pol: e.pol }, multi && e.d !== 'manual' ? { d: e.d } : {}, e.d === 'manual' ? { m: 1 } : {}));
         if (mode === 'replace' && old && old.n) rec.esp.prev = old;   // détection remplacée : rétablissable
-        rec.esp.last = { at: ST.now(), det: multi ? dets.join('+') : R.det, dets, spans, start: A0, end: spans[spans.length - 1][1], mins: Math.round(mins * 100) / 100, szOut: SW.length, fs, pm: SN ? SN.pm : null, adapted: vetoed != null, vetoed, interp: SN && SN.interp.length ? SN.interp : null, chans: ch.map(c => c.name), n: evs.length, events: evs.slice(0, 4000), clusters: cl.slice(0, 8).map((c, k) => ({ k, idx: c.idx, n: c.idx.length, rate: Math.round(c.idx.length / mins * 100) / 100, topo: Array.from(c.topo, sig4) })), params: Object.assign({}, P),
+        rec.esp.last = { at: ST.now(), det: multi ? dets.join('+') : R.det, dets, spans, start: A0, end: spans[spans.length - 1][1], mins: Math.round(mins * 100) / 100, szOut: SW.length, fs, pm: SN ? SN.pm : null, adapted: vetoed != null, vetoed, interp: SN && SN.interp.length ? SN.interp : null, model: SN && SN.model ? SN.model : undefined, chans: ch.map(c => c.name), n: evs.length, events: evs.slice(0, 4000), clusters: cl.slice(0, 8).map((c, k) => ({ k, idx: c.idx, n: c.idx.length, rate: Math.round(c.idx.length / mins * 100) / 100, topo: Array.from(c.topo, sig4) })), params: Object.assign({}, P),
           noise: R.noise ? R.noise.map(sig4) : null, noiseSec: R.sec ? Math.round(R.sec) : null };
         V.espSel = rec.esp.last.clusters.length ? 0 : null; V.espAvg = null; V.dirty = true;
         if (V.espSel != null) await this.esiSpikeAverage(0);
@@ -535,13 +536,18 @@
     /** pointe moyennée d'un groupe (époques filtrées avec 1 s de marge), temps caractéristiques, ESI à mi-montée */
     async esiSpikeAverage(k) {
       const V = this._iev, rec = V.rec, Lr = rec.esp && rec.esp.last; if (!Lr || !Lr.clusters[k]) return; const fs = V.mem.fs, P = Lr.params, ch = this.esiChans(V).filter(c => Lr.chans.includes(c.name)), pre = Math.round(0.3 * fs), post = Math.round(0.3 * fs), pad = Math.round(1 * fs);
-      const times = Lr.clusters[k].idx.map(i => Lr.events[i]).filter(Boolean).map(e => Math.round(e.t * fs)), acc = ch.map(() => new Float64Array(pre + post)), m = ch.length, w = Math.round(0.1 * fs), Cd = new Float64Array(m * m); let n = 0, nd = 0;
-      for (const t of times) { const i0 = t - pre - pad, i1 = t + post + pad; if (i0 < 0 || i1 > V.mem.nSamples) continue; const Y = E.avgRefData(ch.map(c => E.bandpass(V.mem.data[c.i].subarray(i0, i1), fs, P.f1, P.f2))); for (let i = 0; i < m; i++) for (let q = 0; q < pre + post; q++) acc[i][q] += Y[i][pad + q]; n++;
-        const C1 = E.covariance(Y, pad + pre - w, pad + pre + w); for (let q = 0; q < m * m; q++) Cd[q] += C1[q]; nd++; }   // covariance des données autour de la pointe (formeur de voie)
+      // v2.1.0 : vue « papillon » à la même échelle de temps que le tracé (le grapho-élément y garde sa forme) : fenêtre d'affichage
+      // = largeur de la vignette (300 px) / pixels par seconde du tracé, entre ±0,3 et ±3 s ; les temps caractéristiques restent sur ±0,3 s
+      const trW = Math.max(300, ((V.cv && V.cv.clientWidth) || 1200) - 116), dh = Math.min(3, Math.max(0.3, 300 / (trW / (V.page || 10)) / 2)), dpre = Math.max(pre, Math.round(dh * fs)), dpost = Math.max(post, Math.round(dh * fs));
+      const times = Lr.clusters[k].idx.map(i => Lr.events[i]).filter(Boolean).map(e => Math.round(e.t * fs)), acc = ch.map(() => new Float64Array(pre + post)), accD = ch.map(() => new Float64Array(dpre + dpost)), m = ch.length, w = Math.round(0.1 * fs), Cd = new Float64Array(m * m); let n = 0, nd = 0;
+      for (const t of times) { const i0 = t - dpre - pad, i1 = t + dpost + pad; if (i0 < 0 || i1 > V.mem.nSamples) continue; const Y = E.avgRefData(ch.map(c => E.bandpass(V.mem.data[c.i].subarray(i0, i1), fs, P.f1, P.f2))), o0 = pad + dpre - pre;
+        for (let i = 0; i < m; i++) { for (let q = 0; q < pre + post; q++) acc[i][q] += Y[i][o0 + q]; for (let q = 0; q < dpre + dpost; q++) accD[i][q] += Y[i][pad + q]; } n++;
+        const C1 = E.covariance(Y, pad + dpre - w, pad + dpre + w); for (let q = 0; q < m * m; q++) Cd[q] += C1[q]; nd++; }   // covariance des données autour de la pointe (formeur de voie)
       const avg = acc.map(a => { const y = Float32Array.from(a, v => v / (n || 1)); let b = 0; for (let q = 0; q < pre / 2; q++) b += y[q]; b /= pre / 2; return y.map(v => v - b); });
+      const avgD = accD.map(a => { const y = Float32Array.from(a, v => v / (n || 1)); let b = 0; for (let q = 0; q < dpre / 2; q++) b += y[q]; b /= dpre / 2; return y.map(v => v - b); });
       const T = E.spikeTimes(avg, fs, pre), pc = E.pca(avg, T.onset, Math.min(avg[0].length, T.peak + Math.round(0.02 * fs)));
       const names = ch.map(c => c.name), noise = Lr.noise && Lr.chans ? subCov(Lr.noise, Lr.chans, names) : null;
-      V.espSel = k; V.espAvg = { k, avg, fs, pre, n, T, names, chans: ch, pc1: pc.explained[0], noise, dataCov: nd ? Cd.map(x => x / nd) : null };
+      V.espSel = k; V.espAvg = { k, avg, fs, pre, n, T, disp: { avg: avgD, pre: dpre, T: { half: T.half - pre + dpre, peak: T.peak - pre + dpre, gfp: E.spikeTimes(avgD, fs, dpre).gfp } }, names, chans: ch, pc1: pc.explained[0], noise, dataCov: nd ? Cd.map(x => x / nd) : null };
       const vHalf = avg.map(a => a[T.half]); V.espSol = { busy: true }; this.esiRender();
       try { const H = sc(V) ? await this.esiScalpHead(names.filter(x => E.STD[x])) : this.esiSeegHead(ch.map(c => ({ name: c.name, p: c.p }))), v = H.names.map(nm => vHalf[names.indexOf(nm)]), X = { noise: subCov(V.espAvg.noise, names, H.names), data: subCov(V.espAvg.dataCov, names, H.names) };
         if (this._iev === V && V.espAvg.k === k) V.espSol = { H, sol: this.esiSolve(H, v, null, X.noise && sc(V) ? 1 / 9 : 0.05, X), v }; }
@@ -607,10 +613,19 @@
       if (chs.length !== Lr.chans.length) { this.toast('Voies du tracé différentes de celles de la détection : relancer la détection', 4000); return null; }
       const a = Math.max(0, t - 1), b = Math.min(V.mem.duration, t + 1), R = E.spikeScan(this.esiRaw(V, chs, a, b), fs, +P.f1 || 1, +P.f2 || 45, +P.k || 5, { times: [Math.round((t - a) * fs)], amps: [1], srch, det: 'manual' }), ev = R.ev[0];
       if (!ev) return null; const topo = R.topo[0];
-      return { t: r3(a + ev.t / fs), c: chs[ev.c].name, amp: Math.round(ev.amp * 10) / 10, pol: ev.pol, corr: c => { let sa = 0, sb = 0, sab = 0; for (let j = 0; j < topo.length; j++) { sa += topo[j] * topo[j]; sb += c.topo[j] * c.topo[j]; sab += topo[j] * c.topo[j]; } return Math.abs(sab) / Math.sqrt(sa * sb || 1); } };
+      return { t: r3(a + ev.t / fs), c: chs[ev.c].name, amp: Math.round(ev.amp * 10) / 10, pol: ev.pol, topo: Array.from(topo, sig4), corr: c => { let sa = 0, sb = 0, sab = 0; for (let j = 0; j < topo.length; j++) { sa += topo[j] * topo[j]; sb += c.topo[j] * c.topo[j]; sab += topo[j] * c.topo[j]; } return Math.abs(sab) / Math.sqrt(sa * sb || 1); } };
     },
     esiBestCl(Lr, T) { let k = -1; Lr.clusters.forEach((c, j) => { if (k < 0 || T.corr(c) > T.corr(Lr.clusters[k])) k = j; }); return k; },
     esiClInsert(Lr, k, i) { const c = Lr.clusters[k], t = Lr.events[i].t; let pos = c.idx.findIndex(j => Lr.events[j].t > t); if (pos < 0) pos = c.idx.length; c.idx.splice(pos, 0, i); return pos; },
+    /** v2.1.0 — moyennage de pointes marquées à la main, sans détection automatique : la première pointe crée un jeu
+     *  « marquées à la main » (un groupe), les suivantes s'y ajoutent ; moyenne et source comme pour une détection */
+    async esiSpikeManual(t) {
+      const V = this._iev, rec = V.rec, P = this.esiP('esp'); if (!rec.esp) rec.esp = {};
+      let Lr = rec.esp.last;
+      if (!Lr) Lr = rec.esp.last = { at: ST.now(), det: 'manual', dets: ['manual'], spans: [[0, V.mem.duration]], start: 0, end: V.mem.duration, mins: Math.round(V.mem.duration / 60 * 100) / 100, szOut: 0, fs: V.mem.fs, pm: null, chans: this.esiChans(V).map(c => c.name), n: 0, events: [], clusters: [], params: Object.assign({}, P), noise: null, manual: true };
+      if (!Lr.clusters.length) { const T = this.esiEvTopo(V, Lr, t, 0.2); if (!T) { this.toast('Pas de pointe nette à cet endroit', 2500); return; } Lr.clusters.push({ k: 0, idx: [], n: 0, rate: 0, topo: T.topo }); V.espSel = 0; V.espSet = new Set([0]); }
+      return this.esiSpikeAdd(t);
+    },
     async esiSpikeAdd(t) {
       const V = this._iev, Lr = V.rec.esp && V.rec.esp.last; if (!Lr) return; const P = Lr.params || this.esiP('esp'), T = this.esiEvTopo(V, Lr, t, 0.2); if (!T) return;
       const cl = this.esiEvCluster(Lr), dup = Lr.events.findIndex(e => !e.x && Math.abs(e.t - T.t) < 0.15);
@@ -661,7 +676,7 @@
     },
     /** pointes déjà détectées sur ce tracé : les garder en ajoutant la nouvelle détection, ou les remplacer → 'add' | 'replace' | null */
     esiAskMode(Lr) {
-      return new Promise(res => { const det = { spikenet: 'SpikeNet', janca: 'Janča', morph: 'morphologique' }, nm = String(Lr.det || '').split('+').map(x => det[x] || x).join(' + ');
+      return new Promise(res => { const det = { spikenet: 'SpikeNet', spikenet2: 'SpikeNet2', janca: 'Janča', morph: 'morphologique', manual: 'marquées à la main' }, nm = String(Lr.det || '').split('+').map(x => det[x] || x).join(' + ');
         const box = document.createElement('div'); box.className = 'modal'; box.innerHTML = `<div class="modal-card" style="max-width:520px"><div class="modal-head"><span>Pointes déjà détectées sur ce tracé</span><button class="close">✕</button></div>
           <p>${esc(nm)} : <b>${Lr.n}</b> pointes, ${Lr.clusters.length} groupe${Lr.clusters.length > 1 ? 's' : ''}${Lr.at ? ' (' + new Date(Lr.at).toLocaleDateString(SV.LOC) + ')' : ''}.</p>
           <p class="muted small">Ajouter : les pointes des deux détections sont réunies (une seule à moins de 150 ms ; chaque pointe garde le nom de son détecteur), puis regroupées. Remplacer : la détection actuelle reste rétablissable depuis le panneau.</p>
@@ -678,13 +693,19 @@
      *  interp (électrodes interpolées) } ; voies à 128 Hz gardées (V.snD) pour le filtre propre au patient */
     async esiSpikeNetScan(V, C19, a, b, line, P) {
       const J = this.asset('spikenet1'), N = SV.SpikeNet, fs = V.mem.fs, i0 = Math.round(a * fs), i1 = Math.min(V.mem.nSamples, Math.round(b * fs)), present = C19.L.map(Boolean);
-      const X = C19.L.map(c => c ? V.mem.data[c.i].slice(i0, i1) : null), step = P.fine ? 4 : 8;
+      const two = P.det === 'spikenet2', X = C19.L.map(c => c ? V.mem.data[c.i].slice(i0, i1) : null), step = two ? (P.fine ? 16 : 32) : (P.fine ? 4 : 8);
       if (C19.n < 19) { const nm = J.mono, pr = nm.filter((_, k) => X[k]), mi = nm.filter((_, k) => !X[k]), Wt = E.splineWeights(pr, mi), src = X.filter(Boolean);   // électrodes manquantes : spline sphérique
         mi.forEach((m, r) => { const y = new Float32Array(i1 - i0); src.forEach((x, j) => { const w = Wt[r][j]; for (let i = 0; i < y.length; i++) y[i] += w * x[i]; }); X[nm.indexOf(m)] = y; }); present.fill(true); }
       const opt = { present };
       const pool = SV.Work && SV.Work.available ? SV.Work.pool(['spikenet']) : null, prog = p => { V.mprog = p; this.ieegMProg(); };
       try {
         const D = pool ? await pool.call('SpikeNet.prep', [J, X, fs, line], [], p => prog(0.1 * p)) : N.prep(J, X, fs, line); if (this._iev !== V || V.mcancel) return { ev: [] };
+        if (two) {   // v2.1.0 : SpikeNet2 (poids de la bibliothèque), fenêtres de 1 s tous les 250 ms (125 ms en mode fin)
+          const buf = await this.sn2Weights(), H2 = SV.SpikeNet2.header(buf), P0 = await this.sn2ScanD(buf, D, step, p => prog(0.1 + 0.88 * p), () => this._iev !== V || V.mcancel);
+          if (this._iev !== V || V.mcancel) return { ev: [] };
+          const pm = new Array(Math.ceil((i1 - i0) / fs)).fill(0); for (let w = 0; w < P0.length; w++) { const k = Math.floor((w * step + N.W / 2) / N.FS); if (k < pm.length) pm[k] = Math.max(pm[k], Math.round(P0[w] * 100)); }
+          V.snD = null; return { ev: N.events(P0, step, +P.thr || 0.5, 0), pm, interp: J.mono.filter((_, k) => !C19.L[k]), model: { name: 'SpikeNet2', sha: H2.sha.slice(0, 16), step } };
+        }
         const n = D[0].length, CH = 7680, jobs = []; let done = 0;
         for (let s0 = 0; s0 + N.W <= n; s0 += CH) { const e = Math.min(n, s0 + CH + N.W - step), sl = D.map(d => d.slice(s0, e));
           jobs.push((pool ? pool.call('SpikeNet.scan', [J, sl, step, opt]) : Promise.resolve(N.scan(J, sl, step, opt))).then(r => { prog(0.1 + 0.85 * (++done) / jobs.length); return r.p; })); }
@@ -815,9 +836,9 @@
       if (V.meth === 'esp') {
         const P = this.esiP('esp'), Lr = rec.esp.last, A0 = V.espAvg, S0 = V.espSol;
         body = `<div class="ie-sec"><div class="ie-sh">Période analysée</div><div class="ctrl-row"><label>de <input class="e-a" value="${clock(+P.start || 0)}" style="width:66px"></label><label>à <input class="e-b" value="${clock(+P.end || V.mem.duration)}" style="width:66px"></label><span class="muted">${nf(((+P.end || V.mem.duration) - (+P.start || 0)) / 60, 1)} min</span></div>
-            <details><summary>Réglages</summary><div class="ctrl-row"><label title="SpikeNet (scalp) : réseau entraîné sur des pointes annotées par des experts, sortie calibrée ; Janča 2015 (intracrânien) : seuil adaptatif sur l’enveloppe 10–60 Hz ; morphologique : amplitude, deux demi-ondes, acuité">détecteur <select class="e-det">${(sc(V) ? [['spikenet', 'SpikeNet (scalp)']] : []).concat([['janca', 'Janča 2015' + (sc(V) ? ' (intracrânien)' : '')], ['morph', 'morphologique']]).map(([k, l]) => `<option value="${k}"${P.det === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
-                ${P.det === 'spikenet' ? `<label title="probabilité calibrée : proportion d’experts qui jugeraient la fenêtre comme une pointe (0,5 = la majorité)">seuil p ≥ <input type="number" class="e-thr" step="0.05" min="0.2" max="0.95" value="${P.thr}"></label><label title="une fenêtre tous les 31 ms au lieu de 62 ms : un peu plus de pointes retrouvées, calcul deux fois plus long"><input type="checkbox" class="e-fine"${P.fine ? ' checked' : ''}> fin</label>` : P.det === 'morph' ? `<label title="seuil d’amplitude : multiple de l’écart absolu médian local">seuil <input type="number" class="e-k" step="0.5" min="3" value="${P.k}"> σ</label>` : `<label title="seuil k1 × (mode + médiane) de l’enveloppe (3,65 : valeur publiée)">k1 <input type="number" class="e-k1" step="0.05" min="2" value="${P.k1}"></label>`}<label title="corrélation minimale des topographies d’un même groupe">groupes r ≥ <input type="number" class="e-r" step="0.05" min="0.6" max="0.98" value="${P.corr}"></label></div>
-              <div class="hint">${P.det === 'spikenet' ? 'SpikeNet (Jing et al., JAMA Neurol 2020) : réseau convolutif entraîné sur 9 571 EEG de scalp et 13 262 pointes candidates annotées par 8 neurophysiologistes, sortie calibrée sur la proportion d’experts ; 19 électrodes 10-20 en référence moyenne et en double banane, 128 Hz, passe-haut 0,5 Hz, fenêtres de 1 s. Poids publics, licence CC BY-NC 4.0 (usage non commercial).' : P.det === 'morph' ? 'Bande ' + P.f1 + '–' + P.f2 + ' Hz, référence moyenne ; deux demi-ondes de 10 à 100 ms et pic aigu (dérivée seconde).' : 'Janča et al., Brain Topogr 2015 : signal rééchantillonné à 200 Hz, filtré 10–60 Hz, enveloppe de Hilbert ; seuil adaptatif k1 × (mode + médiane) d’une loi log-normale ajustée sur 5 s ; polypointes réunies (120 ms) ; validé en intracrânien' + (sc(V) ? ', plus sensible au scalp (artefacts musculaires)' : '') + '.'} Topographies et groupes : référence moyenne, ${P.f1}–${P.f2} Hz ; voies exclues ignorées${this.ieegSzWins ? ' ; crises marquées du tracé écartées' : ''}.</div>
+            <details><summary>Réglages</summary><div class="ctrl-row"><label title="SpikeNet (scalp) : réseau entraîné sur des pointes annotées par des experts, sortie calibrée ; Janča 2015 (intracrânien) : seuil adaptatif sur l’enveloppe 10–60 Hz ; morphologique : amplitude, deux demi-ondes, acuité">détecteur <select class="e-det">${(sc(V) ? [['spikenet', 'SpikeNet (scalp)'], ['spikenet2', 'SpikeNet2 (scalp)' + (this.sn2Head && this.sn2Head() && !this.sn2Head().broken ? '' : ' — poids à ajouter')]] : []).concat([['janca', 'Janča 2015' + (sc(V) ? ' (intracrânien)' : '')], ['morph', 'morphologique']]).map(([k, l]) => `<option value="${k}"${P.det === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+                ${/^spikenet/.test(P.det) ? `<label title="probabilité calibrée : proportion d’experts qui jugeraient la fenêtre comme une pointe (0,5 = la majorité)">seuil p ≥ <input type="number" class="e-thr" step="0.05" min="0.2" max="0.95" value="${P.thr}"></label><label title="${P.det === 'spikenet2' ? 'une fenêtre tous les 125 ms au lieu de 250 ms' : 'une fenêtre tous les 31 ms au lieu de 62 ms'} : un peu plus de pointes retrouvées, calcul deux fois plus long"><input type="checkbox" class="e-fine"${P.fine ? ' checked' : ''}> fin</label>` : P.det === 'morph' ? `<label title="seuil d’amplitude : multiple de l’écart absolu médian local">seuil <input type="number" class="e-k" step="0.5" min="3" value="${P.k}"> σ</label>` : `<label title="seuil k1 × (mode + médiane) de l’enveloppe (3,65 : valeur publiée)">k1 <input type="number" class="e-k1" step="0.05" min="2" value="${P.k1}"></label>`}<label title="corrélation minimale des topographies d’un même groupe">groupes r ≥ <input type="number" class="e-r" step="0.05" min="0.6" max="0.98" value="${P.corr}"></label></div>
+              ${P.det === 'spikenet2' ? this.sn2HintHtml() : ''}<div class="hint">${P.det === 'spikenet2' ? '' : P.det === 'spikenet' ? 'SpikeNet (Jing et al., JAMA Neurol 2020) : réseau convolutif entraîné sur 9 571 EEG de scalp et 13 262 pointes candidates annotées par 8 neurophysiologistes, sortie calibrée sur la proportion d’experts ; 19 électrodes 10-20 en référence moyenne et en double banane, 128 Hz, passe-haut 0,5 Hz, fenêtres de 1 s. Poids publics, licence CC BY-NC 4.0 (usage non commercial).' : P.det === 'morph' ? 'Bande ' + P.f1 + '–' + P.f2 + ' Hz, référence moyenne ; deux demi-ondes de 10 à 100 ms et pic aigu (dérivée seconde).' : 'Janča et al., Brain Topogr 2015 : signal rééchantillonné à 200 Hz, filtré 10–60 Hz, enveloppe de Hilbert ; seuil adaptatif k1 × (mode + médiane) d’une loi log-normale ajustée sur 5 s ; polypointes réunies (120 ms) ; validé en intracrânien' + (sc(V) ? ', plus sensible au scalp (artefacts musculaires)' : '') + '.'} Topographies et groupes : référence moyenne, ${P.f1}–${P.f2} Hz ; voies exclues ignorées${this.ieegSzWins ? ' ; crises marquées du tracé écartées' : ''}.</div>
               ${P.det === 'spikenet' ? `<div class="ctrl-row esi-adapt"><label title="Retire des détections celles qui ressemblent aux pointes que vous avez rejetées pour ce patient"><input type="checkbox" class="e-adapt"${P.adapt && rec.esp.adapt ? ' checked' : ''}${rec.esp.adapt ? '' : ' disabled'}> filtre propre au patient</label><span class="spacer"></span><button class="e-adapt-go" title="Après relecture : supprimer les groupes faux (artefact récurrent, variante bénigne), garder les vrais, puis apprendre de ces choix (≥ 10 pointes de chaque sorte)">Apprendre de ma relecture</button></div>
                 <div class="hint">${rec.esp.adapt ? `Filtre appris le ${new Date(rec.esp.adapt.at).toLocaleDateString(SV.LOC)} sur ${rec.esp.adapt.nPos} pointes gardées et ${rec.esp.adapt.nNeg} rejetées ; en validation croisée, ${Math.round(rec.esp.adapt.sens * 100)} % des gardées conservées et ${Math.round(rec.esp.adapt.spec * 100)} % des rejetées retirées.` : 'SpikeNet est entraîné une fois pour tous les patients et s’applique tel quel. Le filtre propre au patient, facultatif, apprend de votre relecture (groupes gardés et supprimés) à retirer les fausses détections récurrentes de ce tracé ; il ne fait que retirer des détections.'}</div>` : ''}</details>
             ${busy ? this.ieegBusyHtml('Détection des pointes') : `<div class="btnrow"><button class="e-go primary">${Lr ? 'Relancer la détection' : 'Détecter les pointes'}</button></div>`}</div>`;
@@ -839,7 +860,7 @@
                 : RL.map(m => `<div class="esi-edr"><a href="#" class="e-goi" data-i="${m.i}" title="Aller à cette pointe">${clock(m.e.t)}</a><span>${esc(m.e.c)}</span><span class="muted">${m.e.g != null && Lr.clusters[m.e.g] ? 'groupe ' + (m.e.g + 1) : ''}</span><button class="e-rs" data-i="${m.i}" title="Remettre cette pointe détectée dans son groupe">Rétablir</button></div>`).join('')}</div>
               <div class="hint small">${tab === 'man' ? 'Les ajouts gardent leur marque ◆ : une nouvelle détection les conserve sans les mêler aux pointes détectées, et le filtre propre au patient ne s’en sert pas.' : 'Pointes détectées puis retirées à la relecture : exemples négatifs du filtre propre au patient.'}</div></details>`; }
           if (A0) body += `<div class="ie-sec"><div class="ie-sh">Groupe ${A0.k + 1} : pointe moyennée (${A0.n}) <span class="muted">mi-montée ${Math.round((A0.T.half - A0.T.peak) / A0.fs * 1000)} ms · 1er axe ${Math.round(A0.pc1 * 100)} %${A0.pc1 < 0.8 ? ' (plusieurs générateurs / propagation)' : ''}</span></div>
-            <img class="esi-wave" src="${wavePng(A0.avg, A0.fs, A0.pre, A0.T, light)}" alt="">
+            <img class="esi-wave" src="${A0.disp ? wavePng(A0.disp.avg, A0.fs, A0.disp.pre, A0.disp.T, light) : wavePng(A0.avg, A0.fs, A0.pre, A0.T, light)}" alt="" title="à la même échelle de temps que le tracé">
             ${sc(V) ? `<div class="esi-topos"><figure><img src="${topoPng(A0.names, A0.avg.map(a => a[A0.T.half]))}"><figcaption>mi-montée</figcaption></figure><figure><img src="${topoPng(A0.names, A0.avg.map(a => a[A0.T.peak]))}"><figcaption>pic</figcaption></figure></div>` : ''}
             ${S0 && S0.err ? `<div class="hint warn">${esc(S0.err)}</div>` : S0 && S0.busy ? '<div class="hint">Modèle de tête et imagerie de source…</div>' : S0 ? res(S0.sol, S0.H) : ''}
             ${S0 && !S0.err && !S0.busy ? '<div class="btnrow"><span class="spacer"></span><button class="e-3d">Voir en 3D</button><button class="e-save primary">Enregistrer</button></div>' : ''}</div>`;
@@ -871,7 +892,7 @@
       const tsec = s => { const m = String(s).trim().match(/^(?:(\d+):)?(\d+(?:[.,]\d+)?)$/); return m ? (+(m[1] || 0)) * 60 + parseFloat(m[2].replace(',', '.')) : null; };
       on('.e-a', e => { const v = tsec(e.target.value); if (v != null) P.start = v; this.esiRender(); this.ieegDraw(); }); on('.e-b', e => { const v = tsec(e.target.value); if (v != null) P.end = v; this.esiRender(); this.ieegDraw(); });
       on('.e-thr', e => { P.thr = clamp(+e.target.value || 0.5, 0.2, 0.95); }); on('.e-fine', e => { P.fine = e.target.checked; }); on('.e-adapt', e => { P.adapt = e.target.checked; }); { const ag = q('.e-adapt-go'); if (ag) ag.onclick = () => this.esiSpikeNetAdapt(); }
-      on('.e-k', e => { P.k = +e.target.value || 5; }); on('.e-r', e => { P.corr = clamp(+e.target.value || 0.85, 0.5, 0.99); }); on('.e-k1', e => { P.k1 = clamp(+e.target.value || 3.65, 1.5, 10); }); on('.e-det', e => { P.det = e.target.value; this.esiRender(); });
+      on('.e-k', e => { P.k = +e.target.value || 5; }); on('.e-r', e => { P.corr = clamp(+e.target.value || 0.85, 0.5, 0.99); }); on('.e-k1', e => { P.k1 = clamp(+e.target.value || 3.65, 1.5, 10); }); on('.e-det', e => { P.det = e.target.value; this.esiRender(); }); { const b2 = q('.e-sn2'); if (b2) b2.onclick = () => this.sn2Dialog(); }
       on('.e-off', e => { P.off = +e.target.value || 0; this.ieegDraw(); }); on('.e-len', e => { P.len = Math.max(0.5, +e.target.value || 2); this.ieegDraw(); });
       on('.e-band', e => { P.band = e.target.value; this.esiRender(); }); on('.e-f1', e => { P.f1 = +e.target.value; }); on('.e-f2', e => { P.f2 = +e.target.value; });
       const go = q('.e-go'); if (go) go.onclick = () => V.meth === 'esp' ? this.esiSpikeDetect() : this.esiIctalCompute();
@@ -1001,10 +1022,10 @@
   // tracé : pointes détectées (▲ en haut de page), fenêtre du début de crise
   const pw0 = A.ieegPaintWin; A.ieegPaintWin = function (g, o) {
     const V = this._iev; if (!V || !['esp', 'esz', 'src'].includes(V.meth)) return pw0 ? pw0.apply(this, arguments) : undefined; const { X, x0, pw, TOP } = o;
-    if (V.meth === 'esp') { const Lr = V.rec.esp && V.rec.esp.last; if (!Lr) return; const S = this.esiClSel(V), cl = this.esiEvCluster(Lr), bw = 0.075 * o.k;   // bande de 150 ms centrée sur la pointe (groupes sélectionnés)
+    if (V.meth === 'esp') { const Lr = V.rec.esp && V.rec.esp.last; if (!Lr) return; const S = this.esiClSel(V), cl = this.esiEvCluster(Lr), bw = Math.max(0.175 * o.k, 6);   // v2.1.0 : bande de 350 ms (≥ 12 px) centrée sur la pointe, trait fin sur la pointe
       const C = this.esiCur(V), cur = C ? C.i : -1;
       Lr.events.forEach((e, i) => { if (e.x) return; const x = X(e.t); if (x < x0 - bw || x > x0 + pw + bw) return; const k = cl[i], on = k >= 0 && S.has(k); if (V.espOnly && !on) return; const col = k >= 0 ? CL_PAL[k % CL_PAL.length] : '#9aa4b2';
-        if (on) { g.fillStyle = rgba(col, V.light ? 0.2 : 0.16); g.fillRect(x - bw, TOP, 2 * bw, o.H - TOP); g.strokeStyle = rgba(col, 0.75); g.beginPath(); g.moveTo(Math.round(x) + 0.5, TOP); g.lineTo(Math.round(x) + 0.5, TOP + 12); g.stroke(); }
+        if (on) { g.fillStyle = rgba(col, V.light ? 0.16 : 0.13); g.fillRect(x - bw, TOP, 2 * bw, o.H - TOP); g.strokeStyle = rgba(col, 0.9); g.lineWidth = 1; g.beginPath(); g.moveTo(Math.round(x) + 0.5, TOP); g.lineTo(Math.round(x) + 0.5, o.H); g.stroke(); }
         if (i === cur) { g.strokeStyle = V.light ? 'rgba(20,35,58,0.85)' : 'rgba(255,255,255,0.9)'; g.lineWidth = 1.5; g.strokeRect(x - bw, TOP + 1, 2 * bw, o.H - TOP - 2); g.lineWidth = 1; }   // pointe courante (relecture)
         glyph(g, e.m ? 'dia' : 'tri', x, TOP + 6, on ? 6 : 4, on ? col : rgba(col, k >= 0 ? 0.6 : 0.4)); });
       if (V.espEdOpen && V.espEdTab === 'rm') { g.strokeStyle = V.light ? 'rgba(20,35,58,0.55)' : 'rgba(233,238,246,0.55)'; g.lineWidth = 1.3; Lr.events.forEach(e => { if (!e.x || e.m) return; const x = X(e.t); if (x < x0 || x > x0 + pw) return; g.beginPath(); g.moveTo(x - 4, TOP + 2); g.lineTo(x + 4, TOP + 10); g.moveTo(x + 4, TOP + 2); g.lineTo(x - 4, TOP + 10); g.stroke(); }); g.lineWidth = 1; }   // pointes retirées (liste ouverte)
@@ -1019,6 +1040,7 @@
         if (near) items.push({ label: near[0].m ? `Supprimer l’ajout ◆ de ${clock(near[0].t)} (groupe ${cl[near[1]] + 1})` : `Retirer la pointe de ${clock(near[0].t)} (groupe ${cl[near[1]] + 1})`, danger: true, run: () => this.esiSpikeRemove(near[1]) });
         const gone = Lr.events.map((e, i) => [e, i]).filter(([e]) => e.x && !e.m && Math.abs(e.t - t) < Math.max(tol, 0.08))[0]; if (gone) items.push({ label: `Rétablir la pointe retirée de ${clock(gone[0].t)}`, run: () => this.esiSpikeRestore(gone[1]) });
         items.push({ label: `＋ Ajouter une pointe ici${V.espSel != null && Lr.clusters[V.espSel] ? ` (groupe ${V.espSel + 1})` : ''}`, run: () => this.esiSpikeAdd(t) }); }
+      else items.push({ label: '＋ Marquer une pointe ici (moyennage à la main, sans détection)', run: () => this.esiSpikeManual(t) });
       items.push({ label: 'Début de la période des pointes ici', run: () => { P.start = t; this.esiRender(); this.ieegDraw(); } }, { label: 'Fin de la période des pointes ici', run: () => { P.end = t; this.esiRender(); this.ieegDraw(); } }); } else { const P = this.esiP(V.meth), mk = V.rec.marks || {}; if (mk.onset != null) items.push({ sep: true }, { label: 'Fenêtre de source à partir d’ici', run: () => { P.off = Math.round((t - mk.onset) * 10) / 10; this.esiRender(); this.ieegDraw(); } }); } if (d && mm0) { const ex = (V.rec.ei && V.rec.ei.excluded || []).includes(d.name); items.push({ label: ex ? `Réintégrer ${d.name}` : `Exclure ${d.name} des calculs (artefact)`, run: () => this.ieegExclude(d.name, !ex) }); } };
   // relecture : clic sur une pointe (▲ au-dessus du tracé) ; [ ] : précédente / suivante ; Suppr : retirer la pointe courante ; Ctrl+Z : annuler
   A.ieegClickMeth = function (p) {

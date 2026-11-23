@@ -113,6 +113,8 @@ The [[Interictal]] tab holds the interictal EEG report:
 
 The [[Analyses]] tab receives the **recordings** themselves: EDF, EDF+, BDF, BrainVision, Brainquick or Micromed exports. [[+ Import a recording…]], or drop the files on the card. Recordings are split into **Ictal analyses** (recordings with a seizure, seizure summary) and **Interictal analyses** (spikes, sleep, sources), each filed by recording day; a long recording containing seizures is filed with the seizures and flagged in the interictal part. A seizure of the record whose time falls within the recording is linked to it automatically.
 
+A recording that contains both seizures and interictal activity (a night, for example) appears in both parts: its ictal analyses with the seizures, its interictal analyses (spikes, clusters, spike sources, sleep) with the interictal part; the latter are also shown in the [[Interictal]] tab. The title of a recording (in the viewer) or [[⋯]] › [[Recording information…]] on its card opens its information: editable title, nature, vigilance and notes; start and end time, duration, blocks and gaps, channels, files and reading warnings in full.
+
 Under each recording appear its post-processing results: spikes and clusters, hypnogram, source imaging, page captures.
 
 !!! bref
@@ -156,8 +158,10 @@ In the viewer, **Quantification** panel › [[Spikes → source]]:
 
 1. **Detect**: SpikeNet (a network trained on thousands of EEGs annotated by experts) scans the recording; the threshold is adjustable (0.5 = the majority of experts).
 2. **Review the clusters**: spikes are grouped by topography, each cluster with its averaged spike and its map. Merge, split, or delete an artefact cluster.
-3. **Edit**: remove a wrongly detected spike (<kbd>Delete</kbd> or right-click), add a missed one (right-click › *Add a spike here*). Manual additions are marked ◆ and can be browsed separately.
+3. **Edit**: remove a wrongly detected spike (<kbd>Delete</kbd> or right-click), add a missed one (right-click › *Add a spike here*). Manual additions are marked ◆ and can be browsed separately. Without automatic detection, right-click › *Mark a spike here (manual averaging)*: the marked spikes form a cluster, averaged and localised like the others. On the trace, each spike of a selected cluster is surrounded by a 350 ms coloured band, with a thin line at the spike instant; the averaged spike (butterfly view) is drawn at the same time scale as the trace, so the graphoelement keeps its shape.
 4. **Find the source**: sLORETA, equivalent dipole and LCMV beamformer, on the patient's anatomy if available (BEM head model), otherwise on the template.
+
+**SpikeNet2** (Li et al., NEJM AI 2025), trained on more than 17,000 EEGs with hard-negative mining, can replace SpikeNet in [[Settings]] › detector. Its weights are not shipped with EpiScope: the BDSP (bdsp.io) distributes them under a restricted licence to credentialed users. A user who holds them adds them once with [[Add the SpikeNet2 weights…]] (or Patients › [[Settings]] › Added models) by choosing the authors' checkpoint (`new_weights.ckpt`, about 370 MB): EpiScope reads the network, checks it and stores it in the library (`models` folder, about 120 MB), never in a patient record or an export. Each detection records the fingerprint of the weights used. Computation is slower than SpikeNet (a few minutes per hour of EEG on a recent computer); the patient-specific filter remains specific to SpikeNet.
 
 The [[Seizure onset → source]] tab does the same for the seizure-onset window (dominant frequency, components).
 

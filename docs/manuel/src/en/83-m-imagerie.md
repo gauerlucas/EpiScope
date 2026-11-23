@@ -31,6 +31,18 @@ Each image is registered rigidly to the reference T1: normalised mutual informat
 
 A quality control comes with the result: regions found, proportion of unlabelled tissue, consistency with age.
 
+### Towards MNI space {#vers-lespace-mni}
+
+{refs: bookstein1989 fonov2011}
+
+The affine transformation (12 degrees of freedom) to the fsaverage template (MNI305) is fitted on the centres of about a hundred structures segmented in the same way in the patient and on the template. EpiScope complements it with a regularised **thin-plate spline** fitted on the same landmarks: regularisation is chosen by cross-validation (each landmark predicted without itself), and the spline is kept only if it predicts better than the affine, without folding. The **Patient anatomy** card shows the prediction error of both. MNI305 coordinates of exports, cohort and queries follow the retained transformation; the 3D “template” display remains affine. This is a correction at the scale of structures (a few millimetres), not a voxel-wise registration.
+
+In children, the transformation can go through an **age-appropriate template** (for example NIHPD): patient → age template → MNI305, coordinates remaining expressed in MNI305. A template is created from a record whose T1 is the template image ([[Age-appropriate templates…]]) and stored in the library settings. Before 2 years, immature myelination makes segmentation and coordinates less reliable: the card says so.
+
+### Region of each contact {#region-de-chaque-plot}
+
+When the real electrodes are validated, the VEP region of each contact is **frozen** in the record (vote over three points of the axis), with the date of the anatomy used: a query reads it as it was established, whatever the later version of the atlas. If the anatomy is recomputed, frozen regions remain and are flagged; [[Relabel the contacts]] updates them.
+
 ## Electrodes on the CT {#electrodes-sur-le-scanner}
 
 {refs: epitools}

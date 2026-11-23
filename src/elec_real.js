@@ -222,6 +222,7 @@
         if (!twin && (spec.target || (spec.plan && spec.plan.tip))) delete spec.real; else SV.Store.discard(this.dossier, { kind: 'électrode', label: spec.name, list: 'explorations', id: ex.id, field: 'electrodes', item: spec });
       }
       ex.ctImageId = ct.id; ex.ctDate = S.now(); det.dirty = false;
+      if (this.stampRegions) this.stampRegions(ex, { force: true });   // v2.1.0 : région VEP de chaque plot figée à la validation
       S.log(this.dossier, 'edit', 'exploration', ex.id, `électrodes réelles validées (${nUp} prévues, ${nNew} nouvelles${nOut ? ', ' + nOut + ' retirées' : ''})`); this.touch();
       if (this.ctx && this.ctx.explorationId === ex.id) { const st = S.toWorkspace(this.dossier, this.ctx); this.state.electrodes = st.electrodes; this.rebuildElectrodes(); }
       this.exportElectrodesBids(ex, false);
@@ -235,7 +236,7 @@
     async exportElectrodesBids(ex, download) {
       const d = this.dossier, A = this.patientAnat, sub = SV.BIDS.subOf(d), ses = SV.BIDS.sesOf(d, ex), T = d.anatomy && d.anatomy.toTemplate ? Array.from(d.anatomy.toTemplate) : null;
       const region = c => { const l = A && A.labelWorld ? A.labelWorld.labelAt(c[0], c[1], c[2]) : 0; return l >= 1 && l <= 162 ? this.atlas.labelEn(l) : l === 200 ? 'white-matter' : l === 201 ? 'CSF' : 'n/a'; };
-      const regions = {}; for (const spec of ex.electrodes) if (spec.real) spec.real.contacts.forEach((c, k) => { regions[spec.name.replace(/’/g, "'") + (k + 1)] = region(c); });
+      const regions = {}; for (const spec of ex.electrodes) if (spec.real) spec.real.contacts.forEach((c, k) => { const r = S.contactRegion(spec, k + 1); regions[spec.name.replace(/’/g, "'") + (k + 1)] = r ? r.name : region(c); });   // v2.1.0 : région figée d'abord
       const B = SV.Research.buildSubject({ ...d, explorations: d.explorations.map(e => Object.assign({}, e, { recordings: [], stims: [], thermo: [], quant: [] }, e.id === ex.id ? {} : { electrodes: [] })), seizures: [], lesions: [], procedures: [], outcomes: [] }, { regions: { [ex.id]: regions } });
       const el = B.files.filter(f => /_(electrodes\.tsv|coordsystem\.json)$/.test(f.path));
       for (const f of el) await L.writeFile(d, f.path.replace(/^sub-[^/]+\//, ''), f.text);

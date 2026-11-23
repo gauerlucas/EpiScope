@@ -5,11 +5,11 @@
   python3 tools/check_no_data.py --staged   → fichiers prêts à être commités (hook .githooks/pre-commit)
 
 Refuse : tracés (EDF, BDF, BrainVision, Micromed TRC), imagerie (DICOM, NIfTI, MGZ), vidéos, archives .episcope,
-dossier.json, et tout fichier de plus de 3 Mo hors des ressources livrées (assets/, vendor/, docs/banner/).
+dossier.json, poids de réseaux ajoutés par l'utilisateur (.ckpt, .pth, .epsn2 : SpikeNet2, licence restreinte), et tout fichier de plus de 3 Mo hors des ressources livrées (assets/, vendor/, docs/banner/).
 Seule exception : tools/tests/fixtures/ (fixtures synthétiques, petites)."""
 import os, re, subprocess, sys
 
-DATA = re.compile(r'\.(edf|bdf|eeg|vhdr|vmrk|trc|dcm|ima|nii|nii\.gz|mgz|mp4|mov|avi|mkv|webm|m4v|episcope)$', re.I)
+DATA = re.compile(r'\.(edf|bdf|eeg|vhdr|vmrk|trc|dcm|ima|nii|nii\.gz|mgz|mp4|mov|avi|mkv|webm|m4v|episcope|ckpt|pth|epsn2)$', re.I)   # v2.1.0 : poids sous licence (SpikeNet2) jamais dans le dépôt
 ALLOW_BIG = ('assets/', 'vendor/', 'docs/banner/', 'docs/manuel/img/')
 MAX = 3_000_000
 

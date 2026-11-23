@@ -116,12 +116,42 @@
         await writeFileAt(this.root, 'episcope_library.json', new Blob([JSON.stringify(st, null, 1)]));
         // racine d'un jeu BIDS : description et liste des zones propres à EpiScope (écrites une fois, jamais écrasées)
         if (!(await readFileAt(this.root, 'dataset_description.json'))) await writeFileAt(this.root, 'dataset_description.json', new Blob([JSON.stringify({ Name: st.center ? 'EpiScope — ' + st.center : 'Bibliothèque EpiScope', BIDSVersion: SV.BIDS ? SV.BIDS.VERSION : '1.10.0', DatasetType: 'raw', GeneratedBy: [{ Name: 'EpiScope' }] }, null, 1)]));
-        if (!(await readFileAt(this.root, '.bidsignore'))) await writeFileAt(this.root, '.bidsignore', new Blob(['episcope_library.json\n*/dossier.json\n*/dossier.conflict-*\n*/.lock\n*/history/\n*/trash/\n*/ieeg/\n*/imaging/\n*/gallery/\n*/attachments/\nexports/\n*/staff/\n*/derivatives/\n']));
+        if (!(await readFileAt(this.root, '.bidsignore'))) await writeFileAt(this.root, '.bidsignore', new Blob(['episcope_library.json\n*/dossier.json\n*/dossier.conflict-*\n*/.lock\n*/history/\n*/trash/\n*/ieeg/\n*/imaging/\n*/gallery/\n*/attachments/\nexports/\nmodels/\n*/staff/\n*/derivatives/\n']));
       } else await idbPut('meta', 'library', st);
       return st;
     },
     /** fichier à la racine de la bibliothèque (répertoire seulement : rapports d'export…) ; navigateur : rien */
     async writeRootFile(path, data) { if (this.mode !== 'folder') return false; await writeFileAt(this.root, path, data instanceof Blob ? data : new Blob([data])); return true; },
+    // ------------------------------------------------------------ modèles ajoutés par l'utilisateur (v2.1.0 : poids SpikeNet2)
+    /** models/<nom>.epsn2 à la racine (répertoire) ou meta/model:<nom> (navigateur) : poids que l'utilisateur détient et
+     *  qu'EpiScope ne livre pas ; jamais dans un dossier patient, un export ni le fichier EpiScope.html */
+    modelPath(name) { return 'models/' + String(name).replace(/[^a-z0-9_-]/gi, '') + '.epsn2'; },
+    async getModel(name) {
+      try {
+        if (this.mode === 'folder') { const f = await readFileAt(this.root, this.modelPath(name)); return f ? await f.arrayBuffer() : null; }
+        const b = await idbGet('meta', 'model:' + name); return b ? (b instanceof Blob ? await b.arrayBuffer() : b) : null;
+      } catch (e) { console.warn('modèle', name, e); return null; }
+    },
+    /** début du fichier (en-tête) sans lire les poids */
+    async modelHead(name) {
+      try {
+        if (this.mode === 'folder') { const f = await readFileAt(this.root, this.modelPath(name)); return f ? { head: await f.slice(0, 1 << 20).arrayBuffer(), size: f.size, at: f.lastModified } : null; }
+        const b = await idbGet('meta', 'model:' + name); return b ? { head: await b.slice(0, 1 << 20).arrayBuffer(), size: b.size, at: null } : null;
+      } catch (e) { return null; }
+    },
+    /** range un modèle ; l'ancien, s'il existe, passe dans models/trash/ (rien ne se perd) */
+    async putModel(name, buf) {
+      await this.removeModel(name);
+      if (this.mode === 'folder') {
+        await writeFileAt(this.root, this.modelPath(name), new Blob([buf]));
+        const bi = await readFileAt(this.root, '.bidsignore'); if (bi) { const t = await bi.text(); if (!/^models\/$/m.test(t)) await writeFileAt(this.root, '.bidsignore', new Blob([t.replace(/\n?$/, '\n') + 'models/\n'])); }
+      } else await idbPut('meta', 'model:' + name, new Blob([buf]));
+    },
+    async removeModel(name) {
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      if (this.mode === 'folder') { const p = this.modelPath(name); if (await readFileAt(this.root, p)) await moveAt(this.root, p, 'models/trash/' + p.slice(7).replace('.epsn2', '_' + stamp + '.epsn2')); return; }
+      const b = await idbGet('meta', 'model:' + name); if (b) { await idbPut('meta', 'trash:model:' + name + ':' + stamp, b); await idbDel('meta', 'model:' + name); }
+    },
     /** codes déjà attribués dans la bibliothèque (corbeille comprise) */
     async subjectsInUse() {
       const all = (await this.list()).concat(await this.list({ deleted: true }));

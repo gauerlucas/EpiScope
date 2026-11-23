@@ -40,4 +40,4 @@ Details (manual, tests, translations) are in the help and in `tools/`.
 
 Code under the [MIT licence](LICENSE). Embedded components keep their own licences; the SpikeNet weights are CC BY-NC 4.0, so `EpiScope.html` cannot be used commercially. The legal notice (⋯ › *Legal notice*) and *Credits and sources* in the app list the licences and the original papers of the published methods EpiScope re-implements: please cite them when you use the corresponding results.
 
-Gauer L. EpiScope — Visualize seizures, version 2.0.0 [software]. 2026. ORCID 0000-0001-8250-1455.
+Gauer L. EpiScope — Visualize seizures, version 2.1.0 [software]. 2026. ORCID 0000-0001-8250-1455.

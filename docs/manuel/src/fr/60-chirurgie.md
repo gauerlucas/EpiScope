@@ -20,6 +20,21 @@ L'onglet [[Intervention]] décrit la procédure : type (résection ou corticecto
 - **Régions réséquées** : choisies dans la liste ou reprises des hypothèses retenues ; la vue 3D montre la résection face à la zone épileptogène (comprise ou non dans la résection).
 - **Coupes IRM** : l'IRM post-opératoire associée se superpose au T1 pré-opératoire ; les régions de l'intervention y sont colorées.
 
+### Histologie
+
+{refs: najm2022fcd blumcke2013hs who2021cns}
+
+Les diagnostics se choisissent dans une liste fermée — dysplasies corticales focales selon la classification ILAE 2022 (types I à III, mMCD, MOGHE), sclérose hippocampique ILAE type 1 à 3, tumeurs épileptogènes selon l'OMS 2021 (gangliogliome, DNET, PLNTY…), cavernome, tuber, cicatrice gliale… — plusieurs à la fois en cas de double pathologie. Le texte libre reste à côté pour les précisions (gène, immunohistochimie). Une requête porte sur les codes, pas sur le texte.
+
+### Contacts dans la résection
+
+{refs: arnold2022cavity}
+
+La carte **Contacts dans la résection** montre les électrodes réelles de la SEEG de référence, un bouton par contact : un clic le déclare dans la résection (rouge), le survol rappelle sa région VEP. Sur une IRM post-opératoire importée et recalée, [[Segmenter la cavité]] compare l'image à la parcellation pré-opératoire du patient : le parenchyme devenu LCR forme la cavité. Les composantes trouvées se gardent ou s'écartent, avec leur volume et la part de chaque région emportée ; [[Retenir cette cavité et déduire les contacts]] range le masque (visible dans les coupes) et marque les contacts compris dans la cavité (violet, tolérance 1,5 mm). Les contacts déclarés à la main restent ; ceux d'une cavité précédente sont remplacés.
+
+!!! attention
+    La cavité dépend du recalage de l'IRM post-opératoire et du déplacement du cerveau après l'intervention : vérifiez-la dans les coupes avant de retenir les contacts.
+
 ![L'intervention : type, régions réséquées, coupes pré / post-opératoires.](shot:chirurgie)
 
 ## Le suivi

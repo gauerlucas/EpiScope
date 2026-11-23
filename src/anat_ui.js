@@ -269,7 +269,7 @@
         const info = {
           status: 'done', date: S.now(), refImagingId: ref.id, refLabel: ref.label, files,
           method: SEG_TEXT(cand) + ' ; parcellation VEP par recalage affine sur fsaverage et contrainte Desikan ; surfaces par marching cubes à topologie corrigée',
-          model: mdl.name, toTemplate: Array.from(P.toTemplate), toDisplay: Array.from(P.toDisplay), fit: P.fit, midX: P.midX, brainCenter: P.brainCenter,
+          model: mdl.name, toTemplate: Array.from(P.toTemplate), toDisplay: Array.from(P.toDisplay), fit: P.fit, midX: P.midX, brainCenter: P.brainCenter, landmarks: P.landmarks || null,
           qc: { vertices: [lh.n, rh.n], area: [Math.round(lh.info.area), Math.round(rh.info.area)], genus: [lh.info.genus, rh.info.genus], regions: 162 - missing.length, missing, structures: sub.length, labelsSearch: P.counts, coverage: cand.coverage || null },
           segmentation: { method: cand.id, name: cand.name, chosenBy: cand.chosenBy || 'method', reason: cand.reason || '', ok: cand.q.ok, why: cand.q.why, age: ctx.age == null ? null : +ctx.age.toFixed(3), limits: ctx.limits.band, brainMask: (cand.info && cand.info.brainMask) || null, atlas: (cand.info && cand.info.atlas) || null, import: (cand.info && cand.info.import) || null, tried: ctx.list.map(step) },
           harmonize: (cand.info && cand.info.harmonize) || null,
@@ -280,6 +280,8 @@
         d.anatomy = info;
         S.log(d, 'compute', 'imaging', ref.id, `anatomie du patient · ${cand.name} (${fmtS(info.timings.total)})`); this.touch(); await this.flushSave();
         this.patientAnat = this.buildPatientAnat(d, { mesh: pk, vepVol, segVol, meta: { names: seg.labelNames, colors: mdl.colors || null } }); if (this.fixElectrodeSides) this.fixElectrodeSides(d);
+        // v2.1.0 : transformation vers MNI305 (non linéaire si elle prédit mieux) et régions des plots encore non figées
+        if (this.mniCompute) await this.mniCompute({ quiet: true }); if (this.stampRegions) { for (const ex of d.explorations) this.stampRegions(ex); } this.touch();
         // v2.0.0 : électrodes validées réécrites avec leurs régions et leurs coordonnées MNI305 (nouvelle transformation)
         for (const ex of d.explorations) if (ex.electrodes.some(e => e.real) && this.exportElectrodesBids) { try { await this.exportElectrodesBids(ex); } catch (e) { console.warn('électrodes BIDS', e); } }
         this.ui.anatJob = null;
@@ -368,6 +370,7 @@
       const want = (d.settings && d.settings.anatomy) || 'template';
       this.setAnatomy(this.patientAnat && want === 'patient' ? 'patient' : 'template', true);
     },
+    anatAsset(name) { return asset(name); },
     /** objet anatomie : atlas pour la vue 3D (même interface que SV.Atlas, hérite du gabarit : régions, adjacence,
      *  connectivité), volumes d'étiquettes, transformations entre espaces */
     buildPatientAnat(d, { mesh, vepVol, segVol, meta }) {
@@ -473,6 +476,7 @@
           <div class="muted">${(q.vertices || []).map(n => (n / 1000).toFixed(0) + ' k').join(' + ')} sommets · recalage gabarit ${fit.rms ? fit.rms.toFixed(1) + ' mm (' + fit.n + ' structures)' : '—'} · ${an.timings ? fmtS(an.timings.total) : ''}</div>
           <div class="muted">${esc(new Date(an.date).toLocaleDateString(SV.LOC))} · T1 ${esc(an.refLabel || '')}</div>
           ${this.anatQcLine(an)}
+          ${this.mniLine ? this.mniLine(an) : ''}
           ${q.missing && q.missing.length ? `<div class="note warn">Régions non retrouvées : ${esc(q.missing.slice(0, 6).join(', '))}${q.missing.length > 6 ? '…' : ''} (lésion, résection, ou segmentation à vérifier dans les coupes)</div>` : ''}
           ${stale ? '<div class="note warn">Calculée sur un autre T1 que la référence actuelle : à recalculer.</div>' : ''}
           ${!A ? '<div class="note warn">Fichiers dérivés absents ou illisibles (archive incomplète ?) : recalculez.</div>' : ''}</div>
@@ -482,6 +486,7 @@
       this._bindSegMethod('anO'); bindCommon();
       $('anOGo').onclick = () => { const m = $('anOMeth').value; if (m === 'compare' || confirm(`Recalculer l’anatomie avec la méthode « ${SEG_NAME[m]} » ? (quelques minutes ; l’anatomie actuelle est remplacée à la fin)`)) this.computeAnatomy({ mode: m }); };
       $('anRedo').onclick = () => { if (confirm('Recalculer l’anatomie du patient ? (quelques minutes)')) this.computeAnatomy({ mode: curM && curM !== 'import' ? curM : 'auto', force: true }); };
+      if (this.mniBind) this.mniBind(box);
       if (A) {
         $('anShow').onclick = () => { this.setAnatomy('patient'); this.showScreen && this.showScreen(null); };
         $('anSlices').onclick = () => { this.slvState().labels = 'vep'; this.renderSliceView(); };

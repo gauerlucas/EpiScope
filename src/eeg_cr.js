@@ -173,8 +173,12 @@
     renderP1InterView(box, st) {
       const ex = st.obj;
       box.innerHTML = `<div class="scr-inner wide"><div class="view-head"><h3>Intercritique · ${esc(ex.label)}</h3><span class="muted">EEG de scalp hors crises : repris au staff et dans les rapports</span></div>
-        <div class="eeg-grid"><div class="eeg-col" id="p1Inter"></div><div class="eeg-col"><div class="card"><div class="card-h">Tracés et captures intercritiques <span class="muted">datés, veille / sommeil · Ctrl+V pour coller</span></div><div id="p1InterGal"></div></div></div></div></div>`;
+        <div class="eeg-grid"><div class="eeg-col" id="p1Inter"></div><div class="eeg-col"><div id="p1InterAn"></div><div class="card"><div class="card-h">Tracés et captures intercritiques <span class="muted">datés, veille / sommeil · Ctrl+V pour coller</span></div><div id="p1InterGal"></div></div></div></div></div>`;
       this.eegPart($('p1Inter'), ex, 'inter');
+      // v2.1.0 : analyses intercritiques des tracés (pointes, groupes, sources, sommeil), y compris celles d'un tracé qui contient aussi des crises
+      if (this.recPostHtml) { const rows = (ex.recordings || []).map(r => [r, this.recPostHtml(r, ex, { kind: 'scalp' }, 'inter')]).filter(x => x[1]);
+        if (rows.length) { $('p1InterAn').innerHTML = `<div class="card p1-an"><div class="card-h">Analyses intercritiques des tracés <span class="muted">pointes, groupes, sources, sommeil</span><span class="spacer"></span><button class="mini-btn" data-a="an">onglet Analyses ›</button></div>${rows.map(([r, h]) => `<div class="p1-an-r" data-r="${r.id}"><div class="small"><b>${esc(r.title || '')}</b></div>${h}</div>`).join('')}</div>`;
+          $('p1InterAn').querySelectorAll('[data-a=an], .p1-an-r').forEach(b => b.onclick = e => { e.stopPropagation(); this.go({ stage: st.key, view: 'analyses' }); }); } }
       if (this.renderGallery) this.renderGallery($('p1InterGal'), { explorationId: ex.id, filter: g => !g.seizureId && !['ictal', 'postictal', 'stim'].includes(g.kind), kind: 'interictal' });
     },
     /** textes proposés : intercritique (carte), critique (carte + crises), conclusion (tout) */

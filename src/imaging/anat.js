@@ -42,6 +42,8 @@
     return out;
   }
 
+  /** v2.1.0 : repères (centres des classes, monde du patient) gardés dans le dossier pour la transformation non linéaire */
+  const roundLm = pc => { const o = {}; for (const l in pc) o[l] = [+pc[l][0].toFixed(2), +pc[l][1].toFixed(2), +pc[l][2].toFixed(2), pc[l][3]]; return o; };
   /** volume VEP du gabarit (format de assets/vep_volume.json, décodé) : étiquette au point tkrRAS */
   function tplLabeler(tv) {
     const [d0, d1, d2] = tv.dims, off = tv.off || tv.offset_vox, vox = tv.vox || 2, data = tv.data;
@@ -87,7 +89,7 @@
       let bv = out[o], bc = 0; for (const [v, c] of cnt) if (c > bc) { bc = c; bv = v; } sm[o] = bv;
     }
     prog({ fraction: 1, message: 'parcellation VEP terminée' });
-    return { vep: sm, toTemplate: Array.from(M4.mul(fit.T, M4.identity())), fit: { rms: fit.rms, n: fit.n, rejected: fit.rejected }, counts };
+    return { vep: sm, toTemplate: Array.from(M4.mul(fit.T, M4.identity())), fit: { rms: fit.rms, n: fit.n, rejected: fit.rejected }, counts, landmarks: roundLm(pc) };
   }
 
   /** étiquettes au point monde d'un volume (grille + affine) : interface labelAt(x, y, z) des volumes d'électrodes ;
@@ -137,7 +139,7 @@
     const cents = centroids(vp.vep, dims, Ad, 10);
     for (let k = 0, o = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++, o++) { const l = seg[o]; if (!l || cere[l]) continue; const x = Ad[0] * i + Ad[1] * j + Ad[2] * k + Ad[3]; if (meta.hemi[l] === 'L') { sL[0] += x; sL[1]++; } else if (meta.hemi[l] === 'R') { sR[0] += x; sR[1]++; } }
     prog({ fraction: 1, message: 'parcellation VEP terminée' });
-    return { vep: vp.vep, toTemplate: vp.toTemplate, toDisplay: M4.toArray ? M4.toArray(D) : Array.from(D), fit: vp.fit, counts: vp.counts, brainCenter: c, centroids: cents,
+    return { vep: vp.vep, toTemplate: vp.toTemplate, toDisplay: M4.toArray ? M4.toArray(D) : Array.from(D), fit: vp.fit, counts: vp.counts, landmarks: vp.landmarks, brainCenter: c, centroids: cents,
       midX: sL[1] && sR[1] ? 0.5 * (sL[0] / sL[1] + sR[0] / sR[1]) : 0, ms: Date.now() - t0 };
   }
   /** étape 2 (un worker par hémisphère) : surface piale (classes de l'hémisphère), gonflée (centrée sur l'origine, aire
@@ -184,5 +186,5 @@
     const fit = robustAffine(src, dst, w), T = fit.T, scales = [0, 1, 2].map(c => +Math.hypot(T[c], T[4 + c], T[8 + c]).toFixed(3));
     return { rms: +fit.rms.toFixed(2), n: fit.n, rejected: fit.rejected, scales, volume: n, extent: jmax - jmin + 1 };
   }
-  SV.Anat = { robustAffine, centroids, segQuality, tplLabeler, vepParcellation, labelVolume, rigidPart, hemiClasses, prepare, hemisphere, structures, vertexCentroids };
+  SV.Anat = { robustAffine, centroids, roundLm, segQuality, tplLabeler, vepParcellation, labelVolume, rigidPart, hemiClasses, prepare, hemisphere, structures, vertexCentroids };
 });

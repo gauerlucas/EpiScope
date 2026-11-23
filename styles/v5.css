@@ -549,3 +549,34 @@ div.pr-vact.v3 { justify-content: flex-end; margin-top: 8px; }
 .szs.mid { color: #c98a1b; border-color: currentColor; }
 .ann-card { border-left: 3px solid #c98a1b; }
 td.nowrap { white-space: nowrap; }
+/* v2.0.0 — Intercritique : analyses intercritiques des tracés */
+.p1-an-r { padding: 6px 4px; border-top: 1px solid var(--line, rgba(255,255,255,.08)); cursor: pointer; }
+.p1-an-r:hover { background: rgba(127,127,127,.06); }
+.p1-an { margin-bottom: 12px; }
+
+/* v2.1.0 — données de recherche du dossier (fields_ui.js, resection_ui.js) */
+.histo { display: flex; flex-direction: column; gap: 5px; }
+.histo-h { font-size: 12px; color: var(--muted); }
+.histo-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.histo-c { display: inline-flex; align-items: center; gap: 4px; }
+.histo-c .x { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0 2px; font-size: 13px; line-height: 1; }
+.histo-add { max-width: 280px; }
+.devc { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin: 2px 0 8px; }
+.devc-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-right: 4px; cursor: help; }
+.devc-i { display: inline-flex; align-items: center; gap: 3px; }
+.devc-b { cursor: pointer; }
+.devc-b.neg { opacity: .65; }
+.devc-sev { font-size: 11px; padding: 1px 3px; }
+.pw { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 0 2px; border-top: 1px solid var(--line); }
+.pw-h { font-weight: 600; cursor: help; }
+.pw-t { flex: 1; min-width: 140px; }
+.resect .rs-grid { display: flex; flex-direction: column; gap: 3px; margin: 6px 0 10px; }
+.rs-e { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; } .rs-e b { min-width: 42px; font-size: 12px; }
+.rs-c { min-width: 22px; height: 20px; padding: 0 3px; font-size: 11px; border: 1px solid var(--line2, #c8d2dc); background: transparent; color: var(--muted); border-radius: 3px; cursor: pointer; }
+.rs-c.on { background: #c0392b; border-color: #c0392b; color: #fff; }
+.rs-c.on.cavity { background: #8e44ad; border-color: #8e44ad; }
+.rs-c.on.manual::after { content: ''; }
+.rs-cav { border-top: 1px solid var(--line); padding-top: 6px; display: flex; flex-direction: column; gap: 5px; }
+.rs-run { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .rs-run input[type=number] { width: 58px; }
+.mni-l { margin-top: 4px; }
+.histo-h b { font-weight: 400; color: var(--text); font-size: 12px; }

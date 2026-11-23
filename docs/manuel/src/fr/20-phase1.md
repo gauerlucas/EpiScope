@@ -114,6 +114,8 @@ L'onglet [[Intercritique]] rassemble le compte rendu de l'EEG intercritique :
 
 L'onglet [[Analyses]] reçoit les **tracés** eux-mêmes : EDF, EDF+, BDF, BrainVision, exports Brainquick ou Micromed. [[+ Importer un tracé…]], ou glisser les fichiers sur la carte. Les tracés sont séparés en **Analyses critiques** (tracés avec crise, synthèse des crises) et **Analyses intercritiques** (pointes, sommeil, sources), chacun rangé par jour d'enregistrement ; un long tracé qui contient des crises est rangé avec les crises et signalé dans l'intercritique. Une crise du dossier dont l'heure tombe dans le tracé lui est rattachée d'elle-même.
 
+Un tracé qui contient à la fois des crises et de l'intercritique (une nuit, par exemple) figure dans les deux parties : ses analyses critiques avec les crises, ses analyses intercritiques (pointes, groupes, sources des pointes, sommeil) avec l'intercritique ; ces dernières sont aussi reprises dans l'onglet [[Intercritique]]. Le titre d'un tracé (dans la visionneuse) ou [[⋯]] › [[Informations du tracé…]] sur sa carte ouvre ses informations : titre, nature, vigilance et notes modifiables ; heure de début et de fin, durée, blocs et coupures, voies, fichiers et avertissements de lecture en entier.
+
 Sous chaque tracé apparaissent ses post-traitements : pointes et groupes, hypnogramme, imagerie de source, captures de pages.
 
 !!! bref
@@ -157,8 +159,10 @@ Dans la visionneuse, le panneau **Quantification** › [[Pointes → source]] :
 
 1. **Détecter** : SpikeNet (réseau entraîné sur des milliers d'EEG annotés par des experts) parcourt le tracé ; le seuil se règle (0,5 = la majorité des experts).
 2. **Relire les groupes** : les pointes sont réunies par topographie, chaque groupe avec sa pointe moyennée et sa carte. Fusionner, scinder, supprimer un groupe d'artefacts.
-3. **Retoucher** : retirer une pointe détectée à tort (<kbd>Suppr</kbd> ou clic droit), en ajouter une oubliée (clic droit › *Ajouter une pointe ici*). Les ajouts à la main sont marqués ◆ et se parcourent à part.
+3. **Retoucher** : retirer une pointe détectée à tort (<kbd>Suppr</kbd> ou clic droit), en ajouter une oubliée (clic droit › *Ajouter une pointe ici*). Les ajouts à la main sont marqués ◆ et se parcourent à part. Sans détection automatique, clic droit › *Marquer une pointe ici (moyennage à la main)* : les pointes marquées forment un groupe, moyenné et localisé comme les autres. Sur le tracé, chaque pointe d'un groupe choisi est entourée d'une bande colorée de 350 ms, avec un trait fin à l'instant de la pointe ; la pointe moyennée (vue « papillon ») est dessinée à la même échelle de temps que le tracé, pour que le grapho-élément garde sa forme.
 4. **Chercher la source** : sLORETA, dipôle équivalent et faisceau LCMV, sur l'anatomie du patient si elle existe (modèle de tête BEM), sinon sur le gabarit.
+
+**SpikeNet2** (Li et al., NEJM AI 2025), entraîné sur plus de 17 000 EEG avec une recherche des faux positifs difficiles, peut remplacer SpikeNet dans [[Réglages]] › détecteur. Ses poids ne sont pas livrés avec EpiScope : la BDSP (bdsp.io) les distribue sous licence restreinte à des utilisateurs accrédités. Celui qui les détient les ajoute une fois par [[Ajouter les poids de SpikeNet2…]] (ou Patients › [[Réglages]] › Modèles ajoutés) en choisissant le point de contrôle des auteurs (`new_weights.ckpt`, environ 370 Mo) : EpiScope en lit le réseau, le vérifie et le range dans la bibliothèque (dossier `models`, environ 120 Mo), jamais dans un dossier patient ni un export. Chaque détection note l'empreinte des poids utilisés. Le calcul est plus long que SpikeNet (quelques minutes par heure d'EEG sur un poste récent) ; le filtre propre au patient reste réservé à SpikeNet.
 
 L'onglet [[Début de crise → source]] fait de même pour la fenêtre du début de crise (fréquence dominante, composantes).
 

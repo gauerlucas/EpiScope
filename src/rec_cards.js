@@ -46,8 +46,9 @@
       // un long tracé avec crises est rangé avec les crises et signalé dans l'intercritique
       const byDay = (L, f) => { let s = '', cur = null; for (const r of L) { const D = day(info.get(r).when); if (D.k !== cur) { cur = D.k; s += `<div class="rc-day">${esc(D.l)}</div>`; } s += f(r); } return s; };
       const ictL = sorted.filter(r => info.get(r).ict), intL = sorted.filter(r => !info.get(r).ict || info.get(r).inter);
-      const ictH = byDay(ictL, r => this.recCardHtml(r, info.get(r), ex, o, !!closed[r.id]));
-      const intH = byDay(intL, r => info.get(r).ict ? `<div class="rc-also"><a href="#" data-goto="${r.id}">${esc(r.title || '')}</a> <span class="muted small">— tracé avec crise, aussi intercritique : voir dans « Analyses critiques »</span></div>` : this.recCardHtml(r, info.get(r), ex, o, !!closed[r.id]));
+      const mixed = r => info.get(r).ict && info.get(r).inter;
+      const ictH = byDay(ictL, r => this.recCardHtml(r, info.get(r), ex, o, !!closed[r.id], mixed(r) ? 'ict' : null));
+      const intH = byDay(intL, r => mixed(r) ? this.recCardHtml(r, info.get(r), ex, o, !!closed[r.id], 'inter') : this.recCardHtml(r, info.get(r), ex, o, !!closed[r.id]));
       const list = sorted.length ? `<div class="rc-sec"><div class="rc-sec-h">Analyses critiques <span class="muted">tracés : ${ictL.length}</span></div>${ictH || '<div class="hint small">Aucun tracé avec crise.</div>'}${o.after || ''}</div>
         <div class="rc-sec"><div class="rc-sec-h">Analyses intercritiques <span class="muted">tracés : ${intL.length}</span></div>${intH || '<div class="hint small">Aucun tracé intercritique.</div>'}</div>` : '';
       const orphans = (ex.esi || []).filter(x => !recs.some(r => r.id === x.recId));
@@ -61,29 +62,33 @@
       box.insertBefore(card, box.firstChild);
       this.recCardsBind(card, ex, o);
     },
-    recCardHtml(r, I, ex, o, shut) {
+    recCardHtml(r, I, ex, o, shut, part) {
       const d = this.dossier, SZ = d.seizures || [], mkOf = id => (r.seizureId === id ? r.marks : ((r.bySz || {})[id] || {}).marks) || {}, scalp = o.kind === 'scalp';
       const meta = [I.t0 ? hm(I.t0) : '', dur(r.duration), `${r.nch} voies`].filter(Boolean).join(' · ');
       const sz = I.szIds.map(id => { const z = ST.byId(SZ, id), m = mkOf(id), vid = z && this.videoLinked && this.videoLinked(z); return z ? `<span class="rc-sz"><button class="rc-szgo" data-sz="${id}" title="Ouvrir le tracé au début de ${esc(z.label)}">${esc(z.label)}${m.onset != null ? ' · ' + absLbl(r, m.onset) : ' · <i>début ?</i>'}</button><button class="rc-szinfo" data-sz="${id}" title="Fiche et sémiologie de ${esc(z.label)}">✎</button>${vid ? `<button class="rc-szvid" data-sz="${id}" title="Vidéo de ${esc(z.label)}">▶</button>` : ''}</span>` : ''; }).join('');
       const free = !r.seizureId && r.marks && r.marks.onset != null ? `<button class="rc-szadd" title="Début de crise annoté dans le fichier, sans crise décrite : créer la fiche de la crise (date et heure du tracé), puis décrire sa sémiologie">＋ crise annotée à ${clock(r.marks.onset)}</button>` : '';
       const tags = `${I.ict ? '<span class="rc-k ict">crise' + (I.szIds.length > 1 ? 's' : '') + '</span>' : ''}${I.inter ? '<span class="rc-k">intercritique</span>' : ''}${I.vig ? `<span class="rc-k vig" title="${I.auto ? 'd’après la stadification du sommeil' : 'vigilance choisie (⋯)'}">${VIG[I.vig]}</span>` : ''}`;
-      const post = shut ? '' : this.recPostHtml(r, ex, o);
+      const post = shut ? '' : this.recPostHtml(r, ex, o, part);
       return `<div class="rc${shut ? ' closed' : ''}" data-r="${r.id}"><div class="rc-h"><button class="rc-fold" title="replier / déplier">${shut ? '▸' : '▾'}</button><div class="rc-t"><b title="${esc(r.title)}">${esc(r.title)}</b><span class="rc-m">${esc(meta)}</span></div>
           ${scalp ? `<button class="rc-elec${this._esiElecOnly && this._esiElecOnly.rec === r ? ' on' : ''}" title="Électrodes de ce tracé sur le scalp du modèle de tête (3D) : vérifier, replacer à la souris, clic droit : exclure">Électrodes</button>` : ''}<button class="rc-open" title="Ouvrir le tracé : relecture, marques, panneau d’analyse">Ouvrir</button><button class="rc-more" title="Nature, vigilance, crises, renommer, supprimer">⋯</button></div>
         <div class="rc-tags">${tags}${sz}${free}${(r.warnings || []).length ? `<span class="rc-warn" title="${esc(r.warnings.join('\n'))}">⚠</span>` : ''}</div>
         ${post ? `<div class="rc-post">${post}</div>` : ''}</div>`;
     },
-    /** post-traitements d'un tracé : pointes, sommeil, sources, jeux SEEG, captures */
-    recPostHtml(r, ex, o) {
-      const d = this.dossier, out = [], Lr = r.esp && r.esp.last;
-      if (Lr && o.kind === 'scalp') { const det = { spikenet: 'SpikeNet', janca: 'Janča', morph: 'morphologique', ext: 'externe' }[Lr.det] || Lr.det || '', mins = Lr.mins || ((Lr.end || 0) - (Lr.start || 0)) / 60;
+    /** post-traitements d'un tracé : pointes, sommeil, sources, jeux SEEG, captures ; part = 'ict' | 'inter' (v2.1.0 : un tracé
+     *  qui contient crises et intercritique montre ses analyses critiques avec les crises, ses analyses intercritiques —
+     *  pointes, sommeil, sources des pointes, taux — avec l'intercritique) */
+    recPostHtml(r, ex, o, part) {
+      const d = this.dossier, out = [], Lr = r.esp && r.esp.last, want = k => !part || part === k;
+      const szT = [].concat(r.seizureId && r.marks && r.marks.onset != null ? [r.marks.onset] : [], Object.values(r.bySz || {}).map(s => s && s.marks && s.marks.onset).filter(v => v != null));
+      if (Lr && o.kind === 'scalp' && want('inter')) { const det = { spikenet: 'SpikeNet', spikenet2: 'SpikeNet2', janca: 'Janča', morph: 'morphologique', ext: 'externe' }[Lr.det] || Lr.det || '', mins = Lr.mins || ((Lr.end || 0) - (Lr.start || 0)) / 60;
         out.push(`<div class="rc-p click" data-go="esp" title="Ouvrir le tracé sur les pointes (groupes, moyenne, source)"><span class="rc-pk">Pointes</span><span class="rc-pv">${[esc(det), `${Lr.n} pointe${Lr.n > 1 ? 's' : ''}${mins > 0 ? ` en ${Math.round(mins)} min` : ''}`, `${Lr.clusters.length} groupe${Lr.clusters.length > 1 ? 's' : ''}`, (m => m ? `◆ ${m} ajoutée${m > 1 ? 's' : ''} à la main` : '')(Lr.events.filter(e => e.m && !e.x).length)].filter(Boolean).join(' · ')}</span><span class="rc-cl">${Lr.clusters.slice(0, 8).map(c => `<i style="background:${this.esiClColor(c.k)}" title="groupe ${c.k + 1} : ${c.n} pointes (${c.rate}/min)"></i>`).join('')}</span></div>`); }
-      const S = r.sleep; if (S && S.stages && this.slpStats) { const T = this.slpStats(S);
+      const S = r.sleep; if (S && S.stages && this.slpStats && want('inter')) { const T = this.slpStats(S);
         out.push(`<div class="rc-p click" data-go="slp" title="Ouvrir le tracé sur la stadification du sommeil"><span class="rc-pk">Sommeil</span><span class="rc-hyp">${this.slpHypnoSvg(S, 260, 34, true)}</span><span class="rc-pv">sommeil ${dur(T.tst * 60)} · N3 ${Math.round(T.pct('3') * 100)} % · SP ${Math.round(T.pct('R') * 100)} %${(n => n ? ` · ${n} époque${n > 1 ? 's' : ''} corrigée${n > 1 ? 's' : ''}` : '')(this.slpEdits(S).n)}</span></div>`); }
-      if (o.kind === 'seeg') { const sets = this.recSeegSets(r); if (sets.length) out.push(`<div class="ie-sets qx-list">${sets.map(q => this.quantRowHtml(q, { label: q.name.replace(' · ' + r.title, '').replace(/ · $/, '') || q.name })).join('')}</div>`); }
-      const es = (ex.esi || []).filter(x => x.recId === r.id); if (es.length) out.push(this.esiRowsHtml(es));
-      const caps = (d.gallery || []).filter(g => g.src && g.src.recId === r.id).sort((a, b) => a.src.t - b.src.t);
+      if (o.kind === 'seeg') { const sets = this.recSeegSets(r).filter(q => !part || (part === 'ict') === !!q.seizureId); if (sets.length) out.push(`<div class="ie-sets qx-list">${sets.map(q => this.quantRowHtml(q, { label: q.name.replace(' · ' + r.title, '').replace(/ · $/, '') || q.name })).join('')}</div>`); }
+      const es = (ex.esi || []).filter(x => x.recId === r.id && (!part || (part === 'inter') === (x.kind === 'spike'))); if (es.length) out.push(this.esiRowsHtml(es));
+      const caps = (d.gallery || []).filter(g => g.src && g.src.recId === r.id && (!part || (part === 'ict') === szT.some(t => Math.abs(g.src.t - t) <= 120))).sort((a, b) => a.src.t - b.src.t);
       if (caps.length) out.push(`<div class="rc-p"><span class="rc-pk">Captures</span><span class="rc-caps">${caps.map(g => `<button class="rc-cap" data-g="${g.id}" title="${esc(g.title || '')} — ouvrir le tracé à cet instant">${clock(g.src.t)}</button>`).join('')}</span></div>`);
+      if (!out.length && part) return '';
       if (!out.length) out.push(`<div class="rc-none">${o.kind === 'scalp' ? 'Ouvrir le tracé : pointes → source, début de crise → source, sommeil.' : 'Ouvrir le tracé : EI, cEI, PEI, h², pointes et HFO…'}</div>`);
       return out.join('');
     },
@@ -112,10 +117,34 @@
       });
     },
     /** ⋯ d'un tracé : nature, vigilance, crises rattachées, renommer, supprimer */
+    /** v2.1.0 — informations d'un tracé importé : titre, nature, vigilance, notes (modifiables) ; heure de début et de fin,
+     *  durée, voies, fréquence, blocs et coupures (EDF+D), fichiers, avertissements de lecture (en entier) */
+    recInfoDialog(r, ex) {
+      const d = this.dossier, I = this.recInfo(r), c = r.clock || {}, bl = c.blocks || [], gaps = Math.max(0, bl.length - 1), fmt = iso => iso ? String(iso).slice(0, 19).replace('T', ' ') : '—';
+      const end = c.start && r.duration ? ST.clockAbs(c, r.duration) : '', nat = I.ict && I.inter ? 'both' : I.ict ? 'ict' : 'inter', warns = (r.warnings || []).concat(this._iev && this._iev.rec === r && this._iev.mem ? this._iev.mem.warnings || [] : []).filter((w, i, a) => a.indexOf(w) === i);
+      document.querySelectorAll('#recInfoDlg').forEach(x => x.remove());
+      const box = document.createElement('div'); box.className = 'modal'; box.id = 'recInfoDlg';
+      box.innerHTML = `<div class="modal-card"><div class="modal-head"><span>Informations du tracé</span><button class="close">✕</button></div>
+        <div class="form"><label>Titre <input class="ri-t" value="${esc(r.title || '')}"></label></div>
+        <div class="form row2"><label>Nature <select class="ri-k">${[['ict', 'crise(s)'], ['inter', 'intercritique'], ['both', 'crises et intercritique']].map(([k, l]) => `<option value="${k}"${k === nat ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
+          <label>Vigilance <select class="ri-v">${[['', I.auto ? 'd’après la stadification' : 'non précisée'], ['wake', 'veille'], ['nrem', 'sommeil lent'], ['rem', 'sommeil paradoxal'], ['mixed', 'veille et sommeil']].map(([k, l]) => `<option value="${k}"${(r.vigil || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select></label></div>
+        <div class="form"><label>Notes <textarea class="ri-n grow" rows="2" placeholder="conditions d’enregistrement, sevrage, qualité…">${esc(r.notes || '')}</textarea></label></div>
+        <table class="ov-t small"><tr><td>Début</td><td>${esc(fmt(c.start))}</td></tr><tr><td>Fin</td><td>${esc(fmt(end))}</td></tr><tr><td>Durée</td><td>${esc(dur(r.duration))}${gaps ? ` <span class="muted">(blocs : ${bl.length}, coupures ou recouvrements : ${gaps})</span>` : ''}</td></tr>
+          <tr><td>Voies</td><td>${r.nch || (r.channels || []).length}${r.fs ? ` · ${r.fs} Hz` : ''}${r.line ? ` · secteur ${r.line} Hz` : ''}</td></tr>
+          <tr><td>Fichiers</td><td>${Object.values(r.files || {}).map(p => esc(String(p).split('/').pop())).join('<br>') || '—'}</td></tr>
+          ${warns.length ? `<tr><td>Avertissements</td><td>${warns.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join('')}</td></tr>` : ''}</table>
+        <div class="btnrow"><span class="spacer"></span><button class="close">Annuler</button><button class="primary ri-ok">Enregistrer</button></div></div>`;
+      document.body.appendChild(box); box.hidden = false; box.querySelectorAll('.close').forEach(b => b.onclick = () => box.remove());
+      box.querySelector('.ri-ok').onclick = () => {
+        const k = box.querySelector('.ri-k').value; r.title = box.querySelector('.ri-t').value.trim() || r.title; r.kind = k === 'inter' ? 'inter' : 'ictal'; r.inter = k === 'ict' ? false : k === 'both' ? true : null;
+        r.vigil = box.querySelector('.ri-v').value; r.notes = box.querySelector('.ri-n').value; box.remove();
+        this.touch('exploration', ex.id, 'tracé : ' + r.title); if (this.ui.screen === 'work' && this.renderQuant) this.renderQuant(); if (this._iev && this._iev.rec === r) { const t = this._iev.el.querySelector('.ie-title'); if (t) t.textContent = r.title; }
+      };
+    },
     recMenu(r, ex, b) {
       const d = this.dossier, I = this.recInfo(r), touch = what => { this.touch('exploration', ex.id, what || 'tracé'); this.renderQuant(); }, szs = ST.seizuresOfExploration(d, ex.id), inRec = new Set(I.szIds);
       const nat = I.ict && I.inter ? 'both' : I.ict ? 'ict' : 'inter';
-      this.popupMenu([{ head: r.title },
+      this.popupMenu([{ head: r.title }, { label: 'Informations du tracé…', run: () => setTimeout(() => this.recInfoDialog(r, ex), 0) }, { sep: true },
         { group: 'Nature', options: [['ict', 'crise(s)'], ['inter', 'intercritique'], ['both', 'crises et intercritique']].map(([k, l]) => ({ label: l, on: nat === k, run: () => { r.kind = k === 'inter' ? 'inter' : 'ictal'; r.inter = k === 'ict' ? false : k === 'both' ? true : null; touch(); } })) },
         { group: 'Vigilance', options: [['', I.auto ? `d’après la stadification (${VIG[I.vig]})` : 'non précisée'], ['wake', 'veille'], ['nrem', 'sommeil lent'], ['rem', 'sommeil paradoxal'], ['mixed', 'veille et sommeil']].map(([k, l]) => ({ label: l, on: (r.vigil || '') === k, run: () => { r.vigil = k; touch(); } })) },
         szs.length ? { sep: true } : null, szs.length ? { head: 'Crises de ce tracé' } : null,

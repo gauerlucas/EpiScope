@@ -63,7 +63,7 @@ L'**identité** (nom, prénom, date de naissance, IPP) se saisit dans la zone *I
 La première vue du dossier tient sur un écran :
 
 - en haut, la **chronologie** du parcours : explorations, crises, bilans, staffs, interventions et devenir sur une même frise, avec l'âge du patient ; la molette ou le glisser zoome et déplace ;
-- la carte **Patient** : zone *Identité* (nom et prénom, date de naissance, IPP, sur trois lignes), sexe, dominance du langage, âge des premières crises, IRM, **fréquence actuelle des crises** (bouton [[MàJ aujourd'hui]]), traitement ;
+- la carte **Patient** : zone *Identité* (nom et prénom, date de naissance, IPP, sur trois lignes), sexe, dominance du langage, âge des premières crises, IRM, **fréquence actuelle des crises** (bouton [[MàJ aujourd'hui]]), traitement, et le **statut du parcours** (en attente, opéré, récusé avec son motif, perdu de vue) : saisi explicitement pour les requêtes de recherche, avec la suggestion tirée du dossier (procédure réalisée, décision « pas de chirurgie ») à appliquer d'un clic ;
 - la carte **Parcours** : chaque étape résumée en deux lignes, avec [[ouvrir →]] ;
 - les cartes **Imagerie**, **Bilans** et **Implantations**.
 
@@ -75,7 +75,7 @@ Trois onglets, à remplir dans l'ordre qui vous convient :
 
 - **Antécédents et contexte** : antécédents en *non / oui / ?* avec une précision (le bouton [[non partout]] répond « non » aux lignes restées vides), antécédents médico-chirurgicaux notables, mode de vie, comorbidités, et l'**arbre généalogique** (voir ci-dessous).
 - **Histoire de la maladie** : âge et mode de début, étiologie (confirmée ou suspectée), IRM, types de crises, manifestations subjectives et objectives, facteurs déclenchants, fréquence des crises au fil du temps, traitements actuels et passés avec leur effet.
-- **Développement et examen** : grossesse et naissance (avec les courbes de poids, taille et périmètre crânien), acquisitions psychomotrices, examen neurologique daté, latéralité (questionnaire d'Édimbourg, test de pointage, œil directeur) et dominance du langage.
+- **Développement et examen** : grossesse et naissance (avec les courbes de poids, taille et périmètre crânien), acquisitions psychomotrices, examen neurologique daté, latéralité (questionnaire d'Édimbourg, test de pointage, œil directeur) et dominance du langage. La carte **Développement actuel** commence par les **comorbidités développementales** à cocher (déficience intellectuelle et sa sévérité, trouble du spectre de l'autisme, spasmes infantiles, retard de langage, troubles graves du comportement) : un clic passe de *non renseigné* à *oui* puis *non* — pour une requête, « non renseigné » n'est pas « non » ; le texte libre reste en dessous.
 
 ### Les crises rapportées
 

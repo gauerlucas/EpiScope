@@ -112,8 +112,10 @@
       const c = $('vpCard');
       c.innerHTML = `<div class="form grid2"><label>Type <select data-f="type">${opts(V.procedure, p.type)}</select></label><label>Date <input type="date" data-f="date" value="${esc(p.date)}"></label>
         <label>Côté <select data-f="side">${opts({ '': '—', L: 'gauche', R: 'droit' }, p.side)}</select></label><label>Description <input data-f="target" value="${esc(p.target)}" placeholder="ex. corticectomie operculaire"></label>
-        <div class="span2 rp"></div><label>Histologie <input data-f="histology" value="${esc(p.histology)}" placeholder="ex. FCD IIb"></label><label>Complications <input data-f="complications" value="${esc(p.complications)}"></label>
+        <div class="span2 rp"></div><div class="span2 hb"></div><label class="span2">Complications <input data-f="complications" value="${esc(p.complications)}"></label>
         <label class="span2">Notes <textarea data-f="notes" rows="2">${esc(p.notes || '')}</textarea></label></div>`;
+      if (this.histologyField) c.querySelector('.hb').replaceWith(this.histologyField(p, () => this.touch('procedure', p.id, 'histologie')));   // v2.1.0 : vocabulaire fermé + texte libre
+      if (this.resectionCard && !['rftc', 'neuromod'].includes(p.type)) c.after(this.resectionCard(p));   // v2.1.0 : contacts dans la résection, cavité
       const hy = S.latestHypotheses(d).filter(H => ['confirmed', 'testing', 'proposed'].includes(H.status));
       const changed = () => { this.touch('procedure', p.id, V.procedure[p.type]); clearTimeout(this._vpSl); this._vpSl = setTimeout(() => { if (this.slices && this._ipHost && this._ipHost.closest('#vpSlices')) { this._slvSurg = { regions: p.regions, extent: p.extent, hyps: hy }; this.updateImagingLayers(); } }, 300); };   // régions peintes sur les coupes mises à jour
       if (this.surgeryEditor && ['resection', 'lobectomy', 'litt', 'disconnection', 'other'].includes(p.type)) c.querySelector('.rp').appendChild(this.surgeryEditor(p, hy, changed, 'procedure'));
