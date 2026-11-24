@@ -153,18 +153,38 @@
   /** copie anonymisée d'un dossier pour un partage extérieur : identité vidée, pseudonyme = code, toute occurrence du nom,
    *  du prénom, de l'IPP, de la date de naissance ou de l'ancien pseudonyme remplacée par le code dans tous les textes
    *  (journal compris). Les fichiers (en-têtes EDF, vidéos) sont traités par l'export (library.exportBundle). */
-  function anonymize(d0) {
+  function anonymize(d0) { return anonymizer(d0).d; }
+  /** v2.1.1 : anonymisation d'un dossier ET de ses chemins de fichiers. paths = fichiers du dossier (archive) ; renvoie
+   *  { d, pathMap } : un chemin qui contient le nom, le prénom, l'IPP, la date de naissance ou l'ancien pseudonyme (dérivés
+   *  d'avant le code neutre « sub-<pseudonyme>_… », pièces jointes au nom d'origine) est renommé — le secret remplacé par le
+   *  code, mot entier seulement pour ne pas toucher aux chemins fixes (derivatives/anat…) — et toute référence du dossier à
+   *  ce chemin suit le même renommage. Les autres textes sont anonymisés comme avant. */
+  function anonymizer(d0, paths) {
     const d = JSON.parse(JSON.stringify(d0)), code = subjectLabel(d) || 'Patient', I = d.identity || {}, P = d.patient || {};
     const bd = String(I.birthDate || ''), m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(bd);
     const secrets = [I.lastName, I.firstName, I.ipp, bd, m && `${m[3]}/${m[2]}/${m[1]}`, m && `${m[3]}.${m[2]}.${m[1]}`, P.pseudo !== code ? P.pseudo : '']
       .concat(String(P.pseudo || '').split(/\s+/).filter(w => P.pseudo !== code && w.length > 2))
       .map(s => String(s || '').trim()).filter(s => s.length > 1).sort((a, b) => b.length - a.length);
-    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), re = secrets.length ? new RegExp(secrets.map(esc).join('|'), 'gi') : null;
-    const walk = o => { if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) { if (typeof o[i] === 'string') o[i] = o[i].replace(re, code); else if (o[i] && typeof o[i] === 'object') walk(o[i]); } return; }
-      for (const k of Object.keys(o)) { const v = o[k]; if (typeof v === 'string') o[k] = v.replace(re, code); else if (v && typeof v === 'object') walk(v); } };
-    if (re) walk(d);
+    // texte libre : un secret court (≤ 3 lettres, prénom bref) en mot entier seulement, pour ne pas couper « anatomie » ou « analyse »
+    const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), re = secrets.length ? new RegExp(secrets.map(s => s.length > 3 ? esc(s) : '(?<![\\p{L}])' + esc(s) + '(?![\\p{L}])').join('|'), 'giu') : null;
+    // chemins : secrets et leurs formes collées (« sub-NomPrenom », accents retirés), en mot entier (lettres autour exclues)
+    const flat = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]/g, '');
+    const glued = [P.pseudo !== code ? P.pseudo : '', [I.lastName, I.firstName].join(' '), [I.firstName, I.lastName].join(' ')].map(flat).filter(s => s.length > 2);
+    const pSecrets = [...new Set(secrets.concat(glued, secrets.map(flat)).filter(s => s && s.length > 2))].sort((a, b) => b.length - a.length);
+    const pRe = pSecrets.length ? new RegExp('(?<![\\p{L}])(' + pSecrets.map(esc).join('|') + ')(?![\\p{L}])', 'giu') : null;
+    // un secret d'au moins 4 caractères resté collé dans le nom du fichier (dernier segment) est remplacé aussi
+    const long = secrets.filter(s => s.length > 3), lRe = long.length ? new RegExp(long.map(esc).join('|'), 'gi') : null;
+    const anonPath = p => { let q = pRe ? p.replace(pRe, code) : p; const i = q.lastIndexOf('/') + 1; if (lRe) q = q.slice(0, i) + q.slice(i).replace(lRe, code); return q; };
+    const pathMap = new Map(); for (const p of paths || []) { const q = anonPath(p); if (q !== p) pathMap.set(p, q); }
+    // chemin = fichier de l'archive, ou chaîne d'allure « dossier/…/fichier.ext » (fichier absent d'un export allégé) : jamais
+    // le remplacement en sous-chaîne du texte libre, qui coupait « derivatives/anat/… » quand un prénom court s'y trouvait
+    const known = new Set(paths || []), looksPath = v => v.length < 400 && !/[\n\r]/.test(v) && /^[^/\s][^\n]*\/[^/\n]*\.[A-Za-z0-9]{1,8}$/.test(v);
+    const walkP = o => { const fix = v => known.has(v) ? (pathMap.get(v) || v) : looksPath(v) ? anonPath(v) : (re ? v.replace(re, code) : v);
+      if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) { if (typeof o[i] === 'string') o[i] = fix(o[i]); else if (o[i] && typeof o[i] === 'object') walkP(o[i]); } return; }
+      for (const k of Object.keys(o)) { const v = o[k]; if (typeof v === 'string') o[k] = fix(v); else if (v && typeof v === 'object') walkP(v); } };
+    if (re || pRe) walkP(d);
     d.identity = newIdentity(); d.patient.pseudo = code; d.anonymized = { at: now(), by: 'EpiScope' };
-    return d;
+    return { d, pathMap };
   }
   /** date de naissance de l'identité → mois et année du patient (âge, frise) ; vrai si quelque chose a changé */
   function syncBirth(d) {
@@ -252,6 +272,18 @@
   function recDropSeizure(rec, szId) {
     bindRec(rec); delete rec.sz[szId];
     if (rec.seizureId === szId) rec.seizureId = Object.keys(rec.sz)[0] || null;
+  }
+  /** v2.1.1 : jeu EI enregistré sans sa crise (ieegSaveQuant avant 2.1.1) → crise du rangement du tracé qui le porte
+   *  (rec.sz[<crise>].ei.quantId) ; idempotent, ne touche pas un jeu déjà rattaché ni un jeu hors crise (rec.free) */
+  function eiSetSeizures(d) {
+    let n = 0;
+    for (const ex of d.explorations || []) for (const q of ex.quant || []) {
+      if (q.seizureId || !q.ieeg || (q.method && q.method !== 'ei')) continue;
+      const rec = (ex.recordings || []).find(r => r.id === q.ieeg); if (!rec || !rec.sz) continue;
+      const k = Object.keys(rec.sz).find(id => { const sl = rec.sz[id]; return sl && sl.ei && sl.ei.quantId === q.id; });
+      if (k && byId(d.seizures, k)) { q.seizureId = k; n++; }
+    }
+    return n;
   }
   /** dossier : heures absolues des marques et début absolu des crises (sz.onsetAbs, d'après le tracé qui la marque) */
   function stampAll(d) {
@@ -384,6 +416,7 @@
     d.staffNotes = Array.isArray(d.staffNotes) ? d.staffNotes : [];
     d.syncLinks = Array.isArray(d.syncLinks) ? d.syncLinks : [];
     normalizeResearch(d);
+    eiSetSeizures(d);
     // notes de page saisies avec la première version de l'édition du staff → commentaires accrochés à la page
     for (const m of d.meetings || []) { const it = m.deck && m.deck.items; if (!it) continue; for (const [k, v] of Object.entries(it)) if (v && v.note) { d.staffNotes.push({ id: uid('N'), target: 'page:' + k, meetingId: m.id, text: v.note, at: m.updated || now(), by: '' }); delete v.note; } }
     // v1.1.0 : jeux d'Analyses enregistrés avant la provenance → résultat « antérieur » (valeurs gardées, origine inconnue)
@@ -1020,6 +1053,6 @@
   }
   const mniMethod = d => { const M = d && d.anatomy && d.anatomy.mni; return d && d.anatomy && d.anatomy.toTemplate ? (M && M.method && M.method !== 'affine' ? M.method : 'affine') : null; };
 
-  SV.Store = { newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
+  SV.Store = { anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
     projectLocked, ensureProject, projectsOf, switchProject, addProject, renameProject, removeProject, projectElectrodes, revertToPlan, THERMO_ORDER, THERMO_COL, thermoStatusOf, importImplantation, compareImplantations, explorationsSorted, secretsOf, scrub, bindRec, bindRecs, recSetSeizure, recDropSeizure, REC_F, reportedSeizures, reportedAll, explorationOverview, annotatedSeizures, recordingOverlaps, copySemiology, EEG_MAP_KEYS, seizureDays, moveSeizure, migrate3, REPORTED, reportedEx, seizuresOfExploration, allSeizures, contextOf, lesionRegions, refImaging, deriveIlae, ilaeText, stage, summary, log, resolveCtx, toWorkspace, fromWorkspace, migrateCase, bundlePolicy, user: '' };
 });

@@ -2,6 +2,13 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [2.1.1] — 2026-11-24
+
+Corrections : l'archive anonymisée (.episcope) garde l'anatomie du patient et les électrodes lisibles après l'import, et l'EI enregistré depuis la visionneuse est rangé avec les analyses critiques de sa crise.
+
+- **Export anonymisé (.episcope)** : l'anatomie du patient (maillage, parcellisation VEP, segmentation) n'était plus lisible après l'import d'une archive anonymisée (« Fichiers dérivés absents ou illisibles »), et les électrodes ne pouvaient plus être placées sur le cerveau. L'anonymisation remplaçait le nom en sous-chaîne dans toutes les chaînes du dossier, y compris les chemins de fichiers : un prénom court contenu dans « derivatives/anat/… » coupait le chemin, alors que les fichiers de l'archive gardaient leur nom. Les chemins sont désormais anonymisés avec les fichiers eux-mêmes (`S.anonymizer`) : un fichier dont le nom contient le nom, le prénom, l'IPP ou l'ancien pseudonyme (dérivés nommés « sub-<pseudonyme>_… » avant le code neutre, pièces jointes) est renommé dans l'archive et chaque référence du dossier suit ; les chemins fixes ne sont plus touchés. Aucun nom ne reste dans les noms de fichiers de l'archive. Dans les textes libres, un secret de trois lettres ou moins n'est remplacé qu'en mot entier. Une archive anonymisée produite avec une version antérieure doit être exportée de nouveau.
+- **EI rangé avec les analyses critiques** : le jeu EI enregistré depuis la visionneuse ne portait pas sa crise et apparaissait dans « Analyses intercritiques » d'un tracé mixte. Il porte maintenant la crise active (et son libellé quand le tracé en contient plusieurs), comme cEI et PEI ; les jeux déjà enregistrés retrouvent leur crise à l'ouverture du dossier (`S.eiSetSeizures`, dans `normalize`), et un jeu d'une méthode du début de crise (EI, cEI, PEI, empreintes, EM) n'est jamais rangé en intercritique.
+
 ## [2.1.0] — 2026-11-23
 
 Lecture des pointes de scalp améliorée, SpikeNet2 au choix (poids ajoutés par l'utilisateur), et données de recherche rangées dans le dossier : histologie fermée, contacts réséqués, région de chaque plot figée, comorbidités développementales, statut du parcours, coordonnées MNI non linéaires. Les dossiers de la 2.0.0 s'ouvrent sans conversion ; un dossier enregistré par la 2.1.0 reste lisible par la 2.0.0.

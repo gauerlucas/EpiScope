@@ -84,7 +84,7 @@
         out.push(`<div class="rc-p click" data-go="esp" title="Ouvrir le tracé sur les pointes (groupes, moyenne, source)"><span class="rc-pk">Pointes</span><span class="rc-pv">${[esc(det), `${Lr.n} pointe${Lr.n > 1 ? 's' : ''}${mins > 0 ? ` en ${Math.round(mins)} min` : ''}`, `${Lr.clusters.length} groupe${Lr.clusters.length > 1 ? 's' : ''}`, (m => m ? `◆ ${m} ajoutée${m > 1 ? 's' : ''} à la main` : '')(Lr.events.filter(e => e.m && !e.x).length)].filter(Boolean).join(' · ')}</span><span class="rc-cl">${Lr.clusters.slice(0, 8).map(c => `<i style="background:${this.esiClColor(c.k)}" title="groupe ${c.k + 1} : ${c.n} pointes (${c.rate}/min)"></i>`).join('')}</span></div>`); }
       const S = r.sleep; if (S && S.stages && this.slpStats && want('inter')) { const T = this.slpStats(S);
         out.push(`<div class="rc-p click" data-go="slp" title="Ouvrir le tracé sur la stadification du sommeil"><span class="rc-pk">Sommeil</span><span class="rc-hyp">${this.slpHypnoSvg(S, 260, 34, true)}</span><span class="rc-pv">sommeil ${dur(T.tst * 60)} · N3 ${Math.round(T.pct('3') * 100)} % · SP ${Math.round(T.pct('R') * 100)} %${(n => n ? ` · ${n} époque${n > 1 ? 's' : ''} corrigée${n > 1 ? 's' : ''}` : '')(this.slpEdits(S).n)}</span></div>`); }
-      if (o.kind === 'seeg') { const sets = this.recSeegSets(r).filter(q => !part || (part === 'ict') === !!q.seizureId); if (sets.length) out.push(`<div class="ie-sets qx-list">${sets.map(q => this.quantRowHtml(q, { label: q.name.replace(' · ' + r.title, '').replace(/ · $/, '') || q.name })).join('')}</div>`); }
+      if (o.kind === 'seeg') { const sets = this.recSeegSets(r).filter(q => !part || (part === 'ict') === this.quantIsIctal(q)); if (sets.length) out.push(`<div class="ie-sets qx-list">${sets.map(q => this.quantRowHtml(q, { label: q.name.replace(' · ' + r.title, '').replace(/ · $/, '') || q.name })).join('')}</div>`); }
       const es = (ex.esi || []).filter(x => x.recId === r.id && (!part || (part === 'inter') === (x.kind === 'spike'))); if (es.length) out.push(this.esiRowsHtml(es));
       const caps = (d.gallery || []).filter(g => g.src && g.src.recId === r.id && (!part || (part === 'ict') === szT.some(t => Math.abs(g.src.t - t) <= 120))).sort((a, b) => a.src.t - b.src.t);
       if (caps.length) out.push(`<div class="rc-p"><span class="rc-pk">Captures</span><span class="rc-caps">${caps.map(g => `<button class="rc-cap" data-g="${g.id}" title="${esc(g.title || '')} — ouvrir le tracé à cet instant">${clock(g.src.t)}</button>`).join('')}</span></div>`);
@@ -92,6 +92,8 @@
       if (!out.length) out.push(`<div class="rc-none">${o.kind === 'scalp' ? 'Ouvrir le tracé : pointes → source, début de crise → source, sommeil.' : 'Ouvrir le tracé : EI, cEI, PEI, h², pointes et HFO…'}</div>`);
       return out.join('');
     },
+    /** v2.1.1 : analyse critique — jeu lié à une crise, ou méthode du début de crise (EI, cEI, PEI, empreintes, EM ; jeux enregistrés avant que l'EI ne porte sa crise) */
+    quantIsIctal(q) { return !!q.seizureId || ['ei', 'cei', 'pei', 'fp', 'fpc', 'em'].includes(q.method || (/^EI\b/.test(q.source || '') ? 'ei' : '')); },
     recSeegSets(r) { return ((this.state && this.state.quant) || []).filter(q => q.ieeg === r.id && !q.eimax && !q.smax).sort((a, b) => this.quantMethodRank(a) - this.quantMethodRank(b)); },
     recCardsBind(card, ex, o) {
       const recs = ex.recordings, F = this.ui.recF[ex.id], closed = this.ui.recClosed, re = () => this.renderQuant(), touch = what => this.touch('exploration', ex.id, what || 'tracé');

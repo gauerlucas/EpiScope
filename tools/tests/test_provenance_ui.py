@@ -41,6 +41,12 @@ with sync_playwright() as p:
     pg.evaluate("() => document.querySelector('.qx-prov [data-a=prov]').click()"); pg.wait_for_timeout(500)
     check(pg.evaluate("document.querySelectorAll('.prov-body tbody tr').length") == 2, 'fenêtre de provenance : deux calculs')
     pg.screenshot(path=os.path.join(OUT, 'provenance.png'))
+    # v2.1.1 : EI d'un tracé dont la crise est active → jeu rattaché à la crise, rangé avec les analyses critiques de la carte
+    sz = pg.evaluate("""async () => { const A = SV.app, S = SV.Store, ex = A.ieegEx(), rec = ex.recordings[0], z = S.addSeizure(A.dossier, ex.id, { label: 'Crise 1' });
+      S.recSetSeizure(rec, z.id); await A.ieegOpen(rec, 'ei'); await A.ieegComputeER(true); await new Promise(r => setTimeout(r, 6000)); A.ieegSaveQuant();
+      const q = A.state.quant.find(x => x.id === rec.ei.quantId), card = A.recPostHtml ? A.recPostHtml(rec, ex, { kind: 'seeg' }, 'ict') : '';
+      return { q: q && q.seizureId, z: z.id, inter: A.recPostHtml ? A.recPostHtml(rec, ex, { kind: 'seeg' }, 'inter').includes(q.id) : false, ict: card.includes(q.id) }; }""")
+    check(sz['q'] == sz['z'] and sz['ict'] and not sz['inter'], f'EI rattaché à la crise active, dans les analyses critiques de la carte : {sz}')
     errs = [e for e in errs if 'favicon' not in e]
     check(not errs, 'aucune erreur dans la console' + ('' if not errs else ' : ' + ' | '.join(errs[:5])))
     b.close()

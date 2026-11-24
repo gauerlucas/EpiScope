@@ -76,6 +76,19 @@ with sync_playwright() as p:
     check('TST0001;TST0001;Synthetique;Jeanne' in txt and '000111' in txt, 'code relié à l’identité')
     pg.wait_for_timeout(800)
     check(pg.evaluate("async () => (await SV.Library.load((await SV.Library.list()).find(x => x.subject === 'TST0001').id)).journal.some(j => /table de correspondance/.test(j.text || ''))"), 'export noté au journal du dossier')
+    # v2.1.1 : archive anonymisée — fichiers renommés avec le dossier, anatomie relue après l'import (identité fictive)
+    ab = pg.evaluate("""async () => { const S = SV.Store, L = SV.Library, d = S.newDossier({ pseudo: 'ZORGLUB Ana' }); d.subject = await L.nextSubject();
+      Object.assign(d.identity, { lastName: 'Zorglub', firstName: 'Ana', ipp: '424242' }); const c = d.subject.label;
+      const files = { surf: `derivatives/anat/sub-${c}/sub-${c}_pial.mesh`, vep: `derivatives/anat/sub-${c}/sub-${c}_desc-vep_dseg.nii.gz`, seg: 'derivatives/anat/sub-ZorglubAna/sub-ZorglubAna_desc-aseg_dseg.nii.gz' };
+      d.anatomy = { status: 'done', files }; await L.save(d);
+      for (const [k, f] of Object.entries(files)) await L.writeFile(d, f, new Blob([k]));
+      const blob = await L.exportBundle(d, { anon: true }), B = await L.readBundle(blob), names = [...B.files.keys()];
+      const imp = await L.importBundle(B, 'copy'), got = await Promise.all(Object.values(imp.anatomy.files).map(async f => { const x = await L.readBytes(imp, f); return x ? new TextDecoder().decode(x) : null; }));
+      return { names, refs: Object.values(B.dossier.anatomy.files), got, json: JSON.stringify(B.dossier) }; }""")
+    check(ab['got'] == ['surf', 'vep', 'seg'], f'archive anonymisée : anatomie relue après l’import {ab["got"]}')
+    check(all(r in ab['names'] for r in ab['refs']), 'références du dossier = fichiers de l’archive')
+    check(not any('zorglub' in n.lower() or '424242' in n for n in ab['names']), f'aucun nom dans les fichiers de l’archive : {ab["names"]}')
+    check(all(r.startswith('derivatives/anat/sub-TST') for r in ab['refs']) and 'Zorglub' not in ab['json'] and '424242' not in ab['json'], 'chemins fixes intacts, identité absente du dossier exporté')
     check(not errs, f'aucune erreur dans la console : {errs[:3]}')
     b.close()
 

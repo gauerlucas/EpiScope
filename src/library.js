@@ -338,14 +338,17 @@
     async exportBundle(d, opts) {
       // v1.1.0 : anon → copie anonymisée (S.anonymize), en-têtes EDF/BDF anonymisés, vidéos laissées de côté (visages),
       // historique et corbeille exclus comme toujours (bundlePolicy) ; skipped = fichiers non inclus
-      const light = !!(opts && opts.light), anon = !!(opts && opts.anon), files = [], skipped = [], src = d; if (anon) d = S.anonymize(d);
+      // v2.1.1 : chemins anonymisés avec le dossier (S.anonymizer) — fichiers renommés et références suivies, sinon un dérivé
+      // nommé d'après l'ancien pseudonyme était introuvable après l'import (anatomie « absente ») et son nom restait dans l'archive
+      const light = !!(opts && opts.light), anon = !!(opts && opts.anon), files = [], skipped = [], src = d, all = await this.listFiles(src);
+      let pathMap = new Map(); if (anon) { const A = S.anonymizer(d, all.filter(p => S.bundlePolicy(p, light))); d = A.d; pathMap = A.pathMap; }
       const meta = { format: 'episcope-bundle', schema: S.SCHEMA, created: S.now(), light, anon, by: anon ? '' : (this.user || ''), app: (window.EPISCOPE_BRAND && window.EPISCOPE_BRAND.name) || 'EpiScope', patient: anon ? S.subjectLabel(d) : S.displayName(d) };
       const vids = new Set(anon ? (d.gallery || []).filter(g => /^video\//.test(g.mime || '')).flatMap(g => [g.file]) : []);
-      for (const p of await this.listFiles(src)) {
-        if (!S.bundlePolicy(p, light)) continue; if (vids.has(p)) { skipped.push(p); continue; }
+      for (const p of all) {
+        if (!S.bundlePolicy(p, light)) continue; if (vids.has(pathMap.get(p) || p)) { skipped.push(p); continue; }
         let b = await this.readFile(src, p); if (!b) continue;
         if (anon && /\.(edf|bdf)$/i.test(p)) b = SV.BIDS.edfAnon(new Uint8Array(await b.arrayBuffer()));
-        files.push({ name: p, data: b });
+        files.push({ name: pathMap.get(p) || p, data: b });
       }
       if (anon && vids.size) d.gallery = d.gallery.map(g => vids.has(g.file) ? Object.assign({}, g, { file: '', missing: 'vidéo non incluse (export anonymisé)' }) : g);
       meta.skipped = skipped.length;

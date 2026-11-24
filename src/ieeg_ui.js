@@ -949,7 +949,10 @@
       if (!Object.keys(values).length) { this.toast('Aucune voie ne correspond aux électrodes du schéma : compléter la correspondance (en bas du panneau)', 6000); const m = V.side.querySelector('.ie-map'); if (m) { m.open = true; m.scrollIntoView({ block: 'nearest' }); } return; }
       this.ensureSeeg(); const st = this.state; let q = rec.ei.quantId && st.quant.find(x => x.id === rec.ei.quantId), isNew = !q;
       if (!q) { q = { id: uid('q'), name: 'EI · ' + rec.title, unit: '', cmap: 'inferno', mode: 'both', min: 0, max: 1 }; st.quant.push(q); rec.ei.quantId = q.id; }
-      Object.assign(q, { source: `EI Bartolomei 2008 · ${SV.IEEG.montageLabel(R.montage)} · ν ${nf(P.nu)} · λ ${nf(P.lambda, 1)}${P.tau !== IE.DEF.tau || P.H !== IE.DEF.H ? ` · τ ${nf(P.tau, 1)} s · H ${nf(P.H, 1)} s` : ''}`, values, unmatched, ieeg: rec.id, method: 'ei' });
+      // v2.1.1 : le jeu porte sa crise, comme cEI / PEI (ieegSaveSet) — sans elle il était rangé dans les analyses intercritiques
+      const sz = rec.seizureId && this.dossier && ST.byId(this.dossier.seizures, rec.seizureId);
+      if (sz && this.ieegRecSeizures && this.ieegRecSeizures(rec).length > 1 && !q.name.includes('· ' + sz.label)) q.name = q.name.replace(' · ' + rec.title, '') + ' · ' + sz.label + ' · ' + rec.title;
+      Object.assign(q, { source: `EI Bartolomei 2008 · ${SV.IEEG.montageLabel(R.montage)} · ν ${nf(P.nu)} · λ ${nf(P.lambda, 1)}${P.tau !== IE.DEF.tau || P.H !== IE.DEF.H ? ` · τ ${nf(P.tau, 1)} s · H ${nf(P.H, 1)} s` : ''}`, values, unmatched, ieeg: rec.id, method: 'ei', seizureId: rec.seizureId || null });
       if (this.provRecord) this.provRecord(q, { slot: 'ei', rec, params: JSON.parse(JSON.stringify(P)), map, summary: { N0: R.N0, montage: R.montage } });   // v1.1.0 : provenance
       if (this.viewer) this.viewer.setCellConfig(this.viewer.active, this.quantViewCfg(q), true); this.ensureSeeg().quantOpenId = q.id;
       this.seegChanged(); if (this.refreshMarkers) this.refreshMarkers(); this.touch('exploration', (this.ieegEx() || {}).id, 'EI'); V.dirty = false;
