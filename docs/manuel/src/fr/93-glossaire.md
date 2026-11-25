@@ -23,7 +23,7 @@ lead: Les termes et abréviations employés dans EpiScope et dans ce manuel, ave
 | Empreinte | Fingerprint | Signature temps-fréquence de la zone épileptogène (Grinenko 2018). |
 | Évidence directe | Direct evidence | Part de la plausibilité d'une région due au signe lui-même (et non au relais ou à la propagation). |
 | Frise | Timeline | Représentation des signes d'une crise en barres sur l'axe du temps. |
-| Gabarit | Template | Cerveau moyen (fsaverage, MNI) utilisé quand l'anatomie du patient n'est pas calculée. |
+| Gabarit | Template | Cerveau moyen MNI ICBM 152 2009b asymétrique (coordonnées MNI) utilisé quand l'anatomie du patient n'est pas calculée, et espace commun des coordonnées ; chez l'enfant, gabarit NIHPD de l'âge le plus proche pour la transformation. |
 | Heure réelle | Wall-clock time | Heure du poste d'acquisition au moment de l'enregistrement, qui tient compte des coupures d'un EDF discontinu ; les marques et le début des crises y sont enregistrés. |
 | HFO | HFO | Oscillations à haute fréquence : ripples (80–250 Hz), fast ripples (250–500 Hz). |
 | Hypothèse (H1–H4) | Hypothesis | Trajectoire de réseau : origine, relais, zones symptomatogènes. |

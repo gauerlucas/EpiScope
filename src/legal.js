@@ -30,7 +30,7 @@
         <li>three.js, webm-muxer, brainchop models, Semio2Brain: MIT; NiiVue conformation: BSD-2; Desikan parcellation (ENIGMA Toolbox) and YASA sleep-staging model: BSD-3; Bodoni Moda and Aleo fonts: SIL Open Font License 1.1;</li>
         <li>SpikeNet network weights (Jing et al., 2020): CC BY-NC 4.0, non-commercial use only, citation required. The EpiScope.html file, which embeds them, therefore cannot be used for commercial purposes;</li>
         <li>SpikeNet2 network weights (Li et al., 2025) are not embedded: they are distributed by the BDSP (bdsp.io) under a restricted licence to credentialed users. A user who adds them to their library is responsible for complying with that licence;</li>
-        <li>templates and surfaces (MNI ICBM152 2009, FreeSurfer fsaverage, via nilearn), reference data (WHO growth curves, INTERGROWTH-21st, CDC milestones), electrode catalogues: terms of their publishers;</li>
+        <li>MNI ICBM 152 NLin 2009b, 2009c and NIHPD templates (Copyright (C) 1993–2004 Louis Collins, McConnell Brain Imaging Centre, Montreal Neurological Institute, McGill University; use, copy, modification and distribution permitted with this notice), FreeSurfer fsaverage labels used to build the template parcellation, reference data (WHO growth curves, INTERGROWTH-21st, CDC milestones), electrode catalogues: terms of their publishers;</li>
         <li>ffmpeg.wasm (GPL) is not embedded: it is downloaded only when you ask for a video to be converted.</li>
       </ul>
       <h3>Personal data</h3>
@@ -54,7 +54,7 @@
         <li>three.js, webm-muxer, modèles de brainchop, Semio2Brain : MIT ; conformation de NiiVue : BSD-2 ; parcellation de Desikan (ENIGMA Toolbox) et modèle de stades de sommeil de YASA : BSD-3 ; polices Bodoni Moda et Aleo : SIL Open Font License 1.1 ;</li>
         <li>poids du réseau SpikeNet (Jing et al., 2020) : CC BY-NC 4.0, usage non commercial et citation obligatoire. Le fichier EpiScope.html, qui les embarque, ne peut donc pas être utilisé à des fins commerciales ;</li>
         <li>les poids du réseau SpikeNet2 (Li et al., 2025) ne sont pas embarqués : la BDSP (bdsp.io) les distribue sous licence restreinte à des utilisateurs accrédités. L’utilisateur qui les ajoute à sa bibliothèque doit respecter cette licence ;</li>
-        <li>gabarits et surfaces (MNI ICBM152 2009, fsaverage de FreeSurfer, via nilearn), données de référence (courbes de croissance de l’OMS, INTERGROWTH-21st, repères du CDC), catalogues d’électrodes : conditions de leurs éditeurs ;</li>
+        <li>gabarits MNI ICBM 152 NLin 2009b, 2009c et NIHPD (Copyright (C) 1993–2004 Louis Collins, McConnell Brain Imaging Centre, Montreal Neurological Institute, McGill University ; usage, copie, modification et distribution permis avec cet avis), étiquettes de fsaverage (FreeSurfer) ayant servi à construire la parcellation du gabarit, données de référence (courbes de croissance de l’OMS, INTERGROWTH-21st, repères du CDC), catalogues d’électrodes : conditions de leurs éditeurs ;</li>
         <li>ffmpeg.wasm (GPL) n’est pas embarqué : il n’est téléchargé que si l’on demande la conversion d’une vidéo.</li>
       </ul>
       <h3>Données personnelles</h3>

@@ -4,17 +4,17 @@
  *  Ce module décrit, pour un dossier, tous les fichiers d'un export BIDS (spécification BIDS 1.10, extension iEEG) :
  *    - brut : sub-<code>/[sub-<code>_sessions.tsv] ses-<session>/<ieeg|eeg>/ … _ieeg.edf (en-tête anonymisé, dates décalées),
  *      _channels.tsv, _events.tsv (débuts et fins de crises, annotations), _ieeg.json / _eeg.json, _scans.tsv,
- *      _space-ScanRAS_electrodes.tsv + _coordsystem.json (repère du T1 du patient), _space-MNI305_electrodes.tsv +
- *      _coordsystem.json (affine 12 ddl du T1 vers le gabarit fsaverage / MNI305), anat/…_T1w.nii.gz (option) ;
+ *      _space-ScanRAS_electrodes.tsv + _coordsystem.json (repère du T1 du patient), _space-MNI152NLin2009bAsym_electrodes.tsv
+ *      + _coordsystem.json (vers le gabarit MNI 2009b depuis la v3.0.0 ; MNI305 avant), anat/…_T1w.nii.gz (option) ;
  *    - dérivés EpiScope (derivatives/episcope/sub-<code>/) : crises, sémiologie signe par signe, stimulations,
  *      thermocoagulations, résultats des analyses par plot (avec méthode et version), clinique (étiologie, lésions,
- *      chirurgie, devenir), transformation vers MNI305.
+ *      chirurgie, devenir), transformation vers MNI 2009b.
  *  Anonymisation : code neutre seulement (jamais d'identité), dates décalées d'un nombre de jours propre au sujet (gardé
  *  dans la bibliothèque clinique, le même d'un export à l'autre), âges au lieu des dates de naissance, pas de vidéos ni de
  *  captures, textes libres exclus ; le contrôle final (scanSecrets) cherche l'identité du patient dans chaque fichier.  */
 (function (SV) {
   'use strict';
-  const S = SV.Store, B = SV.BIDS;
+  const S = SV.Store, B = SV.BIDS, MNI = (SV.Store && SV.Store.TEMPLATE_SPACE) || 'MNI152NLin2009bAsym';
   const VERSION = '1.10.0';
   const tsv = (cols, rows) => cols.join('\t') + '\n' + rows.map(r => cols.map(c => { const v = r[c]; return v == null || v === '' ? 'n/a' : String(v).replace(/[\t\n\r]+/g, ' '); }).join('\t')).join('\n') + (rows.length ? '\n' : '');
   const json = o => JSON.stringify(o, null, 2) + '\n';
@@ -99,22 +99,22 @@
           dt === 'ieeg' ? { iEEGReference: 'voir channels.tsv (référence d’enregistrement)', SEEGChannelCount: n('SEEG'), ECOGChannelCount: n('ECOG'), EEGChannelCount: n('EEG'), ECGChannelCount: n('ECG'), MiscChannelCount: n('MISC') }
             : { EEGReference: 'référence d’enregistrement', EEGChannelCount: n('EEG'), ECGChannelCount: n('ECG'), MiscChannelCount: n('MISC') })));
       }
-      // électrodes (SEEG) : repère du T1 du patient, et MNI305 si la transformation existe
+      // électrodes (SEEG) : repère du T1 du patient, et MNI 2009b (MNI152NLin2009bAsym) si la transformation existe
       const el = (ex.electrodes || []).filter(s => s.real && s.real.contacts), reg = (opts.regions || {})[ex.id] || {};
       // v2.1.0 : contacts dans la résection (procédures dont la SEEG de référence est cette exploration) ; région VEP figée à la validation
       const resProcs = (d.procedures || []).filter(p => p.resection && (p.resection.contacts || []).length && S.resectionExploration && S.resectionExploration(d, p) === ex), resK = new Set(resProcs.flatMap(p => p.resection.contacts.map(c => c.e + ':' + c.k)));
       if (el.length) {
-        const rows = sp => el.flatMap(s => s.real.contacts.map((c, k) => { const nm = s.name.replace(/’/g, "'") + (k + 1), q = sp === 'MNI305' ? (S.toMNI ? S.toMNI(d, c) : apply(T, c)) : c, rg = S.contactRegion ? S.contactRegion(s, k + 1) : null;
+        const rows = sp => el.flatMap(s => s.real.contacts.map((c, k) => { const nm = s.name.replace(/’/g, "'") + (k + 1), q = sp === MNI ? (S.toMNI ? S.toMNI(d, c) : apply(T, c)) : c, rg = S.contactRegion ? S.contactRegion(s, k + 1) : null;
           return { name: nm, x: r2(q[0]), y: r2(q[1]), z: r2(q[2]), size: 5.03, group: s.name.replace(/’/g, "'"), hemisphere: s.hemi || '', type: 'depth', manufacturer: s.maker || '', region_vep: rg ? rg.name : reg[nm] || '', resected: resProcs.length ? (resK.has(s.id + ':' + (k + 1)) ? 'true' : 'false') : 'n/a' }; }));
         const cols = ['name', 'x', 'y', 'z', 'size', 'group', 'hemisphere', 'type', 'manufacturer', 'region_vep', 'resected'];
         add(`ses-${ses}/ieeg/sub-${sub}_ses-${ses}_electrodes.json`, json({ region_vep: { Description: 'région de la parcellation VEP du patient (Wang et al. 2021) au plot, figée à la validation des électrodes (indépendante des versions ultérieures de l’atlas)' }, resected: { Description: 'plot compris dans la résection (liste déclarée ou cavité segmentée sur l’IRM post-opératoire)', Levels: { true: 'dans la résection', false: 'hors résection', 'n/a': 'non renseigné' } } }));
         add(`ses-${ses}/ieeg/sub-${sub}_ses-${ses}_space-ScanRAS_electrodes.tsv`, tsv(cols, rows('ScanRAS')));
         add(`ses-${ses}/ieeg/sub-${sub}_ses-${ses}_space-ScanRAS_coordsystem.json`, json({ iEEGCoordinateSystem: 'ScanRAS', iEEGCoordinateUnits: 'mm', iEEGCoordinateSystemDescription: 'RAS scanner du T1 pré-opératoire de référence du patient', iEEGCoordinateProcessingDescription: 'scanner post-implantation recalé sur le T1 (rigide), plots détectés puis validés dans EpiScope' }));
         if (T) {
-          add(`ses-${ses}/ieeg/sub-${sub}_ses-${ses}_space-MNI305_electrodes.tsv`, tsv(cols, rows('MNI305')));
+          add(`ses-${ses}/ieeg/sub-${sub}_ses-${ses}_space-${MNI}_electrodes.tsv`, tsv(cols, rows(MNI)));
           const mm = S.mniMethod ? S.mniMethod(d) : 'affine', MI = d.anatomy && d.anatomy.mni;
-          add(`ses-${ses}/ieeg/sub-${sub}_ses-${ses}_space-MNI305_coordsystem.json`, json({ iEEGCoordinateSystem: 'MNI305', iEEGCoordinateUnits: 'mm', iEEGCoordinateProcessingDescription: mm === 'affine' ? 'transformation affine 12 ddl du T1 du patient vers le gabarit fsaverage (MNI305), estimée par EpiScope (centres de structures) ; voir derivatives/episcope' : `transformation non linéaire du T1 du patient vers MNI305 : spline de plaque mince 3D régularisée sur ${MI.n} centres de structures segmentées (λ par validation croisée, erreur de prédiction ${MI.loo.tps} mm contre ${MI.loo.affine} mm pour l’affine)${MI.template ? `, par le gabarit adapté à l’âge « ${MI.template.name} »` : ''} ; voir derivatives/episcope`, iEEGCoordinateProcessingReference: 'Fischl et al. 1999, fsaverage ; Bookstein 1989 (plaques minces)' }));
-        } else notes.push(`${ex.label} : pas de transformation vers MNI305 (anatomie du patient non calculée) — électrodes dans le repère du T1 seulement`);
+          add(`ses-${ses}/ieeg/sub-${sub}_ses-${ses}_space-${MNI}_coordsystem.json`, json({ iEEGCoordinateSystem: MNI, iEEGCoordinateUnits: 'mm', iEEGCoordinateSystemDescription: 'gabarit MNI ICBM 152 non linéaire 2009b asymétrique (Fonov et al. 2009, 2011)', iEEGCoordinateProcessingDescription: mm === 'affine' ? 'transformation affine 12 ddl du T1 du patient vers le gabarit MNI 2009b, estimée par EpiScope (centres de structures) ; voir derivatives/episcope' : `transformation non linéaire du T1 du patient vers le gabarit MNI 2009b : spline de plaque mince 3D régularisée sur ${MI.n} centres de structures segmentées (λ par validation croisée, erreur de prédiction ${MI.loo.tps} mm contre ${MI.loo.affine} mm pour l’affine)${MI.template ? `, par le gabarit adapté à l’âge « ${MI.template.name} »` : ''} ; voir derivatives/episcope`, iEEGCoordinateProcessingReference: 'Fischl et al. 1999, fsaverage ; Bookstein 1989 (plaques minces)' }));
+        } else notes.push(`${ex.label} : pas de transformation vers MNI 2009b (anatomie du patient non calculée) — électrodes dans le repère du T1 seulement`);
       }
       if (recs.length || el.length) { sessions.push({ session_id: 'ses-' + ses, acq_time: ex.start ? shiftIso(ex.start, days) : '', exploration_type: ex.kind === 'other' ? (ex.context || 'other') : ex.kind });
         if (scans.length) add(`ses-${ses}/sub-${sub}_ses-${ses}_scans.tsv`, tsv(['filename', 'acq_time'], scans)); }
@@ -149,8 +149,8 @@
       developmental_comorbidities: S.V && S.V.devComorb ? Object.fromEntries(S.V.devComorb.map(([k]) => [k, ((P.dev || {})[k]) || null])) : null,
       pathway: d.pathway && d.pathway.status ? { status: d.pathway.status, reason: d.pathway.reason || null, months_after_first_exploration: months(d.pathway.date) } : null,
       outcomes: (d.outcomes || []).map(o => ({ months_after_procedure: S.outcomeMonths ? S.outcomeMonths(d, o) : null, engel: o.engel || null, ilae: o.ilae || null })), note: 'dates décalées par sujet ; âges en années ; textes libres non exportés' }));
-    if (T && d.anatomy.mni && d.anatomy.mni.method !== 'affine') der(`sub-${sub}_from-T1w_to-MNI305_mode-points_xfm.json`, json({ Type: d.anatomy.mni.method === 'chain' ? 'chain' : 'thin-plate spline', Steps: d.anatomy.mni.steps, Kernel: 'U(r) = -r (3D), terme affine [1 x y z]', Lambda: d.anatomy.mni.lambda, Landmarks: d.anatomy.mni.n, LeaveOneOutRMS_mm: d.anatomy.mni.loo, AgeTemplate: d.anatomy.mni.template ? d.anatomy.mni.template.name : null, FromSpace: 'T1w (RAS scanner du T1 de référence)', ToSpace: 'MNI305 (gabarit fsaverage)', Note: 'transformation de points (patient → MNI305) ; f(p) = A·[1 p] + Σ cᵢ U(‖p − ptsᵢ‖)' }));
-    if (T) der(`sub-${sub}_from-T1w_to-MNI305_mode-image_xfm.json`, json({ Type: 'affine', Matrix: [T.slice(0, 4), T.slice(4, 8), T.slice(8, 12), T.slice(12, 16)], FromSpace: 'T1w (RAS scanner du T1 de référence)', ToSpace: 'MNI305 (gabarit fsaverage)', Method: (d.anatomy && d.anatomy.method) || 'affine 12 ddl (EpiScope)', RMS_mm: d.anatomy && d.anatomy.fit ? r2(d.anatomy.fit.rms) : null }));
+    if (T && d.anatomy.mni && d.anatomy.mni.method !== 'affine') der(`sub-${sub}_from-T1w_to-${MNI}_mode-points_xfm.json`, json({ Type: d.anatomy.mni.method === 'chain' ? 'chain' : 'thin-plate spline', Steps: d.anatomy.mni.steps, Kernel: 'U(r) = -r (3D), terme affine [1 x y z]', Lambda: d.anatomy.mni.lambda, Landmarks: d.anatomy.mni.n, LeaveOneOutRMS_mm: d.anatomy.mni.loo, AgeTemplate: d.anatomy.mni.template ? d.anatomy.mni.template.name : null, FromSpace: 'T1w (RAS scanner du T1 de référence)', ToSpace: MNI + ' (gabarit MNI ICBM 152 NLin 2009b asymétrique)', Note: 'transformation de points (patient → MNI 2009b) ; f(p) = A·[1 p] + Σ cᵢ U(‖p − ptsᵢ‖)' }));
+    if (T) der(`sub-${sub}_from-T1w_to-${MNI}_mode-image_xfm.json`, json({ Type: 'affine', Matrix: [T.slice(0, 4), T.slice(4, 8), T.slice(8, 12), T.slice(12, 16)], FromSpace: 'T1w (RAS scanner du T1 de référence)', ToSpace: MNI + ' (gabarit MNI ICBM 152 NLin 2009b asymétrique)', Method: (d.anatomy && d.anatomy.method) || 'affine 12 ddl (EpiScope)', RMS_mm: d.anatomy && d.anatomy.fit ? r2(d.anatomy.fit.rms) : null }));
     return { sub, files, notes, participant: { participant_id: 'sub-' + sub, sex: P.sex === 'M' ? 'M' : P.sex === 'F' ? 'F' : 'n/a', age: first ? ageAt(d, first.start) : '', handedness: P.handedness === 'R' ? 'R' : P.handedness === 'L' ? 'L' : P.handedness === 'A' ? 'A' : 'n/a', pathway_status: d.pathway && d.pathway.status ? d.pathway.status : 'n/a' } };
   }
 
@@ -161,7 +161,7 @@
       { path: 'dataset_description.json', text: json({ Name: opts.name || 'EpiScope — export de recherche', BIDSVersion: VERSION, DatasetType: 'raw', License: opts.license || 'n/a', GeneratedBy: [{ Name: 'EpiScope', Version: v, Description: 'export anonymisé : codes neutres, dates décalées par sujet, en-têtes EDF anonymisés' }] }) },
       { path: 'participants.tsv', text: tsv(['participant_id', 'sex', 'age', 'handedness', 'pathway_status'], parts) },
       { path: 'participants.json', text: json({ age: { Description: 'âge à la première exploration', Units: 'year' }, sex: { Description: 'sexe', Levels: { M: 'masculin', F: 'féminin' } }, handedness: { Description: 'latéralité manuelle', Levels: { R: 'droitier', L: 'gaucher', A: 'ambidextre' } }, pathway_status: { Description: 'statut final du parcours chirurgical, saisi explicitement', Levels: { evaluation: 'en attente / en cours d’évaluation', operated: 'opéré', declined: 'récusé', lost: 'perdu de vue' } } }) },
-      { path: 'README', text: `Export de recherche EpiScope ${v}\n\nDonnées anonymisées : codes neutres (sub-<site><numéro>), dates décalées d'un nombre de jours propre à chaque sujet (intervalles conservés), âges en années, en-têtes EDF anonymisés, pas de vidéo ni de capture, textes libres non exportés.\nÉlectrodes : repère du T1 du patient (space-ScanRAS) et gabarit MNI305 (transformation affine 12 ddl, voir derivatives/episcope).\nDérivés EpiScope : derivatives/episcope (crises, sémiologie, stimulations, thermocoagulations, résultats par plot avec méthode et version, clinique).\n` },
+      { path: 'README', text: `Export de recherche EpiScope ${v}\n\nDonnées anonymisées : codes neutres (sub-<site><numéro>), dates décalées d'un nombre de jours propre à chaque sujet (intervalles conservés), âges en années, en-têtes EDF anonymisés, pas de vidéo ni de capture, textes libres non exportés.\nÉlectrodes : repère du T1 du patient (space-ScanRAS) et gabarit MNI ICBM 152 NLin 2009b asymétrique (space-MNI152NLin2009bAsym ; transformation affine ou non linéaire, voir derivatives/episcope).\nDérivés EpiScope : derivatives/episcope (crises, sémiologie, stimulations, thermocoagulations, résultats par plot avec méthode et version, clinique).\n` },
       { path: '.bidsignore', text: 'derivatives/episcope/**/*_clinical.json\n' },
       { path: 'derivatives/episcope/dataset_description.json', text: json({ Name: 'EpiScope — dérivés', BIDSVersion: VERSION, DatasetType: 'derivative', GeneratedBy: [{ Name: 'EpiScope', Version: v }] }) },
     ];

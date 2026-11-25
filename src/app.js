@@ -583,7 +583,7 @@
       const r = this.result, opts = this._elOpts || (this._elOpts = { max: 12, hemi: 'auto', contra: true, post: false, maker: 'DIXI' });
       const groups = [...new Set(SV.Electrodes.LIBRARY.map(l => l.group))];
       const libOpts = groups.map(g => `<optgroup label="${esc(g)}">` + SV.Electrodes.LIBRARY.filter(l => l.group === g).map(l => `<option value="${l.code}">${l.code}${l.alias ? ' (' + l.alias + ')' : ''} — ${esc(l.fr)}</option>`).join('') + '</optgroup>').join('');
-      let html = `<div class="hint">Schéma sur gabarit fsaverage (coordonnées tkrRAS), à traduire sur l’IRM et l’angiographie du patient. Nomenclature conventionnelle (prime = gauche) : orthogonales au plan sagittal, sauf les insulaires obliques Ia / Im / Ip (entrée F2, précentrale, pariétale supérieure) et l’OR fronto-orbitaire ; modèles DIXI / Alcis ; règles : pas de croisement, entrée hors sillon, pas de frontal bas ni de temporal pneumatisé, postérieur évité, orthogonal privilégié.</div>
+      let html = `<div class="hint">Schéma sur gabarit MNI 2009b (coordonnées MNI), à traduire sur l’IRM et l’angiographie du patient. Nomenclature conventionnelle (prime = gauche) : orthogonales au plan sagittal, sauf les insulaires obliques Ia / Im / Ip (entrée F2, précentrale, pariétale supérieure) et l’OR fronto-orbitaire ; modèles DIXI / Alcis ; règles : pas de croisement, entrée hors sillon, pas de frontal bas ni de temporal pneumatisé, postérieur évité, orthogonal privilégié.</div>
         <div class="ctrl-row"><label>max <input id="elMax" type="number" min="1" max="20" value="${opts.max}"></label>
           <label>hémisphère <select id="elHemi"><option value="auto"${opts.hemi === 'auto' ? ' selected' : ''}>auto (latéralisation)</option><option value="L"${opts.hemi === 'L' ? ' selected' : ''}>gauche</option><option value="R"${opts.hemi === 'R' ? ' selected' : ''}>droit</option><option value="B"${opts.hemi === 'B' ? ' selected' : ''}>bilatéral</option></select></label>
           <label><input type="checkbox" id="elContra"${opts.contra ? ' checked' : ''}> contrôle controlatéral</label>
@@ -625,7 +625,7 @@
       });
     },
     electrodesText() {
-      const lines = [`EpiScope — schéma d’implantation (gabarit fsaverage) — ${this.state.name || 'cas'}`];
+      const lines = [`EpiScope — schéma d’implantation (gabarit MNI 2009b) — ${this.state.name || 'cas'}`];
       for (const e of this.elecs) lines.push(`${e.name} (${this.elecDesc ? this.elecDesc(e) || e.code : e.fr || e.code}, ${e.model}, ${e.nContacts} plots, ${e.length.toFixed(0)} mm) : ${SV.Electrodes.contactSummary(e, this.atlas)}${this.electrodeTests(e).length ? ' — teste ' + this.electrodeTests(e).join(', ') : ''}${e.issues.length ? ' — ⚠ ' + e.issues.map(i => i.text).join(' ; ') : ''}`);
       return lines.join('\n');
     },

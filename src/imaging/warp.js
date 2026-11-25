@@ -1,4 +1,4 @@
-/* EpiScope — imaging/warp.js (v2.1.0) : transformation non linéaire du T1 du patient vers le gabarit MNI305 (fsaverage).
+/* EpiScope — imaging/warp.js (v2.1.0) : transformation non linéaire du T1 du patient vers le gabarit MNI (MNI 2009b depuis la v3.0.0).
  *
  * EpiScope ne recale pas les intensités : le patient et le gabarit sont segmentés par le même réseau (aparc+aseg, ~100
  * classes), et la transformation affine actuelle (imaging/anat.js) s'ajuste sur les centres de ces structures. On la
@@ -12,7 +12,7 @@
  * l'affine (résidu > max(2,5 × médiane, 3 mm)).
  * Limites, à dire : correction à l'échelle des structures (quelques millimètres), pas un recalage voxel à voxel (ANTs SyN) ;
  * l'affichage 3D « gabarit » reste affine, les coordonnées MNI (exports, cohorte, requêtes) suivent la transformation retenue.
- * Chaîne : [patient → gabarit de l'âge, gabarit de l'âge → MNI305] quand un gabarit adapté à l'âge est installé.     */
+ * Chaîne : [patient → gabarit de l'âge, gabarit de l'âge → MNI 2009b] pour l'enfant (NIHPD) ou un gabarit ajouté.     */
 (function (factory) {
   const G = typeof window !== 'undefined' ? (window.SV = window.SV || {}) : (globalThis.SV = globalThis.SV || {});
   factory(G); (G._factories = G._factories || {}).warp = factory;
@@ -133,7 +133,7 @@
     return out;
   }
   function applyStep(s, p) { return s.kind === 'tps' ? tpsApply(s, p) : applyAffine(s.T, p); }
-  /** applique une chaîne d'étapes (patient → gabarit de l'âge → MNI305) */
+  /** applique une chaîne d'étapes (patient → gabarit de l'âge → MNI 2009b) */
   function applyChain(steps, p) { let q = p; for (const s of steps || []) q = applyStep(s, q); return q; }
   SV.Warp = { estimate, applyChain, applyStep, tpsFit, tpsApply, tpsLoo, affineFit, applyAffine, minJacobian, inliers, solve };
 });

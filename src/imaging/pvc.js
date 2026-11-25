@@ -202,8 +202,8 @@
    * son homologue miroir, lisser largement pour absorber l'asymétrie anatomique résiduelle (recalage affine), restreindre à
    * la substance grise, puis normaliser (z robuste sur le cerveau du patient : la distribution des AI d'un cerveau sans
    * asymétrie métabolique est centrée, les foyers sont des valeurs extrêmes). Ici, sans rééchantillonner : le point
-   * homologue de p (monde du T1) est p' = A⁻¹ · F · A · p avec A l'affine 12 ddl patient → gabarit symétrique (MNI305 /
-   * fsaverage) et F la réflexion x → −x ; l'image est lue par interpolation au point et à son miroir. Résultat sur la
+   * homologue de p (monde du T1) est p' = A⁻¹ · F · A · p avec A l'affine 12 ddl patient → gabarit (MNI 2009b,
+   * ligne médiane x = 0) et F la réflexion x → −x ; l'image est lue par interpolation au point et à son miroir. Résultat sur la
    * grille des étiquettes (espace du T1), donc directement en calque sur les coupes et retransportable en MNI pour les
    * cohortes.
    *   o = { img, imgT, lab, res, mirror (4×4 monde → monde), fwhm (mm, défaut 10), gm (true : substance grise seule),

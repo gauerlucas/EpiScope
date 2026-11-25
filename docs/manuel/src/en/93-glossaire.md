@@ -41,7 +41,7 @@ lead: Terms and abbreviations used in EpiScope and in this manual, with their Fr
 | Snapshot | Instantané | Copy of the meeting as presented (pages, data, comments), viewable later read-only. |
 | Symptomatogenic zone | Zone symptomatogène | Region whose activation produces a sign. |
 | Synchronisation point | Point de synchronisation | The same event found in a video and in a recording, to align the video on the recording's clock. |
-| Template | Gabarit | Average brain (fsaverage, MNI) used when the patient's anatomy has not been computed. |
+| Template | Gabarit | MNI ICBM 152 2009b asymmetric average brain (MNI coordinates) used when the patient's anatomy has not been computed, and common coordinate space; in children, the NIHPD template of the closest age for the transformation. |
 | Timeline | Frise | Representation of a seizure's signs as bars on the time axis. |
 | VEP atlas | Atlas VEP | Division of the brain into 162 cortical regions and deep structures, designed for epilepsy (*Virtual Epileptic Patient*). |
 | Wall-clock time | Heure réelle | Time of the acquisition computer at recording, taking the gaps of a discontinuous EDF into account; markers and seizure onsets are stored in it. |

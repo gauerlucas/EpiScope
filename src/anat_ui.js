@@ -3,7 +3,7 @@
  * Chaîne (Dossier › Imagerie → « Calculer l'anatomie », ou « Recaler tout + anatomie ») :
  *   1. T1 de référence « conformé » (256³, 1 mm, LIA ; SV.MeshNet.conform, dans un worker) ;
  *   2. segmentation aparc+aseg 104 classes (MeshNet, modèles brainchop ; prémodèle de recadrage SB/SG), multi-fil ;
- *   3. recalage affine sur le gabarit fsaverage (centres de ~100 structures), parcellation VEP du patient
+ *   3. recalage affine sur le gabarit MNI 2009b (centres de ~100 structures), parcellation VEP du patient
  *      (SV.Anat.prepare) et transformation rigide « d'affichage » (cerveau orienté comme le gabarit, à sa taille) ;
  *   4. surfaces piales et gonflées des deux hémisphères, profondeur sulcale, région VEP par sommet, structures profondes
  *      (3 workers en parallèle : SV.Anat.hemisphere ×2, SV.Anat.structures) ;
@@ -12,7 +12,7 @@
  * Le dossier décrit la chaîne dans d.anatomy (méthode, transformations, contrôle qualité, durées).
  *
  * Espaces : « monde » = RAS scanner du T1 de référence (plots réels, NIfTI) ; « affichage » = monde × toDisplay (rigide) ;
- * « gabarit » = fsaverage tkrRAS (MNI305), monde × toTemplate (affine). La vue 3D travaille en affichage (anatomie du
+ * « gabarit » = MNI ICBM 152 NLin 2009b asymétrique (v3.0.0 ; fsaverage / MNI305 avant), monde × toTemplate (affine). La vue 3D travaille en affichage (anatomie du
  * patient) ou en gabarit ; les coupes 3D suivent.                                                                     */
 (function (SV) {
   'use strict';
@@ -38,7 +38,7 @@
     if (c.id === 'net') return net;
     if (c.id === 'bias') return net + ', après correction du biais de champ (EM 3 classes dans le masque mindgrab)';
     if (c.id === 'smooth') return net + ', sur l’image corrigée du biais et lissée (σ 0,6 mm)';
-    if (c.id === 'atlas') return 'segmentation atlas sans réseau (recalage affine 12 ddl sur MNI ICBM152 2009a, mélange de gaussiennes à a priori spatiaux avec champ de biais, champ de Markov ; esprit de la segmentation unifiée de SPM, Ashburner & Friston 2005), étiquettes du modèle aparc+aseg 104';
+    if (c.id === 'atlas') return 'segmentation atlas sans réseau (recalage affine 12 ddl sur MNI ICBM 152 2009b, mélange de gaussiennes à a priori spatiaux avec champ de biais, champ de Markov ; esprit de la segmentation unifiée de SPM, Ashburner & Friston 2005), étiquettes du modèle aparc+aseg 104';
     if (c.id === 'import') return 'segmentation importée (' + ((c.info && c.info.import && c.info.import.source) || 'fichier externe') + ')' + (c.info && c.info.atlas ? ', complétée par le gabarit MNI (méthode atlas à tissus imposés)' : '');
     return c.name || c.id;
   };
@@ -268,7 +268,7 @@
         const step = c => ({ id: c.id, name: c.name, ok: c.q.ok, why: c.q.why, rms: c.q.rms, unlabeled: +(c.q.unlabeled || 0).toFixed(4), score: +c.q.score.toFixed(2), extent: c.q.extent, volume: c.q.volume, scales: c.q.scales, gm: c.q.gm, wm: c.q.wm, ms: c.ms });
         const info = {
           status: 'done', date: S.now(), refImagingId: ref.id, refLabel: ref.label, files,
-          method: SEG_TEXT(cand) + ' ; parcellation VEP par recalage affine sur fsaverage et contrainte Desikan ; surfaces par marching cubes à topologie corrigée',
+          method: SEG_TEXT(cand) + ' ; parcellation VEP par recalage affine sur le gabarit MNI 2009b et contrainte Desikan ; surfaces par marching cubes à topologie corrigée',
           model: mdl.name, toTemplate: Array.from(P.toTemplate), toDisplay: Array.from(P.toDisplay), fit: P.fit, midX: P.midX, brainCenter: P.brainCenter, landmarks: P.landmarks || null,
           qc: { vertices: [lh.n, rh.n], area: [Math.round(lh.info.area), Math.round(rh.info.area)], genus: [lh.info.genus, rh.info.genus], regions: 162 - missing.length, missing, structures: sub.length, labelsSearch: P.counts, coverage: cand.coverage || null },
           segmentation: { method: cand.id, name: cand.name, chosenBy: cand.chosenBy || 'method', reason: cand.reason || '', ok: cand.q.ok, why: cand.q.why, age: ctx.age == null ? null : +ctx.age.toFixed(3), limits: ctx.limits.band, brainMask: (cand.info && cand.info.brainMask) || null, atlas: (cand.info && cand.info.atlas) || null, import: (cand.info && cand.info.import) || null, tried: ctx.list.map(step) },
@@ -280,9 +280,9 @@
         d.anatomy = info;
         S.log(d, 'compute', 'imaging', ref.id, `anatomie du patient · ${cand.name} (${fmtS(info.timings.total)})`); this.touch(); await this.flushSave();
         this.patientAnat = this.buildPatientAnat(d, { mesh: pk, vepVol, segVol, meta: { names: seg.labelNames, colors: mdl.colors || null } }); if (this.fixElectrodeSides) this.fixElectrodeSides(d);
-        // v2.1.0 : transformation vers MNI305 (non linéaire si elle prédit mieux) et régions des plots encore non figées
+        // v2.1.0 : transformation vers MNI (non linéaire si elle prédit mieux) et régions des plots encore non figées
         if (this.mniCompute) await this.mniCompute({ quiet: true }); if (this.stampRegions) { for (const ex of d.explorations) this.stampRegions(ex); } this.touch();
-        // v2.0.0 : électrodes validées réécrites avec leurs régions et leurs coordonnées MNI305 (nouvelle transformation)
+        // v2.0.0 : électrodes validées réécrites avec leurs régions et leurs coordonnées MNI (nouvelle transformation)
         for (const ex of d.explorations) if (ex.electrodes.some(e => e.real) && this.exportElectrodesBids) { try { await this.exportElectrodesBids(ex); } catch (e) { console.warn('électrodes BIDS', e); } }
         this.ui.anatJob = null;
         job.done(`Anatomie du patient prête (${cand.name}) en ${fmtS(info.timings.total)} — bouton « Patient » pour l’afficher`);
@@ -433,7 +433,7 @@
       if (K && K.steps && K.steps.length) out.push(`<div class="muted" title="${esc(K.steps.map(s0 => `${s0.name} : ${s0.ok ? 'contrôle satisfaisant' : (s0.why || []).join(', ')} (recalage ${s0.rms} mm${s0.unlabeled ? `, ${(100 * s0.unlabeled).toFixed(1)} % sans étiquette` : ''}${s0.gm ? `, SG ${s0.gm} / SB ${s0.wm} cm³` : ''})`).join('\n'))}">segmentation : ${K.steps.map(s0 => `${esc(SEG_SHORT[s0.id] || s0.name)} ${s0.ok ? '✓' : '✗'}`).join(' · ')} · retenue : <b>${esc(K.chosen)}</b>${G && G.chosenBy && G.chosenBy !== 'import' ? ` <span class="small">(${esc(BY[G.chosenBy] || G.chosenBy)})</span>` : ''}</div>`);
       if (h && !h.skipped && h.field) out.push(`<div class="muted" title="${esc(h.method || 'biais de champ (inhomogénéité lente des intensités) corrigé')} ; référence ramenée à ${h.target}${h.retry ? ` ; second passage sur l’image lissée (${h.smooth || 0.6} mm) : tissu sans étiquette ${pct(h.retry.unlabeled[0])} → ${pct(h.retry.unlabeled[1])}, ${h.retry.kept === 'lissée' ? 'gardé' : 'non retenu'}` : ''}">intensités corrigées : biais ${pct(h.field[0])} à +${pct(h.field[1])}${h.wmBefore != null ? `, SB ${h.wmBefore} → ${h.wmAfter}` : ''}${h.cvBefore != null ? `, hétérogénéité ${pct(h.cvBefore)} → ${pct(h.cvAfter)}` : ''}${h.smooth ? ' · image lissée' : ''}</div>`);
       else if (!h && !K && ((an.qc || {}).missing || []).length) out.push('<div class="note">Anatomie calculée par une version ancienne, avant l’harmonisation des intensités : des régions manquent — « recalculer » corrige souvent une segmentation incomplète (lobes frontaux, vertex).</div>');
-      const At = G && G.atlas; if (At && At.reg) out.push(`<div class="muted" title="recalage affine 12 ddl du gabarit MNI ICBM152 2009a sur le cerveau du patient (NMI ${At.reg.nmi}) ; tissus par EM à a priori spatiaux (α ${At.em ? At.em.alpha : '—'}), champ de Markov (β ${At.em ? At.em.beta : '—'}) ; frontières de Desikan issues du gabarit (approximatives)">atlas : échelles du gabarit ${At.reg.scales.join(' / ')}${At.em ? ` · LCR ${At.em.volumes.csf} / SG ${At.em.volumes.gm} / SB ${At.em.volumes.wm} cm³ · ${esc(At.em.contrast)}` : ' · tissus importés'}</div>`);
+      const At = G && G.atlas; if (At && At.reg) out.push(`<div class="muted" title="recalage affine 12 ddl du gabarit MNI ICBM 152 2009b sur le cerveau du patient (NMI ${At.reg.nmi}) ; tissus par EM à a priori spatiaux (α ${At.em ? At.em.alpha : '—'}), champ de Markov (β ${At.em ? At.em.beta : '—'}) ; frontières de Desikan issues du gabarit (approximatives)">atlas : échelles du gabarit ${At.reg.scales.join(' / ')}${At.em ? ` · LCR ${At.em.volumes.csf} / SG ${At.em.volumes.gm} / SB ${At.em.volumes.wm} cm³ · ${esc(At.em.contrast)}` : ' · tissus importés'}</div>`);
       if (G && G.import) out.push(`<div class="muted">import : ${esc(G.import.source)} · ${esc((G.import.files || []).join(', '))}${G.import.unmapped && G.import.unmapped.length ? ` · codes ignorés ${esc(G.import.unmapped.slice(0, 8).join(', '))}` : ''}</div>`);
       const ch = K && K.steps ? K.steps.find(s0 => s0.name === K.chosen) : null;
       if (ch && !ch.ok) out.push(`<div class="note warn">Segmentation à vérifier dans les coupes : ${esc((ch.why || []).join(', '))}${K.steps.length > 1 ? ' — aucune des méthodes essayées n’a passé le contrôle de qualité ; la meilleure est gardée' : ''}. « Autre méthode… » permet d’en essayer une autre ou de comparer.</div>`);

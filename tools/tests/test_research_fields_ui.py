@@ -2,7 +2,7 @@
 """v2.1.0 — données de recherche saisies dans le dossier (dist/EpiScope.html, Chromium headless, Playwright, stockage du
    navigateur ; données entièrement synthétiques) : histologie en vocabulaire fermé + texte libre, contacts dans la
    résection (clic sur les plots), comorbidités développementales à trois états, statut du parcours avec suggestion,
-   transformation non linéaire vers MNI305 et régions des plots figées (anatomie synthétique injectée).
+   transformation non linéaire vers MNI 2009b (adulte, et chaîne NIHPD chez l’enfant) et régions des plots figées (anatomie synthétique injectée).
    python3 tools/tests/test_research_fields_ui.py      (après python3 tools/build.py)"""
 import os
 from playwright.sync_api import sync_playwright
@@ -69,11 +69,16 @@ with sync_playwright() as p:
     r = pg.evaluate("""async () => { const A = SV.app, d = A.dossier, tpl = A.anatAsset('template_anat'), lm = {};
       const fwd = q => [0.85 * q[0] + 2 + 6 * Math.sin(q[1] / 25), 0.82 * q[1] - 5 + 5 * Math.sin(q[2] / 22), 0.8 * q[2] + 8 + 4 * Math.cos(q[0] / 30)];
       for (const l in tpl.centroids) { const c = tpl.centroids[l]; lm[l] = [...fwd(c), c[3]]; }
-      d.anatomy = { status: 'done', date: '2025-02-10T10:00:00Z', toTemplate: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], landmarks: lm, segmentation: { age: 9.5 } };
+      d.anatomy = { status: 'done', date: '2025-02-10T10:00:00Z', toTemplate: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], landmarks: lm, segmentation: { age: 25 } };
       A.patientAnat = { labelWorld: { labelAt: (x, y, z) => x < -32 ? 200 : 12 } };
       const R = await A.mniCompute({ quiet: true }); const ex = d.explorations[0]; const n = A.stampRegions(ex);
       return { m: R && R.method, loo: R && R.loo, n, reg: ex.electrodes[0].real.regions.map(r => r.name), st: SV.Store.contactRegionStatus(d, ex.electrodes[0]), mni: SV.Store.mniMethod(d) }; }""")
     check(r['m'] == 'tps' and r['loo']['tps'] < r['loo']['affine'] and r['mni'] == 'tps', f'transformation non linéaire retenue {r["loo"]}')
+    # v3.0.0 : enfant de 9,5 ans → chaîne par le gabarit NIHPD intégré de l'âge le plus proche (7–11 ans)
+    r2 = pg.evaluate("""async () => { const A = SV.app, d = A.dossier; d.anatomy.segmentation.age = 9.5; const R = await A.mniCompute({ quiet: true });
+      const p = SV.Store.toMNI(d, [10, 20, 30]); d.anatomy.segmentation.age = 25; await A.mniCompute({ quiet: true });
+      return { m: R && R.method, t: R && R.template && R.template.name, b: R && R.template && R.template.builtin, target: R && R.target, ok: p.every(isFinite) }; }""")
+    check(r2['m'] == 'chain' and r2['b'] and 'NIHPD 7–11' in (r2['t'] or '') and r2['target'] == 'MNI152NLin2009bAsym' and r2['ok'], f'enfant : chaîne par le gabarit NIHPD de l’âge {r2}')
     check(r['n'] == 2 and r['reg'][0] != 'white-matter' and r['reg'][2] == 'white-matter' and r['st'] == 'ok', f'régions figées par plot {r["reg"]}')
     check(not errs, f'aucune erreur de page {errs[:3]}')
     b.close()

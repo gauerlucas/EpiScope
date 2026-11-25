@@ -1,4 +1,4 @@
-/* EpiScope — atlas.js : atlas VEP (fsaverage5), régions, adjacence, matrice de connectivité */
+/* EpiScope — atlas.js : atlas VEP (gabarit MNI 2009b depuis la v3.0.0, fsaverage5 avant), régions, adjacence, matrice de connectivité */
 (function (SV) {
   'use strict';
 

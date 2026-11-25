@@ -1,6 +1,6 @@
 // node tools/tests/test_research_fields.mjs — v2.1.0 : données de recherche rangées dans le dossier (store.js) et leurs calculs
 // (imaging/warp.js, imaging/cavity.js) : histologie en vocabulaire fermé, comorbidités développementales, statut du parcours,
-// contacts dans la résection (liste ou cavité segmentée), région VEP figée par plot, transformation non linéaire vers MNI305.
+// contacts dans la résection (liste ou cavité segmentée), région VEP figée par plot, transformation non linéaire vers MNI 2009b.
 // Données synthétiques.
 import fs from 'fs'; import vm from 'vm'; import assert from 'assert/strict';
 globalThis.window = globalThis; globalThis.SV = globalThis.SV || {};
@@ -53,7 +53,7 @@ let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return se
   ok(S.contactRegionStatus(d, ex.electrodes[0]) === 'stale' && S.contactRegion(ex.electrodes[0], 1).code === 12, 'anatomie recalculée : régions gardées, signalées');
   ex.electrodes[1].name = 'B'; ex.electrodes.splice(1, 1); ok(S.resectedContacts(d, p).length === 1, 'électrode disparue : contact ignoré, liste intacte');
 }
-// ---------------------------------------------------------------- transformation non linéaire vers MNI305
+// ---------------------------------------------------------------- transformation non linéaire vers MNI 2009b
 {
   const tpl = {}, pat = {}, patA = {}, fwd = q => { const s = [0.85 * q[0] + 2, 0.82 * q[1] - 5, 0.8 * q[2] + 8]; return [s[0] + 6 * Math.sin(q[1] / 25), s[1] + 5 * Math.sin(q[2] / 22), s[2] + 4 * Math.cos(q[0] / 30)]; };
   for (let l = 1; l <= 100; l++) { const q = [70 * (2 * rnd() - 1), 90 * (2 * rnd() - 1), 60 * (2 * rnd() - 1)], w = 200 + 3000 * rnd(); tpl[l] = [...q, w]; pat[l] = [...fwd(q).map(v => v + gauss()), w]; patA[l] = [...[0.85 * q[0] + 2, 0.82 * q[1] - 5, 0.8 * q[2] + 8].map(v => v + gauss()), w]; }
@@ -71,7 +71,7 @@ let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return se
   ok(S.toMNI(d, [0, 0, 0]).join() === '1,2,3' && S.mniMethod(d) === 'affine', 'MNI : affine par défaut');
   d.anatomy.mni = { method: 'tps', steps: R.steps }; const q = S.toMNI(d, fwd([10, 20, 30]));
   ok(Math.hypot(q[0] - 10, q[1] - 20, q[2] - 30) < 3 && S.mniMethod(d) === 'tps', 'MNI : non linéaire quand elle est retenue');
-  // chaîne patient → gabarit de l'âge → MNI305
+  // chaîne patient → gabarit de l’âge → MNI 2009b
   const ch = [{ kind: 'affine', T: [1, 0, 0, 5, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] }, { kind: 'affine', T: [2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1] }];
   ok(W.applyChain(ch, [1, 1, 1]).join() === '12,2,2', 'chaîne de transformations composée dans l’ordre');
 }
@@ -118,11 +118,11 @@ let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return se
   ok(!!F.get('sub-HFAR0007/ses-seeg1/ieeg/sub-HFAR0007_ses-seeg1_electrodes.json'), 'colonnes décrites (electrodes.json)');
   const cl = JSON.parse(F.get('derivatives/episcope/sub-HFAR0007/sub-HFAR0007_clinical.json'));
   ok(cl.procedures[0].histology_codes.join() === 'hs1,fcd3a' && cl.procedures[0].resected_contacts.join() === "A'1" && cl.developmental_comorbidities.id === 'mild' && cl.developmental_comorbidities.language === null && cl.pathway.status === 'operated', 'clinical.json : histologie, contacts réséqués, comorbidités (null = non renseigné), parcours');
-  ok(B.participant.pathway_status === 'operated' && !F.has('derivatives/episcope/sub-HFAR0007/sub-HFAR0007_from-T1w_to-MNI305_mode-points_xfm.json'), 'participants : statut ; affine seule : pas de fichier de points');
+  ok(B.participant.pathway_status === 'operated' && !F.has('derivatives/episcope/sub-HFAR0007/sub-HFAR0007_from-T1w_to-MNI152NLin2009bAsym_mode-points_xfm.json'), 'participants : statut ; affine seule : pas de fichier de points');
   // MNI non linéaire retenue : coordonnées et description suivent
   d.anatomy.mni = { method: 'tps', n: 90, lambda: 1, loo: { affine: 4.1, tps: 2.3 }, steps: [W.tpsFit([[0, 0, 0], [50, 0, 0], [0, 50, 0], [0, 0, 50], [40, 40, 40]], [[1, 1, 1], [52, 0, 0], [0, 51, 0], [0, 0, 49], [41, 42, 38]], [1, 1, 1, 1, 1], 0)] };
   const B2 = SV.Research.buildSubject(d, { shift: -10 }), F2 = new Map(B2.files.map(f => [f.path, f.text])), q = S.toMNI(d, [-30, 10, 5]);
-  const elM = F2.get('sub-HFAR0007/ses-seeg1/ieeg/sub-HFAR0007_ses-seeg1_space-MNI305_electrodes.tsv'), cs = JSON.parse(F2.get('sub-HFAR0007/ses-seeg1/ieeg/sub-HFAR0007_ses-seeg1_space-MNI305_coordsystem.json'));
-  ok(elM.includes(`A'1\t${Math.round(q[0] * 100) / 100}\t${Math.round(q[1] * 100) / 100}\t`) && /non linéaire/.test(cs.iEEGCoordinateProcessingDescription) && F2.has('derivatives/episcope/sub-HFAR0007/sub-HFAR0007_from-T1w_to-MNI305_mode-points_xfm.json'), 'MNI305 non linéaire : coordonnées, description, transformation exportée');
+  const elM = F2.get('sub-HFAR0007/ses-seeg1/ieeg/sub-HFAR0007_ses-seeg1_space-MNI152NLin2009bAsym_electrodes.tsv'), cs = JSON.parse(F2.get('sub-HFAR0007/ses-seeg1/ieeg/sub-HFAR0007_ses-seeg1_space-MNI152NLin2009bAsym_coordsystem.json'));
+  ok(elM.includes(`A'1\t${Math.round(q[0] * 100) / 100}\t${Math.round(q[1] * 100) / 100}\t`) && /non linéaire/.test(cs.iEEGCoordinateProcessingDescription) && F2.has('derivatives/episcope/sub-HFAR0007/sub-HFAR0007_from-T1w_to-MNI152NLin2009bAsym_mode-points_xfm.json'), 'MNI 2009b non linéaire : coordonnées, description, transformation exportée');
 }
 console.log(`${n} vérifications — données de recherche du dossier`);

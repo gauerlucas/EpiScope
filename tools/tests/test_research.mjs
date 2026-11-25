@@ -1,5 +1,5 @@
 // node tools/tests/test_research.mjs — v2.0.0 : export de recherche BIDS anonymisé (contenu des fichiers, dates décalées,
-// électrodes dans le repère du patient et en MNI305, dérivés, contrôle d'identité). Dossier entièrement synthétique.
+// électrodes dans le repère du patient et en MNI 2009b, dérivés, contrôle d'identité). Dossier entièrement synthétique.
 import fs from 'fs'; import vm from 'vm'; import assert from 'assert/strict';
 globalThis.window = globalThis; globalThis.SV = globalThis.SV || {};
 for (const f of ['src/core.js', 'src/store.js', 'src/bids.js', 'src/research.js']) vm.runInThisContext(fs.readFileSync(f, 'utf8'), { filename: f });
@@ -48,16 +48,16 @@ const js = JSON.parse(P('sub-HFAR0042/ses-seeg1/ieeg/sub-HFAR0042_ses-seeg1_task
 assert.equal(js.TaskName, 'seizure'); assert.equal(js.SamplingFrequency, 512); assert.equal(js.SEEGChannelCount, 2); assert.equal(js.ECGChannelCount, 1);
 assert.match(P('sub-HFAR0042/ses-seeg1/sub-HFAR0042_ses-seeg1_scans.tsv'), /ieeg\/sub-HFAR0042_ses-seeg1_task-seizure_run-01_ieeg\.edf\t2024-12-02T14:00:00/);
 assert.match(P('sub-HFAR0042/sub-HFAR0042_sessions.tsv'), /ses-seeg1\t2024-11-30\tseeg/);
-const elN = P('sub-HFAR0042/ses-seeg1/ieeg/sub-HFAR0042_ses-seeg1_space-ScanRAS_electrodes.tsv'), elM = P('sub-HFAR0042/ses-seeg1/ieeg/sub-HFAR0042_ses-seeg1_space-MNI305_electrodes.tsv');
-assert.match(elN, /\nA'1\t-30\t10\t5\t5\.03\tA'\tL\tdepth\tDIXI\tLeft-Hippocampus\tn\/a\n/, 'colonne resected : n/a sans résection déclarée'); assert.match(elM, /\nA'1\t-20\t5\t7\t/, 'MNI305 = affine appliquée');
-assert.equal(JSON.parse(P('sub-HFAR0042/ses-seeg1/ieeg/sub-HFAR0042_ses-seeg1_space-MNI305_coordsystem.json')).iEEGCoordinateSystem, 'MNI305');
+const elN = P('sub-HFAR0042/ses-seeg1/ieeg/sub-HFAR0042_ses-seeg1_space-ScanRAS_electrodes.tsv'), elM = P('sub-HFAR0042/ses-seeg1/ieeg/sub-HFAR0042_ses-seeg1_space-MNI152NLin2009bAsym_electrodes.tsv');
+assert.match(elN, /\nA'1\t-30\t10\t5\t5\.03\tA'\tL\tdepth\tDIXI\tLeft-Hippocampus\tn\/a\n/, 'colonne resected : n/a sans résection déclarée'); assert.match(elM, /\nA'1\t-20\t5\t7\t/, 'MNI152NLin2009bAsym = affine appliquée');
+assert.equal(JSON.parse(P('sub-HFAR0042/ses-seeg1/ieeg/sub-HFAR0042_ses-seeg1_space-MNI152NLin2009bAsym_coordsystem.json')).iEEGCoordinateSystem, 'MNI152NLin2009bAsym');
 assert.match(P('derivatives/episcope/sub-HFAR0042/sub-HFAR0042_seizures.tsv'), /sz-01\tn\/a\treported\t2024-08-23\t.*\nsz-02\tses-seeg1\trecorded\t2024-12-02T14:01:00\tyes\t.*\t1\tsub-HFAR0042_ses-seeg1_task-seizure_run-01_ieeg\.edf\n/);
 assert.match(P('derivatives/episcope/sub-HFAR0042/sub-HFAR0042_semiology.tsv'), /sz-02\t1\taura_epigastric\tlabel aura_epigastric\t0\t1\t4\tn\/a\t1/);
 assert.match(P('derivatives/episcope/sub-HFAR0042/ses-seeg1/sub-HFAR0042_ses-seeg1_stimulations.tsv'), /A'1-2\tHF\t50\t1\t5\t2\t1/);
 assert.match(P('derivatives/episcope/sub-HFAR0042/ses-seeg1/sub-HFAR0042_ses-seeg1_results.tsv'), /EI\tei\tn\/a\tn\/a\tsz-02\tA'1-2\t0\.9/);
 const cl = JSON.parse(P('derivatives/episcope/sub-HFAR0042/sub-HFAR0042_clinical.json'));
 assert.equal(cl.age_first_exploration, 16.9); assert.deepEqual(cl.lesions[0].regions, ['REG3']); assert.equal(cl.procedures[0].months_after_first_exploration, 6);
-assert.deepEqual(JSON.parse(P('derivatives/episcope/sub-HFAR0042/sub-HFAR0042_from-T1w_to-MNI305_mode-image_xfm.json')).Matrix[0], [1, 0, 0, 10]);
+assert.deepEqual(JSON.parse(P('derivatives/episcope/sub-HFAR0042/sub-HFAR0042_from-T1w_to-MNI152NLin2009bAsym_mode-image_xfm.json')).Matrix[0], [1, 0, 0, 10]);
 assert.deepEqual(B.participant, { participant_id: 'sub-HFAR0042', sex: 'M', age: 16.9, handedness: 'R', pathway_status: 'n/a' });
 assert.ok(![...F.keys()].some(p => /anat\//.test(p)), 'T1 exclu par défaut');
 

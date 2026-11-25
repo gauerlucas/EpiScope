@@ -70,7 +70,7 @@ ${ctx.hypothesisViews.map(v => `<figure class="hv" style="border-left:4px solid 
     o = Object.assign({ lv: 2 }, o || {}); const base = slug(ctx.caseName || 'cas');
     if (!ctx.electrodes || !ctx.electrodes.length) return '';
     const realN = ctx.electrodes.filter(e => e.real).length;
-    return `${H(o.lv, esc(o.title || 'Schéma d\'implantation SEEG (gabarit fsaverage)'))}
+    return `${H(o.lv, esc(o.title || 'Schéma d\'implantation SEEG (gabarit MNI 2009b)'))}
 <p class="m">${esc(o.intro || 'Nomenclature conventionnelle (prime = gauche) : électrodes orthogonales au plan sagittal, sauf les insulaires obliques Ia / Im / Ip et l\'OR fronto-orbitaire ; modèles DIXI / Alcis. Une colonne par hémisphère : face latérale en haut, face mésiale en miroir en bas ; à droite, vue supérieure (ou, pour l’implantation, vues inférieure en convention radiologique et de face) ; cortex en verre non coloré ; repères D/G, A/P, S/I.')}</p>
 ${views(ctx.implantation, base)}
 <table><tr><th>électrode</th><th>cible</th><th>modèle</th><th>plots</th><th>long.</th><th>échantillonnage (plot 1 = pointe)</th>${ctx.electrodes.some(e => e.tests) ? '<th>teste</th>' : ''}${realN ? '<th>état</th>' : '<th>cible / entrée (x,y,z)</th>'}<th>remarques</th></tr>${ctx.electrodes.map(e => `<tr><td class="mono"><b>${esc(e.name)}</b></td><td>${esc(e.fr)}</td><td>${esc(e.model)}</td><td class="mono">${e.n}</td><td class="mono">${e.length.toFixed(0)} mm</td><td>${esc(e.contacts)}</td>${ctx.electrodes.some(x => x.tests) ? `<td>${esc(e.tests || '')}</td>` : ''}${realN ? `<td>${e.real ? 'réelle (scanner)' : 'prévue'}${e.origin ? '<div class="m">' + esc(e.origin) + '</div>' : ''}</td>` : `<td class="mono">${e.target ? e.target.map(v => v.toFixed(0)).join(',') : '—'} / ${e.entry.map(v => v.toFixed(0)).join(',')}</td>`}<td>${esc(e.issues)}</td></tr>`).join('')}</table>`;
@@ -284,7 +284,7 @@ ${CLIPJS}
     if (ctx.patient.eeg_onset != null) meta.push(`début EEG à ${SV.fmtT(ctx.patient.eeg_onset)} du premier signe`);
     if (ctx.patient.seizure_end != null) meta.push(`fin clinique à ${SV.fmtT(ctx.patient.seizure_end)}`);
     if (ctx.patient.state) meta.push(ctx.patient.state === 'sleep' ? 'sommeil' : 'veille');
-    meta.push('atlas VEP (fsaverage5)', `base ${db.meta.version || ''} (${(db.meta.built || '').slice(0, 10)})`, new Date().toLocaleString(SV.LOC));
+    meta.push('atlas VEP sur le gabarit MNI 2009b', `base ${db.meta.version || ''} (${(db.meta.built || '').slice(0, 10)})`, new Date().toLocaleString(SV.LOC));
     const body = seizure(ctx, { lv: 2 }) + implantation(ctx, { lv: 2 }) + seeg(ctx.seeg, { lv: 2, caseName: ctx.caseName }) + `<h2>Paramètres du modèle</h2>${paramsLine(ctx.result.params, ctx.connectome)}`;
     return wrap({ title: ctx.caseName || 'cas sans nom', subtitle: 'Compte rendu anatomo-électro-clinique', brand: ctx.brand, logo: ctx.logo, font: ctx.font, meta }, body);
   }

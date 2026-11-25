@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """v2.0.0 — export de recherche BIDS anonymisé (Chromium headless, Playwright, données synthétiques) : archive .zip,
-   arborescence BIDS, en-tête EDF anonymisé et daté autrement, électrodes ScanRAS / MNI305, dérivés, aucune identité ;
+   arborescence BIDS, en-tête EDF anonymisé et daté autrement, électrodes ScanRAS / MNI152NLin2009bAsym, dérivés, aucune identité ;
    patient refusé quand une annotation de tracé porte son nom ; décalage des dates identique d'un export à l'autre.
    python3 tools/tests/test_research_ui.py   (après tools/build.py)"""
 import os, sys, io, zipfile, json
@@ -36,7 +36,7 @@ with sync_playwright() as p:
     check(rep['subjects'] == ['HFAR0101'] and rep['refused'] and rep['refused'][0]['sub'] == 'HFAR0102', f'patient refusé si son nom est dans une annotation {rep["subjects"]} {rep["refused"]}')
     edfp = 'sub-HFAR0101/ses-seeg1/ieeg/sub-HFAR0101_ses-seeg1_task-seizure_run-01_ieeg.edf'
     need = ['dataset_description.json', 'participants.tsv', 'participants.json', 'README', edfp, 'sub-HFAR0101/ses-seeg1/ieeg/sub-HFAR0101_ses-seeg1_task-seizure_run-01_channels.tsv', 'sub-HFAR0101/ses-seeg1/ieeg/sub-HFAR0101_ses-seeg1_task-seizure_run-01_events.tsv',
-            'sub-HFAR0101/ses-seeg1/ieeg/sub-HFAR0101_ses-seeg1_space-ScanRAS_electrodes.tsv', 'sub-HFAR0101/ses-seeg1/ieeg/sub-HFAR0101_ses-seeg1_space-MNI305_electrodes.tsv', 'derivatives/episcope/sub-HFAR0101/sub-HFAR0101_seizures.tsv', 'derivatives/episcope/dataset_description.json']
+            'sub-HFAR0101/ses-seeg1/ieeg/sub-HFAR0101_ses-seeg1_space-ScanRAS_electrodes.tsv', 'sub-HFAR0101/ses-seeg1/ieeg/sub-HFAR0101_ses-seeg1_space-MNI152NLin2009bAsym_electrodes.tsv', 'derivatives/episcope/sub-HFAR0101/sub-HFAR0101_seizures.tsv', 'derivatives/episcope/dataset_description.json']
     miss = [n for n in need if n not in names]
     check(not miss, f'arborescence BIDS complète (manque : {miss})')
     check(not any('HFAR0102' in n for n in names), 'rien du patient refusé dans l’archive')

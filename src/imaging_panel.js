@@ -310,7 +310,7 @@
         const pngDl = () => { const u = S3.snapshot(), a = document.createElement('a'); a.href = u; a.download = 'EpiScope_coupes.png'; a.click(); };
         const capGal = async () => { if (!this.galleryAdd) return; const u = S3.snapshot(), b = await (await fetch(u)).blob(), base = (st.base && S.byId(d.imaging, st.base)) || S.refImaging(d), c = S3.cursor || [0, 0, 0];
           const what = tpl ? 'gabarit MNI' : base ? (V.modality[base.modality] || base.modality) : '';
-          const g = (await this.galleryAdd([new File([b], 'coupes.png', { type: 'image/png' })], Object.assign({ modality: 'imaging', kind: '', title: `Coupes ${what} (${c.map(v => Math.round(v)).join(', ')} mm${tpl ? ' MNI305' : ''})` }, this.ctx && this.ui.screen === 'work' ? { explorationId: this.ctx.explorationId || null, seizureId: this.ctx.seizureId || null } : {})))[0];
+          const g = (await this.galleryAdd([new File([b], 'coupes.png', { type: 'image/png' })], Object.assign({ modality: 'imaging', kind: '', title: `Coupes ${what} (${c.map(v => Math.round(v)).join(', ')} mm${tpl ? ' MNI 2009b' : ''})` }, this.ctx && this.ui.screen === 'work' ? { explorationId: this.ctx.explorationId || null, seizureId: this.ctx.seizureId || null } : {})))[0];
           if (g) { g.date = S.today(); this.touch('gallery', g.id, g.title); this.toast('Capture des coupes rangée dans la galerie (imagerie) : à montrer au staff, à lier à une lésion depuis la Synthèse', 4000); } };
       };
       bind(bar, false);

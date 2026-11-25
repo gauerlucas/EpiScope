@@ -117,8 +117,41 @@
       patient: Object.assign({ pseudo: '', sex: '', birthYear: '', birthMonth: '', handedness: '', dominant: 'L', dominanceMethod: '', onsetAge: '', etiology: '', etiologies: [], etiologyDetail: '', mri: '', frequency: '', aeds: '', history: '', notes: '', clin: newClin(), dev: newDev() }, p || {}),
       explorations: [], seizures: [], imaging: [], anatomy: null, lesions: [], meetings: [], hypotheses: [], decisions: [], procedures: [], outcomes: [], exams: [], gallery: [], aedHistory: [], rois: [], sliceViews: {},
       settings: { anatomy: 'template' }, ui: {}, journal: [], trash: [], results: [], subject: null, identity: newIdentity(), staffNotes: [], syncLinks: [], pathway: newPathway(),
+      templateSpace: TEMPLATE_SPACE,
     };
     return d;
+  }
+  // ---------------------------------------------------------------- espace du gabarit (v3.0.0)
+  /** gabarit d'EpiScope depuis la v3.0.0 : MNI ICBM 152 NLin 2009b asymétrique (coordonnées « gabarit » et MNI des exports) ;
+   *  avant : fsaverage (tkrRAS = MNI305). */
+  const TEMPLATE_SPACE = 'MNI152NLin2009bAsym';
+  /** MNI305 → MNI152 (matrice publiée par FreeSurfer, « CoordinateSystems ») : passage des coordonnées de l'ancien gabarit */
+  const MNI305_TO_MNI152 = [1.0022, 0.0071, -0.0177, 0.0528, -0.0146, 0.9990, 0.0027, -1.5519, 0.0129, 0.0094, 1.0027, -1.2012, 0, 0, 0, 1];
+  const mulA = (A, B) => { const C = new Array(16).fill(0); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) for (let k = 0; k < 4; k++) C[4 * r + c] += A[4 * r + k] * B[4 * k + c]; return C; };
+  const applyA = (T, p) => [0, 1, 2].map(r => +(T[4 * r] * p[0] + T[4 * r + 1] * p[1] + T[4 * r + 2] * p[2] + T[4 * r + 3]).toFixed(3));
+  const isPt = p => Array.isArray(p) && p.length >= 3 && p.slice(0, 3).every(v => typeof v === 'number' && isFinite(v));
+  /** gabarit pédiatrique de l'âge le plus proche (centre de la tranche) parmi list [{ageMin, ageMax, off}] ; null à partir de
+   *  18,5 ans (fin des tranches NIHPD) ou sans âge : gabarit adulte MNI 2009b directement */
+  function nearestAgeTemplate(list, age) {
+    if (age == null || age === '' || !isFinite(+age)) return null; const a = +age, L = (list || []).filter(t => !t.off && isFinite(t.ageMin) && isFinite(t.ageMax));
+    if (!L.length || a >= Math.max(...L.map(t => t.ageMax))) return null;
+    let best = null, bd = Infinity; for (const t of L) { const dd = Math.abs(a - (t.ageMin + t.ageMax) / 2); if (dd < bd - 1e-9) { bd = dd; best = t; } } return best;
+  }
+  /** dossier d'avant la v3.0.0 (sans templateSpace) : coordonnées du gabarit portées de MNI305 vers MNI 2009b —
+   *  transformation patient → gabarit (affine) et vers MNI (étape affine ajoutée en fin de chaîne), cibles et sorties des
+   *  électrodes du schéma (dessinées sur le gabarit). Les régions figées des plots (VEP) ne dépendent pas de l'espace. */
+  function migrateTemplate(d) {
+    const R = { anatomy: 0, mni: 0, electrodes: 0 }, M = MNI305_TO_MNI152, an = d.anatomy;
+    if (an && Array.isArray(an.toTemplate) && an.toTemplate.length === 16) { an.toTemplate = mulA(M, an.toTemplate).map(v => +v.toFixed(6)); R.anatomy = 1; }
+    if (an && an.mni && Array.isArray(an.mni.steps) && an.mni.steps.length) { an.mni.steps.push({ kind: 'affine', T: M.slice() }); an.mni.target = TEMPLATE_SPACE; an.mni.migrated = 'MNI305'; R.mni = 1; }
+    else if (an && an.mni) an.mni.target = TEMPLATE_SPACE;
+    if (an) an.templateSpace = TEMPLATE_SPACE;
+    for (const ex of d.explorations || []) for (const e of ex.electrodes || []) {
+      let k = 0; for (const f of ['target', 'exit']) if (isPt(e[f])) { e[f] = applyA(M, e[f]); k = 1; }
+      R.electrodes += k;
+    }
+    d.templateSpace = TEMPLATE_SPACE;
+    return R;
   }
   // ---------------------------------------------------------------- identité et code du sujet (v1.1.0)
   /** zone d'identité : seul endroit des données identifiantes (jamais dans un nom de fichier, un export de recherche, un
@@ -395,7 +428,7 @@
   }
   function normalize(d) {
     if (!d || d.format !== 'episcope-dossier') throw new Error('ce fichier n’est pas un dossier EpiScope');
-    const base = newDossier();
+    const oldSpace = !d.templateSpace, base = newDossier();
     for (const k of Object.keys(base)) if (d[k] == null) d[k] = base[k];
     d.patient = Object.assign(base.patient, d.patient);
     const c0 = newClin(); d.patient.clin = Object.assign(c0, d.patient.clin || {}); d.patient.clin.antecedents = Object.assign(newClin().antecedents, d.patient.clin.antecedents || {});
@@ -419,6 +452,7 @@
     d.syncLinks = Array.isArray(d.syncLinks) ? d.syncLinks : [];
     normalizeResearch(d);
     eiSetSeizures(d);
+    if (oldSpace) { const R = migrateTemplate(d); if (R.anatomy || R.mni || R.electrodes) { d._snap = d._snap || 'migrate'; log(d, 'edit', 'dossier', d.id, `gabarit 3.0 (MNI 2009b) : coordonnées du gabarit portées de MNI305 vers MNI 2009b${R.anatomy ? ' — transformation patient → gabarit' : ''}${R.mni ? ' — transformation vers MNI' : ''}${R.electrodes ? ` — ${R.electrodes} électrode${R.electrodes > 1 ? 's' : ''} du schéma` : ''}`); } }
     // notes de page saisies avec la première version de l'édition du staff → commentaires accrochés à la page
     for (const m of d.meetings || []) { const it = m.deck && m.deck.items; if (!it) continue; for (const [k, v] of Object.entries(it)) if (v && v.note) { d.staffNotes.push({ id: uid('N'), target: 'page:' + k, meetingId: m.id, text: v.note, at: m.updated || now(), by: '' }); delete v.note; } }
     // v1.1.0 : jeux d'Analyses enregistrés avant la provenance → résultat « antérieur » (valeurs gardées, origine inconnue)
@@ -1149,7 +1183,8 @@
     const R = spec && spec.real; if (!R || !R.contacts) return null; if (!R.regions || R.regions.length !== R.contacts.length) return 'missing';
     return d.anatomy && d.anatomy.date && R.regionsMeta && R.regionsMeta.anatomyDate && R.regionsMeta.anatomyDate !== d.anatomy.date ? 'stale' : 'ok';
   }
-  /** coordonnées MNI305 d'un point du T1 du patient : transformation non linéaire si elle a été calculée et retenue, sinon affine */
+  /** coordonnées MNI (gabarit MNI 2009b depuis la v3.0.0) d'un point du T1 du patient : transformation non linéaire si elle a
+   *  été calculée et retenue, sinon affine */
   function toMNI(d, p) {
     const A = d && d.anatomy, M = A && A.mni; if (!A || !p) return null;
     if (M && M.method !== 'affine' && SV.Warp && M.steps && M.steps.length) return SV.Warp.applyChain(M.steps, p);
@@ -1157,6 +1192,6 @@
   }
   const mniMethod = d => { const M = d && d.anatomy && d.anatomy.mni; return d && d.anatomy && d.anatomy.toTemplate ? (M && M.method && M.method !== 'affine' ? M.method : 'affine') : null; };
 
-  SV.Store = { networkRank, EEG_SYS, eegMapSystems, examLocSuggest, anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
+  SV.Store = { TEMPLATE_SPACE, MNI305_TO_MNI152, migrateTemplate, nearestAgeTemplate, networkRank, EEG_SYS, eegMapSystems, examLocSuggest, anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
     projectLocked, ensureProject, projectsOf, switchProject, addProject, renameProject, removeProject, projectElectrodes, revertToPlan, THERMO_ORDER, THERMO_COL, thermoStatusOf, importImplantation, compareImplantations, explorationsSorted, secretsOf, scrub, bindRec, bindRecs, recSetSeizure, recDropSeizure, REC_F, reportedSeizures, reportedAll, explorationOverview, annotatedSeizures, recordingOverlaps, copySemiology, EEG_MAP_KEYS, seizureDays, moveSeizure, migrate3, REPORTED, reportedEx, seizuresOfExploration, allSeizures, contextOf, lesionRegions, refImaging, deriveIlae, ilaeText, stage, summary, log, resolveCtx, toWorkspace, fromWorkspace, migrateCase, bundlePolicy, user: '' };
 });

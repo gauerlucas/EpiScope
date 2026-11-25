@@ -359,7 +359,7 @@
       const box = new THREE.Box3().setFromObject(this.hemiMesh.lh).union(new THREE.Box3().setFromObject(this.hemiMesh.rh));
       this.center = box.getCenter(new THREE.Vector3());
     }
-    /** change d'anatomie (gabarit fsaverage ou anatomie du patient, même interface que SV.Atlas) : maillages, transport
+    /** change d'anatomie (gabarit MNI 2009b ou anatomie du patient, même interface que SV.Atlas) : maillages, transport
      *  au gonflement, couleurs, centre et caméras ; réseaux, électrodes et marqueurs sont reconstruits par l'application */
     setAtlas(atlas) {
       if (atlas === this.atlas) return;

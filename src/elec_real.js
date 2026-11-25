@@ -231,7 +231,7 @@
       if (quiet) return; if (this.refreshImagingScreen) this.refreshImagingScreen(); else this.renderImaging();
     },
     /** BIDS iEEG (v2.0.0) : plots validés rangés avec les tracés de la session, ses-<session>/ieeg/ —
-     *  …_space-ScanRAS_electrodes.tsv (repère du T1 du patient) et …_space-MNI305_electrodes.tsv (affine vers le gabarit, si
+     *  …_space-ScanRAS_electrodes.tsv (repère du T1 du patient) et …_space-MNI152NLin2009bAsym_electrodes.tsv (vers le gabarit MNI 2009b, si
      *  l'anatomie du patient est calculée), chacun avec son _coordsystem.json ; région VEP de chaque plot */
     async exportElectrodesBids(ex, download) {
       const d = this.dossier, A = this.patientAnat, sub = SV.BIDS.subOf(d), ses = SV.BIDS.sesOf(d, ex), T = d.anatomy && d.anatomy.toTemplate ? Array.from(d.anatomy.toTemplate) : null;

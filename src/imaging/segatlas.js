@@ -8,7 +8,7 @@
  *     référence de brainchop).
  *  2. segment(conf, brain, template, meta) : dans l'esprit de la segmentation unifiée de SPM (Ashburner & Friston 2005), sans
  *     déformation non linéaire :
- *       a. recalage affine 12 ddl (information mutuelle normalisée) du T1 moyen MNI ICBM152 2009a extrait du crâne sur le
+ *       a. recalage affine 12 ddl (information mutuelle normalisée) du T1 MNI ICBM 152 NLin 2009b asymétrique extrait du crâne sur le
  *          cerveau du patient ; échelle de départ = racine cubique du rapport des volumes (enfants) ;
  *       b. a priori des tissus (LCR, SG, SB, hors cerveau) du gabarit transportés chez le patient, adoucis (puissance α = 0,6,
  *          plancher 0,02 : la seule transformation affine ne superpose pas les sillons) ;
@@ -171,7 +171,7 @@
     const say = (f, m) => { try { cb({ fraction: Math.max(0, Math.min(1, f)), message: m }); } catch (e) { /* rien */ } };
     const lap = (k, t) => timings.push({ model: 'atlas', layer: k, ms: Math.round(now() - t) });
     const img = conf.data, names = meta.names, L = labelSets(names);
-    let t = now(); say(0, 'gabarit MNI ICBM152 2009a');
+    let t = now(); say(0, 'gabarit MNI ICBM 152 2009b');
     const V = await template(tj), tdims = V.t1.dims, [tx, ty, tz] = tdims, txy = tx * ty, tA = M4.from(V.t1.affine);
     const TG = V.gm.data, TW = V.wm.data, TC = V.csf.data, TS = V.seg.data;
     lap('gabarit', t);
@@ -270,7 +270,7 @@
     lap('étiquettes', t);
     say(1, 'segmentation atlas terminée');
     return { labels, dims: [N, N, N], affine: Float64Array.from(conf.affine), labelNames: names, fsCodes: meta.fsCodes, hemi: meta.hemi,
-      atlas: { template: 'MNI ICBM152 2009a (2 mm)', reg: { T: Array.from(Tt), nmi: reg.nmi != null ? +reg.nmi.toFixed(4) : null, rel: reg.qc ? +reg.qc.rel.toFixed(3) : null, scales: scl, s0: +s0.toFixed(3), warnings: reg.warnings, ms: reg.ms },
+      atlas: { template: 'MNI ICBM 152 2009b (2 mm)', reg: { T: Array.from(Tt), nmi: reg.nmi != null ? +reg.nmi.toFixed(4) : null, rel: reg.qc ? +reg.qc.rel.toFixed(3) : null, scales: scl, s0: +s0.toFixed(3), warnings: reg.warnings, ms: reg.ms },
         em: emInfo, tissueImposed: !!opts.tissue, labelsImposed: !!Lin, stats: stat, brainCm3: Math.round(nB / 1000) },
       harmonize: harm, ms: Math.round(now() - T0), timings, image };
   }

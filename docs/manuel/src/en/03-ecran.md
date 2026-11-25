@@ -51,7 +51,7 @@ The views that show the brain (a seizure, planning, analyses, stimulations, ther
 |---|---|
 | [[1 view ▾]] | One view, two views, four faces or mosaic. Each view keeps its own settings. |
 | [[L lat.]] [[L med.]] … [[Post.]] | Orientation: lateral or medial view of each hemisphere, top, bottom, front, back. |
-| [[Template]] / [[Patient]] | Average brain (fsaverage) or the patient's anatomy, if it has been computed. |
+| [[Template]] / [[Patient]] | Average brain (MNI 2009b) or the patient's anatomy, if it has been computed. |
 | [[Display ▾]] | Cortex inflation, opacity, deep structures, network, electrodes, labels. |
 | [[MRI slices]] | Opens the patient's slices next to the 3D view, synchronised with it. |
 | [[Capture ▾]] | Image of the view, to paste into a document or file in the gallery. |

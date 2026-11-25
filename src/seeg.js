@@ -37,7 +37,7 @@
   }
   /** toutes les paires contiguës d'une électrode construite */
   function pairsOf(e) { const out = []; for (let k = 1; k < e.nContacts; k++) out.push({ elec: e.name, c1: k, c2: k + 1 }); return out; }
-  /** position (tkrRAS) d'un plot ou d'une paire sur une électrode construite (géométrie au niveau de gonflement donné) */
+  /** position (gabarit) d'un plot ou d'une paire sur une électrode construite (géométrie au niveau de gonflement donné) */
   function pairPoint(geom, c1, c2) {
     const C = geom.contacts, a = C[c1 - 1], b = c2 != null ? C[c2 - 1] : null; if (!a) return null; if (!b) return a.slice ? a.slice() : a;
     return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];

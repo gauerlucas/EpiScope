@@ -51,7 +51,7 @@ Les vues qui montrent le cerveau (une crise, la planification, les analyses, les
 |---|---|
 | [[1 vue ▾]] | Une vue, deux vues, quatre faces ou mosaïque. Chaque vue garde ses propres réglages. |
 | [[Lat. G]] [[Méd. G]] … [[Post.]] | Orientation : latérale ou médiale de chaque hémisphère, dessus, dessous, avant, arrière. |
-| [[Gabarit]] / [[Patient]] | Cerveau moyen (fsaverage) ou anatomie du patient, si elle a été calculée. |
+| [[Gabarit]] / [[Patient]] | Cerveau moyen (MNI 2009b) ou anatomie du patient, si elle a été calculée. |
 | [[Affichage ▾]] | Gonflement du cortex, opacité, structures profondes, réseau, électrodes, étiquettes. |
 | [[Coupes IRM]] | Ouvre les coupes du patient à côté de la 3D, synchronisées avec elle. |
 | [[Capture ▾]] | Image de la vue, à coller dans un document ou à ranger dans la galerie. |

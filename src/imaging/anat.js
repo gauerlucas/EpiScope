@@ -1,7 +1,7 @@
 /* EpiScope — imaging/anat.js : anatomie du patient à partir de son T1 (sans logiciel externe).
  *
  *   1. segmentation aparc+aseg (MeshNet 104 classes, SV.MeshNet) sur le T1 « conformé » (256³, 1 mm, LIA) ;
- *   2. transformation affine patient → gabarit fsaverage (MNI305) ajustée sur les centroïdes des 100 classes
+ *   2. transformation affine patient → gabarit MNI 2009b ajustée sur les centroïdes des 100 classes
  *      (moindres carrés pondérés, rejet itératif des points aberrants) ;
  *   3. parcellation VEP du patient : chaque voxel de cortex reçoit la région VEP du gabarit la plus proche *compatible
  *      avec sa région de Desikan* (les régions VEP subdivisent Desikan-Killiany ; table de compatibilité préparée par
@@ -44,7 +44,7 @@
 
   /** v2.1.0 : repères (centres des classes, monde du patient) gardés dans le dossier pour la transformation non linéaire */
   const roundLm = pc => { const o = {}; for (const l in pc) o[l] = [+pc[l][0].toFixed(2), +pc[l][1].toFixed(2), +pc[l][2].toFixed(2), pc[l][3]]; return o; };
-  /** volume VEP du gabarit (format de assets/vep_volume.json, décodé) : étiquette au point tkrRAS */
+  /** volume VEP du gabarit (format de assets/vep_volume.json, décodé) : étiquette au point du gabarit (mm MNI) */
   function tplLabeler(tv) {
     const [d0, d1, d2] = tv.dims, off = tv.off || tv.offset_vox, vox = tv.vox || 2, data = tv.data;
     return (x, y, z) => { const i = Math.round((128 - x) / vox) - off[0], j = Math.round((128 - z) / vox) - off[1], k = Math.round((y + 128) / vox) - off[2]; if (i < 0 || j < 0 || k < 0 || i >= d0 || j >= d1 || k >= d2) return 0; return data[(i * d1 + j) * d2 + k]; };

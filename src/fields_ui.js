@@ -4,7 +4,7 @@
  *   devChipsHtml / bindDevChips   Développement : comorbidités développementales à trois états (non renseigné → oui → non)
  *   renderPathway(el)             Synthèse : statut final du parcours, motif si récusé, suggestion tirée du dossier
  *   stampRegions(ex, o)           région VEP de chaque plot figée (validation des électrodes, anatomie calculée ensuite)
- *   mniLine / mniBind / mniCompute transformation vers MNI305 (affine ou non linéaire), gabarits adaptés à l'âge
+ *   mniLine / mniBind / mniCompute transformation vers MNI 2009b (affine ou non linéaire), gabarits adaptés à l'âge (NIHPD intégrés)
  * Les champs vivent dans store.js (création, normalisation, requêtes) ; ce module ne fait que les montrer.            */
 (function (SV) {
   'use strict';
@@ -85,13 +85,13 @@
       const d = this.dossier, c = { ok: 0, missing: 0, stale: 0 }; for (const ex of (d && d.explorations) || []) for (const spec of ex.electrodes || []) { const s = S.contactRegionStatus(d, spec); if (s) c[s]++; } return c;
     },
 
-    // ============================================================ transformation vers MNI305
+    // ============================================================ transformation vers MNI (gabarit MNI 2009b, v3.0.0)
     mniLine(an) {
       const M0 = an.mni, d = this.dossier, rc = this.regionStatusCounts(), ageT = this.ageTemplateFor ? this.ageTemplateFor() : null;
       const meth = !M0 ? 'affine 12 ddl (centres de structures)' : M0.method === 'affine' ? `affine 12 ddl — ${esc(M0.why || '')}` : `non linéaire (spline régularisée sur ${M0.n} repères${M0.template ? `, via le gabarit « ${esc(M0.template.name)} »` : ''}) : erreur de prédiction des repères exclus ${String(M0.loo.tps).replace('.', ',')} mm contre ${String(M0.loo.affine).replace('.', ',')} mm pour l’affine`;
       const youth = an.segmentation && an.segmentation.age != null && an.segmentation.age < 2 ? '<div class="note warn">Moins de 2 ans au T1 : myélinisation immature, segmentation et coordonnées MNI à interpréter avec prudence.</div>' : '';
-      return `<div class="mni-l"><div class="muted" title="coordonnées MNI305 des exports (électrodes, résultats), de la cohorte et des requêtes ; l’affichage 3D « gabarit » reste affine">vers MNI305 : ${meth}</div>${youth}
-        <div class="btnrow"><button class="mini-btn mni-go" title="spline de plaque mince 3D régularisée sur les centres des structures segmentées, λ choisi par validation croisée « un exclu » ; gardée seulement si elle prédit mieux que l’affine">${M0 && M0.method !== 'affine' ? 'Recalculer la transformation non linéaire' : 'Transformation non linéaire vers MNI305'}</button><button class="mini-btn mni-age" title="gabarits d’enfants (p. ex. NIHPD) installés dans la bibliothèque : patient → gabarit de l’âge → MNI305">Gabarits adaptés à l’âge${ageT ? ' (' + esc(ageT.name) + ')' : ''}…</button></div>
+      return `<div class="mni-l"><div class="muted" title="coordonnées MNI 2009b (MNI152NLin2009bAsym) des exports (électrodes, résultats), de la cohorte et des requêtes ; l’affichage 3D « gabarit » reste affine">vers MNI 2009b : ${meth}</div>${youth}
+        <div class="btnrow"><button class="mini-btn mni-go" title="spline de plaque mince 3D régularisée sur les centres des structures segmentées, λ choisi par validation croisée « un exclu » ; gardée seulement si elle prédit mieux que l’affine">${M0 && M0.method !== 'affine' ? 'Recalculer la transformation non linéaire' : 'Transformation non linéaire vers MNI 2009b'}</button><button class="mini-btn mni-age" title="gabarits d’enfants NIHPD intégrés (4,5–18,5 ans) et gabarits ajoutés à la bibliothèque : patient → gabarit de l’âge le plus proche → MNI 2009b">Gabarits adaptés à l’âge${ageT ? ' (' + esc(ageT.name) + ')' : ''}…</button></div>
         ${rc.ok + rc.missing + rc.stale ? `<div class="muted small">régions des plots figées : ${rc.ok} électrode${rc.ok > 1 ? 's' : ''}${rc.missing ? ` · ${rc.missing} à étiqueter` : ''}${rc.stale ? ` · ${rc.stale} étiquetée${rc.stale > 1 ? 's' : ''} avec une anatomie antérieure` : ''}${rc.missing || rc.stale ? ' <button class="mini-btn mni-lab">Réétiqueter les plots</button>' : ''}</div>` : ''}</div>`;
     },
     mniBind(box) {
@@ -109,41 +109,54 @@
       o = o || {}; const d = this.dossier, an = d && d.anatomy; if (!an || an.status !== 'done') return null;
       try {
         const lm = this.mniLandmarks(), tpl = this.anatAsset && this.anatAsset('template_anat'); if (!lm || !tpl) throw new Error('segmentation du patient ou repères du gabarit indisponibles');
+        if (!o.direct && !this._libTemplates) { try { await this.loadAgeTemplates(); } catch (e) { console.warn('gabarits', e); } }
         const direct = SV.Warp.estimate(lm, tpl.centroids), pack = o.direct ? null : this.ageTemplateFor();
-        let R = Object.assign({}, direct, { target: 'MNI305', template: null, date: S.now() });
+        let R = Object.assign({}, direct, { target: S.TEMPLATE_SPACE, template: null, date: S.now() });
         if (pack) {
           const toPack = SV.Warp.estimate(lm, pack.landmarks), steps = toPack.steps.concat(pack.toMNI.steps);
-          R = Object.assign({}, toPack, { steps, method: 'chain', target: 'MNI305', template: { id: pack.id, name: pack.name, ageMin: pack.ageMin, ageMax: pack.ageMax, toMNI: pack.toMNI.method }, direct: { method: direct.method, loo: direct.loo }, date: S.now(),
-            why: `patient → « ${pack.name} » : ${toPack.why} ; « ${pack.name} » → MNI305 : ${pack.toMNI.method === 'affine' ? 'affine' : 'non linéaire'}` });
+          R = Object.assign({}, toPack, { steps, method: 'chain', target: S.TEMPLATE_SPACE, template: { id: pack.id, name: pack.name, ageMin: pack.ageMin, ageMax: pack.ageMax, builtin: !!pack.builtin, toMNI: pack.toMNI.method }, direct: { method: direct.method, loo: direct.loo }, date: S.now(),
+            why: `patient → « ${pack.name} » : ${toPack.why} ; « ${pack.name} » → MNI 2009b : ${pack.toMNI.method === 'affine' ? 'affine' : 'non linéaire'}` });
         }
-        delete R.grid; an.mni = R; S.log(d, 'compute', 'dossier', d.id, 'transformation vers MNI305 : ' + (R.method === 'chain' ? 'chaîne par gabarit de l’âge' : R.method === 'tps' ? 'non linéaire' : 'affine'));
-        this.touch(); if (!o.quiet) { this.toast(R.method === 'affine' ? 'Affine gardée : ' + R.why : 'Transformation vers MNI305 enregistrée — ' + R.why, 7000); this.renderImaging && this.renderImaging(); }
+        delete R.grid; an.mni = R; S.log(d, 'compute', 'dossier', d.id, 'transformation vers MNI 2009b : ' + (R.method === 'chain' ? 'chaîne par gabarit de l’âge' : R.method === 'tps' ? 'non linéaire' : 'affine'));
+        this.touch(); if (!o.quiet) { this.toast(R.method === 'affine' ? 'Affine gardée : ' + R.why : 'Transformation vers MNI 2009b enregistrée — ' + R.why, 7000); this.renderImaging && this.renderImaging(); }
         return R;
       } catch (e) { console.warn('MNI', e); if (!o.quiet) this.toast('Transformation non linéaire impossible : ' + (e.message || e), 6000); return null; }
     },
 
     // ============================================================ gabarits adaptés à l'âge (réglages de la bibliothèque)
-    /** gabarit installé couvrant l'âge du patient au T1 (null : MNI305 directement) */
+    /** gabarits intégrés (NIHPD asymétriques, assets/templates_peds.json), désactivables dans la bibliothèque */
+    builtinAgeTemplates() { const P = this.anatAsset && this.anatAsset('templates_peds'), off = new Set(this._tplOff || []); return ((P && P.templates) || []).map(t => Object.assign({}, t, { off: off.has(t.id) })); },
+    /** gabarit de l'âge du patient au T1 : gabarit ajouté à la bibliothèque couvrant l'âge (choix explicite du centre), sinon
+     *  gabarit NIHPD intégré de la tranche dont le centre est le plus proche ; null à partir de 18,5 ans (MNI 2009b directement) */
     ageTemplateFor() {
-      const d = this.dossier, an = d && d.anatomy, age = an && an.segmentation ? an.segmentation.age : null, list = (this._libTemplates || []).filter(t => !t.off);
-      return age == null ? null : list.find(t => age >= t.ageMin && age < t.ageMax) || null;
+      const d = this.dossier, an = d && d.anatomy, age = an && an.segmentation ? an.segmentation.age : null; if (age == null) return null;
+      const user = (this._libTemplates || []).filter(t => !t.off).find(t => age >= t.ageMin && age < t.ageMax);
+      return user || S.nearestAgeTemplate(this.builtinAgeTemplates(), age);
     },
-    async loadAgeTemplates() { const st = await L.settings(); this._libTemplates = (st && st.templates) || []; return this._libTemplates; },
+    /** gabarits de la bibliothèque ; ceux créés avant la v3.0.0 (transformation vers MNI305) reçoivent l'étape affine
+     *  MNI305 → MNI 2009b, enregistrée dans les réglages */
+    async loadAgeTemplates() {
+      const st = await L.settings(); let L2 = (st && st.templates) || [], ch = false;
+      for (const t of L2) if (t.toMNI && t.space !== S.TEMPLATE_SPACE) { t.toMNI = Object.assign({}, t.toMNI, { steps: (t.toMNI.steps || []).concat([{ kind: 'affine', T: S.MNI305_TO_MNI152.slice() }]) }); t.space = S.TEMPLATE_SPACE; ch = true; }
+      if (ch && st) { st.templates = L2; try { await L.saveSettings(st); } catch (e) { console.warn('gabarits', e); } }
+      this._tplOff = (st && st.templatesOff) || []; this._libTemplates = L2; return L2;
+    },
     async ageTemplatesDialog() {
       const d = this.dossier, an = d.anatomy, list = await this.loadAgeTemplates(), m = document.createElement('div'); m.className = 'modal';
-      const canMake = an && an.status === 'done' && an.mni && an.mni.target === 'MNI305' && !an.mni.template;
+      const canMake = an && an.status === 'done' && an.mni && an.mni.target === S.TEMPLATE_SPACE && !an.mni.template, builtin = this.builtinAgeTemplates();
       m.innerHTML = `<div class="modal-card" style="max-width:640px"><div class="modal-head"><b>Gabarits adaptés à l’âge</b><span class="spacer"></span><button class="close">✕</button></div><div class="prov-body">
-        <div class="hint">Chez l’enfant, la transformation peut passer par un gabarit de son âge : patient → gabarit de l’âge (mêmes repères anatomiques), puis gabarit → MNI305. Les coordonnées restent exprimées en MNI305, commun à la cohorte. Un gabarit se crée ici à partir d’un dossier dont le « T1 » est l’image du gabarit (p. ex. NIHPD 4,5–8,5 ans, Fonov et al. 2011, licence de diffusion libre), une fois son anatomie et sa transformation vers MNI305 calculées : il est rangé dans les réglages de la bibliothèque, partagé par tous ses dossiers.</div>
-        <table class="mini-tab"><tr><th>gabarit</th><th>âges</th><th>repères</th><th>vers MNI305</th><th></th></tr>${list.map((t, i) => `<tr class="${t.off ? 'muted' : ''}"><td>${esc(t.name)}</td><td>${t.ageMin}–${t.ageMax} ans</td><td>${Object.keys(t.landmarks || {}).length}</td><td>${t.toMNI.method === 'affine' ? 'affine' : 'non linéaire'} (${String((t.toMNI.loo || {})[t.toMNI.method === 'affine' ? 'affine' : 'tps'] || '—').replace('.', ',')} mm)</td><td><button class="mini-btn at-off" data-i="${i}">${t.off ? 'réactiver' : 'désactiver'}</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">aucun gabarit installé : MNI305 directement</td></tr>'}</table>
-        ${canMake ? `<div class="form grid2" style="margin-top:10px"><label class="span2">Créer un gabarit à partir de ce dossier — nom <input class="at-n" placeholder="ex. NIHPD 4,5–8,5 ans"></label><label>Âge minimal (ans) <input class="at-a" type="number" step="0.5" min="0"></label><label>Âge maximal (ans) <input class="at-b" type="number" step="0.5" min="0"></label><label class="span2">Source et licence <input class="at-s" placeholder="ex. NIHPD asymétrique, Fonov et al., NeuroImage 2011"></label></div><div class="btnrow"><button class="primary at-make">Créer le gabarit</button></div>` : `<div class="muted small" style="margin-top:8px">Pour créer un gabarit : dossier dont le T1 est l’image du gabarit, anatomie calculée, puis « Transformation non linéaire vers MNI305 » (sans gabarit d’âge).</div>`}
+        <div class="hint">Chez l’enfant, la transformation passe par le gabarit de son âge : patient → gabarit de l’âge (mêmes repères anatomiques), puis gabarit → MNI 2009b. Les coordonnées restent exprimées en MNI 2009b (MNI152NLin2009bAsym), commun à la cohorte. Les gabarits NIHPD asymétriques (Fonov et al., NeuroImage 2011) sont intégrés : la tranche dont le centre est le plus proche de l’âge au T1 est choisie, jusqu’à 18,5 ans. Un gabarit ajouté ici (dossier dont le « T1 » est l’image du gabarit, anatomie et transformation vers MNI 2009b calculées) l’emporte quand sa tranche couvre l’âge ; il est rangé dans les réglages de la bibliothèque.</div>
+        <table class="mini-tab"><tr><th>gabarit</th><th>âges</th><th>repères</th><th>vers MNI 2009b</th><th></th></tr>${builtin.map(t => `<tr class="${t.off ? 'muted' : ''}"><td>${esc(t.name)} <span class="muted small">intégré</span></td><td>${String(t.ageMin).replace('.', ',')}–${String(t.ageMax).replace('.', ',')} ans</td><td>${Object.keys(t.landmarks || {}).length}</td><td>${t.toMNI.method === 'affine' ? 'affine' : 'non linéaire'} (${String((t.toMNI.loo || {})[t.toMNI.method === 'affine' ? 'affine' : 'tps'] || '—').replace('.', ',')} mm)</td><td><button class="mini-btn at-boff" data-id="${esc(t.id)}">${t.off ? 'réactiver' : 'désactiver'}</button></td></tr>`).join('')}${list.map((t, i) => `<tr class="${t.off ? 'muted' : ''}"><td>${esc(t.name)}</td><td>${t.ageMin}–${t.ageMax} ans</td><td>${Object.keys(t.landmarks || {}).length}</td><td>${t.toMNI.method === 'affine' ? 'affine' : 'non linéaire'} (${String((t.toMNI.loo || {})[t.toMNI.method === 'affine' ? 'affine' : 'tps'] || '—').replace('.', ',')} mm)</td><td><button class="mini-btn at-off" data-i="${i}">${t.off ? 'réactiver' : 'désactiver'}</button></td></tr>`).join('')}${builtin.length + list.length ? '' : '<tr><td colspan="5" class="muted">aucun gabarit : MNI 2009b directement</td></tr>'}</table>
+        ${canMake ? `<div class="form grid2" style="margin-top:10px"><label class="span2">Créer un gabarit à partir de ce dossier — nom <input class="at-n" placeholder="ex. NIHPD 4,5–8,5 ans"></label><label>Âge minimal (ans) <input class="at-a" type="number" step="0.5" min="0"></label><label>Âge maximal (ans) <input class="at-b" type="number" step="0.5" min="0"></label><label class="span2">Source et licence <input class="at-s" placeholder="ex. NIHPD asymétrique, Fonov et al., NeuroImage 2011"></label></div><div class="btnrow"><button class="primary at-make">Créer le gabarit</button></div>` : `<div class="muted small" style="margin-top:8px">Pour créer un gabarit : dossier dont le T1 est l’image du gabarit, anatomie calculée, puis « Transformation non linéaire vers MNI 2009b » (sans gabarit d’âge).</div>`}
         <div class="btnrow"><span class="spacer"></span>${an && an.mni ? '<button class="mini-btn at-redo">Recalculer la transformation de ce dossier</button>' : ''}<button class="at-close">Fermer</button></div></div></div>`;
       document.body.appendChild(m); const q = s => m.querySelector(s), close = () => m.remove(); q('.close').onclick = close; q('.at-close').onclick = close;
       const save = async L2 => { const st = (await L.settings()) || {}; st.templates = L2; await L.saveSettings(st); this._libTemplates = L2; };
+      m.querySelectorAll('.at-boff').forEach(b => b.onclick = async () => { const st = (await L.settings()) || {}, off = new Set(st.templatesOff || []), id = b.dataset.id; if (off.has(id)) off.delete(id); else off.add(id); st.templatesOff = [...off]; await L.saveSettings(st); this._tplOff = st.templatesOff; close(); this.ageTemplatesDialog(); });
       m.querySelectorAll('.at-off').forEach(b => b.onclick = async () => { const L2 = list.slice(), t = L2[+b.dataset.i]; t.off = !t.off; await save(L2); close(); this.ageTemplatesDialog(); });
       if (q('.at-redo')) q('.at-redo').onclick = async () => { close(); await this.mniCompute(); };
       if (q('.at-make')) q('.at-make').onclick = async () => {
         const name = q('.at-n').value.trim(), a = +q('.at-a').value, b = +q('.at-b').value; if (!name || !(b > a) || a < 0) { this.toast('Nom et tranche d’âge (minimum < maximum) à renseigner', 4000); return; }
-        const t = { id: 'tpl-' + Date.now().toString(36), name, ageMin: a, ageMax: b, source: q('.at-s').value.trim(), created: S.now(), landmarks: an.landmarks, toMNI: { method: an.mni.method, steps: an.mni.steps, loo: an.mni.loo, n: an.mni.n } };
+        const t = { id: 'tpl-' + Date.now().toString(36), name, ageMin: a, ageMax: b, source: q('.at-s').value.trim(), created: S.now(), landmarks: an.landmarks, space: S.TEMPLATE_SPACE, toMNI: { method: an.mni.method, steps: an.mni.steps, loo: an.mni.loo, n: an.mni.n } };
         await save(list.concat(t)); S.log(d, 'compute', 'dossier', d.id, 'gabarit adapté à l’âge créé : ' + name); this.toast(`Gabarit « ${name} » installé dans la bibliothèque (${a}–${b} ans)`, 5000); close();
       };
     },

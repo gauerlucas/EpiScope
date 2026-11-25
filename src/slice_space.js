@@ -1,7 +1,7 @@
 /* EpiScope — slice_space.js (v5.1) : espace des coupes — IRM du patient (monde du T1) ou gabarit MNI.
  *
- *   Le volet « Coupes IRM » de l'espace de travail suit l'anatomie de la vue 3D : gabarit → T1 moyen MNI ICBM152 2009a
- *   (2 mm, espace fsaverage / MNI305, celui de la méthode atlas) avec la parcellation VEP du gabarit, électrodes prévues
+ *   Le volet « Coupes IRM » de l'espace de travail suit l'anatomie de la vue 3D : gabarit → T1 MNI ICBM 152 NLin 2009b
+ *   asymétrique (2 mm, coordonnées MNI, celui de la méthode atlas) avec la parcellation VEP du gabarit, électrodes prévues
  *   dans leurs coordonnées, électrodes réelles ramenées par l'affine patient → gabarit ; patient → IRM du patient et sa
  *   segmentation. « Gabarit MNI | IRM du patient » bascule le volet (stimulations, thermocoagulations : toujours le
  *   patient). Les coupes affichées dans la 3D suivent la même règle et ne demandent plus ni T1 ni anatomie en gabarit.
@@ -15,7 +15,7 @@
       if (this._tpl) return this._tpl;
       const tj = this.asset && this.asset('template_spm'); if (!tj) throw new Error('gabarit MNI absent de cette version');
       const t1 = await SV.Nifti.read(SV.b64ToArray(tj.t1, Uint8Array));
-      t1.name = 'T1 MNI ICBM152 2009a';
+      t1.name = 'T1 MNI ICBM 152 2009b';
       return (this._tpl = { t1, vep: this.tplVepVol() });
     },
     /** volume VEP de l'atlas (2 mm, i = (128 − x)/2, j = (128 − z)/2, k = (y + 128)/2, k le plus rapide) en volume NIfTI */
@@ -72,7 +72,7 @@
     slvSpaceHtml() {
       const dock = $('sliceDock'), d = this.dossier; if (!dock || this._ipHost !== dock || this.ui.screen !== 'work' || !d || !S.refImaging(d) || ['stim', 'thermo'].includes(this.ui.wm)) return '';
       const sp = this.slvSpace();
-      return `<div class="seg ip-space" title="images du volet : gabarit MNI (comme la vue 3D sur gabarit) ou IRM du patient">${[['tpl', 'MNI', 'gabarit : T1 moyen MNI ICBM152 2009a, parcellation VEP du gabarit, électrodes prévues sur le gabarit'], ['pat', 'Patient', 'IRM du patient, sa segmentation, électrodes réelles']].map(([k, l, t]) => `<button data-sp="${k}" class="${sp === k ? 'on' : ''}" title="${t}">${l}</button>`).join('')}</div>`;
+      return `<div class="seg ip-space" title="images du volet : gabarit MNI (comme la vue 3D sur gabarit) ou IRM du patient">${[['tpl', 'MNI', 'gabarit : T1 MNI ICBM 152 NLin 2009b asymétrique, parcellation VEP du gabarit, électrodes prévues sur le gabarit'], ['pat', 'Patient', 'IRM du patient, sa segmentation, électrodes réelles']].map(([k, l, t]) => `<button data-sp="${k}" class="${sp === k ? 'on' : ''}" title="${t}">${l}</button>`).join('')}</div>`;
     },
   };
   Object.assign(SV.app, M);

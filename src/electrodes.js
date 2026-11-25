@@ -1,4 +1,4 @@
-/* EpiScope — electrodes.js : schéma d'implantation SEEG sur le gabarit fsaverage/VEP.
+/* EpiScope — electrodes.js : schéma d'implantation SEEG sur le gabarit MNI ICBM 152 NLin 2009b asymétrique (atlas VEP).
  *
  * Tradition Talairach–Bancaud (Marseille, Grenoble, Lyon, Milan) : électrodes orthogonales au plan sagittal,
  * nommées d'après la structure visée (nomenclature conventionnelle : A = amygdale, B/C = hippocampe antérieur/postérieur,
@@ -7,12 +7,14 @@
  * haut sur la convexité frontale, précentrale ou pariétale et descendent dans un plan parasagittal vers l'insula
  * antérieure, moyenne ou postérieure ; l'OR est oblique (entrée F2 rostrale, descente vers l'orbitofrontal médial).
  * BM et BL (v2.4.0) sont verticales : entrée F1 (BM) ou F2 (BL) sur la convexité, descente vers le gyrus droit ou l’orbitofrontal.
+ * v3.0.0 : FA, PO (cingulaires moyens antérieur / postérieur), LI (planum temporale), O (pôle occipital), Ib (insulaire
+ * oblique antérieure basse), PB (cunéus supérieur → angulaire) ; toutes les trajectoires sont données en coordonnées MNI.
  * Modèles DIXI Microdeep / Alcis : Ø 0,8 mm, plots de 2 mm espacés de 1,5 mm (pas 3,5 mm), 5 à 18 plots.
  * Règles (Cardinale 2013, 2016, 2019 ; Isnard 2018 ; Afif 2008) : privilégier l'orthogonal (sauf insula), pas de
  * croisement, minimiser le nombre d'électrodes pour un maximum de structures, éviter les entrées en fond de sillon
  * (veines), les entrées trop basses en frontal (sinus), l'os temporal pneumatisé et les entrées trop postérieures.
  *
- * AVERTISSEMENT : ce module produit un SCHÉMA sur gabarit (coordonnées fsaverage), pas une planification
+ * AVERTISSEMENT : ce module produit un SCHÉMA sur gabarit (coordonnées MNI 2009b), pas une planification
  * stéréotaxique ; la trajectoire définitive se fait sur l'IRM et l'angiographie du patient. */
 (function (SV) {
   'use strict';
@@ -54,56 +56,65 @@
   function offsetsOf(model, n) { const m = typeof model === 'string' ? modelById(model) : model; if (m && (!n || m.n === n)) return m.offsets.slice(); const k = n || (m ? m.n : 0); return Array.from({ length: k }, (_, i) => CONTACT_LEN / 2 + i * PITCH); }
 
   /** Bibliothèque des trajectoires conventionnelles (nomenclature Talairach–Bancaud, prime = gauche).
-   *  target = structure visée (famille VEP) ; dx (médial +), dy (antérieur +), dz (supérieur +) = décalage par rapport au centroïde ;
-   *  exit = famille corticale par laquelle l'électrode ressort (direction cible → sortie ; sans exit : orthogonale au plan sagittal) ;
-   *  ex = décalage [médial, antérieur, supérieur] du point de sortie ; oblique = trajectoire oblique assumée ;
-   *  vertical (v2.4.0) = sortie cherchée à l'aplomb de la cible dans la famille exit (trajet de haut en bas). */
+   *  v3.0.0 : géométrie explicite sur le gabarit MNI 2009b — tip (pointe) et entry (point d'entrée) de l'électrode GAUCHE en mm
+   *  MNI, n = nombre de plots du modèle (null : choisi d'après la longueur) ; à droite, miroir x → −x. Jeu de trajectoires placées
+   *  et corrigées à la main par un épileptologue sur le gabarit (gauche et droite symétriques).
+   *  target = structure visée (famille VEP : rattachement des propositions, contrôle « plot dans la cible ») ;
+   *  exit = famille corticale de sortie (renseignement) ; oblique = trajectoire oblique assumée ; vertical = trajet de haut en bas.
+   *  Sans tip / entry (bibliothèques anciennes) : cible au centroïde de la famille décalé de dx (médial +), dy (antérieur +),
+   *  dz (supérieur +), sortie vers la famille exit (décalage ex). */
   const LIBRARY = [
     // --- temporal mésial / basal
-    { code: 'TP', fr: 'pôle temporal', target: 'Temporal-pole', dx: 10, dy: 4, samples: 'pôle temporal mésial → latéral', group: 'temporal' },
-    { code: 'A', alias: 'NA', fr: 'amygdale', target: 'Amygdala', samples: 'amygdale → T2 antérieur', group: 'temporal' },
-    { code: 'B', alias: 'HC', fr: 'hippocampe antérieur (tête)', target: 'Hippocampus-anterior', samples: 'tête de l’hippocampe → T2', group: 'temporal' },
-    { code: 'C', alias: 'HT', fr: 'hippocampe postérieur (queue)', target: 'Hippocampus-posterior', samples: 'hippocampe postérieur → T2 postérieur', group: 'temporal' },
-    { code: 'TB', fr: 'temporo-basal (cortex rhinal)', target: 'Rhinal-cortex', samples: 'cortex rhinal → fusiforme → T3', group: 'temporal' },
-    { code: 'CE', fr: 'parahippocampique antérieur', target: 'Parahippocampal-cortex', dy: 6, samples: 'parahippocampe antérieur → fusiforme → T3', group: 'temporal' },
-    { code: 'GPH', fr: 'parahippocampique postérieur', target: 'Parahippocampal-cortex', dy: -8, samples: 'parahippocampe postérieur → fusiforme → T3 postérieur', group: 'temporal' },
-    { code: 'T', fr: 'T1 antérieur (planum polare)', target: 'T1-planum-polare', exit: 'T1-lateral-anterior', samples: 'planum polare → T1 antérieur', group: 'temporal' },
-    { code: 'H', fr: 'gyrus de Heschl', target: 'Insula-gyri-longi', dy: -14, dz: 6, exit: 'Gyrus-of-Heschl', ex: [0, -6, -2], samples: 'insula postérieure → Heschl → planum temporale → T1', group: 'temporal' },
+    { code: 'TP', fr: 'pôle temporal', target: 'Temporal-pole', tip: [-24.6, 11.7, -36.2], entry: [-61.4, 3.8, -28.8], n: 8, samples: 'pôle temporal mésial → latéral', group: 'temporal' },
+    { code: 'A', alias: 'NA', fr: 'amygdale', target: 'Amygdala', tip: [-19.6, -6.9, -18.8], entry: [-69.1, -8.4, -12.0], n: 12, samples: 'amygdale → T2 antérieur', group: 'temporal' },
+    { code: 'B', alias: 'HC', fr: 'hippocampe antérieur (tête)', target: 'Hippocampus-anterior', tip: [-25.0, -17.1, -20.8], entry: [-70.4, -19.4, -19.8], n: 12, samples: 'tête de l’hippocampe → T2', group: 'temporal' },
+    { code: 'C', alias: 'HT', fr: 'hippocampe postérieur (queue)', target: 'Hippocampus-posterior', tip: [-25.1, -33.1, -9.1], entry: [-72.1, -36.2, -4.6], n: 12, samples: 'hippocampe postérieur → T2 postérieur', group: 'temporal' },
+    { code: 'TB', fr: 'temporo-basal (cortex rhinal)', target: 'Rhinal-cortex', tip: [-28.5, -13.8, -34.8], entry: [-55.0, -13.8, -34.8], n: 8, samples: 'cortex rhinal → fusiforme → T3', group: 'temporal' },
+    { code: 'CE', fr: 'parahippocampique antérieur', target: 'Parahippocampal-cortex', tip: [-20.4, -31.1, -18.0], entry: [-70.0, -32.5, -17.5], n: 15, samples: 'parahippocampe antérieur → fusiforme → T3', group: 'temporal' },
+    { code: 'GPH', fr: 'parahippocampique postérieur', target: 'Parahippocampal-cortex', tip: [-19.2, -39.1, -13.9], entry: [-70.2, -39.1, -13.9], n: 15, samples: 'parahippocampe postérieur → fusiforme → T3 postérieur', group: 'temporal' },
+    { code: 'T', fr: 'T1 antérieur (planum polare)', target: 'T1-planum-polare', exit: 'T1-lateral-anterior', tip: [-35.0, 6.9, -24.9], entry: [-61.6, 6.0, -12.0], n: 8, samples: 'planum polare → T1 antérieur', group: 'temporal' },
+    { code: 'H', fr: 'gyrus de Heschl', target: 'Insula-gyri-longi', exit: 'Gyrus-of-Heschl', tip: [-36.3, -24.0, 5.5], entry: [-69.9, -16.1, 8.2], n: 10, samples: 'insula postérieure → Heschl → planum temporale → T1', group: 'temporal' },
+    { code: 'LI', fr: 'planum temporale (sortie supramarginale)', target: 'T1-planum-temporale', tip: [-42.4, -36.0, 17.5], entry: [-70.4, -40.2, 18.6], samples: 'planum temporale → supramarginal antérieur', group: 'temporal' },
     // --- temporo-occipital
-    { code: 'OT', fr: 'occipito-temporal (fusiforme)', target: 'Fusiform-gyrus', dy: 6, samples: 'fusiforme → T3 postérieur', group: 'postérieur' },
-    { code: 'PFG', fr: 'fusiforme postérieur', target: 'Fusiform-gyrus', dx: 4, dy: -10, samples: 'fusiforme postérieur → O3 / T3 postérieur', group: 'postérieur' },
-    { code: 'GL', fr: 'gyrus lingual', target: 'Lingual-gyrus', samples: 'lingual → fusiforme postérieur → O3', group: 'postérieur' },
-    { code: 'FCA', fr: 'fissure calcarine antérieure', target: 'Calcarine-sulcus', dy: 10, samples: 'calcarine antérieure → O2 / T2 postérieur', group: 'postérieur' },
-    { code: 'Cu', fr: 'cunéus', target: 'Cuneus', samples: 'cunéus → O1 / O2', group: 'postérieur' },
+    { code: 'OT', fr: 'occipito-temporal (fusiforme)', target: 'Fusiform-gyrus', tip: [-28.4, -52.7, -16.0], entry: [-65.3, -53.5, -15.9], n: 8, samples: 'fusiforme → T3 postérieur', group: 'postérieur' },
+    { code: 'PFG', fr: 'fusiforme postérieur', target: 'Fusiform-gyrus', tip: [-18.9, -70.4, -12.1], entry: [-53.7, -71.0, -12.6], n: 5, samples: 'fusiforme postérieur → O3 / T3 postérieur', group: 'postérieur' },
+    { code: 'GL', fr: 'gyrus lingual', target: 'Lingual-gyrus', tip: [-9.2, -69.1, -11.6], entry: [-49.7, -69.1, -11.6], n: 12, samples: 'lingual → fusiforme postérieur → O3', group: 'postérieur' },
+    { code: 'FCA', fr: 'fissure calcarine antérieure', target: 'Calcarine-sulcus', tip: [-17.7, -58.0, 6.4], entry: [-62.3, -64.5, 6.7], n: 15, samples: 'calcarine antérieure → O2 / T2 postérieur', group: 'postérieur' },
+    { code: 'Cu', fr: 'cunéus', target: 'Cuneus', tip: [-4.0, -80.8, 17.2], entry: [-48.3, -80.8, 17.6], n: 12, samples: 'cunéus → O1 / O2', group: 'postérieur' },
+    { code: 'O', fr: 'pôle occipital', target: 'Occipital-pole', tip: [-2.9, -93.5, -6.3], entry: [-39.0, -93.2, -3.4], samples: 'lingual → pôle occipital → O2', group: 'postérieur' },
     // --- insulo-operculaire : orthogonales trans-operculaires
-    { code: 'FT', fr: 'frontal triangulaire → insula antérieure', target: 'Insula-gyri-brevi', dy: 10, dz: 2, exit: 'F3-Pars-triangularis', samples: 'insula antérieure → F3 pars triangularis', group: 'insulo-operculaire' },
-    { code: 'OF', fr: 'opercule frontal → insula antérieure', target: 'Insula-gyri-brevi', dz: 6, exit: 'F3-pars-opercularis', samples: 'insula antérieure → F3 pars opercularis', group: 'insulo-operculaire' },
-    { code: 'OC', fr: 'opercule central → insula moyenne', target: 'Insula-gyri-longi', dy: 8, dz: 8, exit: 'Central-operculum', samples: 'insula moyenne → opercule rolandique', group: 'insulo-operculaire' },
-    { code: 'OP', fr: 'opercule pariétal → insula postérieure', target: 'Insula-gyri-longi', dy: -6, dz: 6, exit: 'Parietal-operculum', samples: 'insula postérieure → opercule pariétal (SII)', group: 'insulo-operculaire' },
+    { code: 'FT', fr: 'frontal triangulaire → insula antérieure', target: 'Insula-gyri-brevi', exit: 'F3-Pars-triangularis', tip: [-33.6, 22.5, 0.0], entry: [-58.4, 24.9, 0.2], n: 8, samples: 'insula antérieure → F3 pars triangularis', group: 'insulo-operculaire' },
+    { code: 'OF', fr: 'opercule frontal → insula antérieure', target: 'Insula-gyri-brevi', exit: 'F3-pars-opercularis', tip: [-37.4, 7.3, 3.7], entry: [-59.6, 13.9, 0.4], n: 8, samples: 'insula antérieure → F3 pars opercularis', group: 'insulo-operculaire' },
+    { code: 'OC', fr: 'opercule central → insula moyenne', target: 'Insula-gyri-longi', exit: 'Central-operculum', tip: [-40.5, -1.2, 6.5], entry: [-63.6, 5.4, 5.4], n: 8, samples: 'insula moyenne → opercule rolandique', group: 'insulo-operculaire' },
+    { code: 'OP', fr: 'opercule pariétal → insula postérieure', target: 'Insula-gyri-longi', exit: 'Parietal-operculum', tip: [-40.7, -13.9, 9.8], entry: [-68.9, -10.6, 15.2], n: 10, samples: 'insula postérieure → opercule pariétal (SII)', group: 'insulo-operculaire' },
     // --- insulaires obliques (Lyon) : entrée haute, trajet parasagittal descendant vers l'insula
-    { code: 'Ia', fr: 'insula antérieure (oblique, sortie F2)', target: 'Insula-gyri-brevi', dy: 4, dz: -4, exit: 'F2-caudal', ex: [-6, 14, -10], oblique: true, samples: 'insula antérieure → F3 / sillon frontal inférieur → F2', group: 'insulaire oblique' },
-    { code: 'Im', fr: 'insula moyenne (oblique, sortie précentrale)', target: 'Insula-gyri-longi', dy: 8, dz: 2, exit: 'Precentral-gyrus-upper-limb', ex: [-12, 0, -6], oblique: true, samples: 'insula moyenne → corona radiata → précentral', group: 'insulaire oblique' },
-    { code: 'Ip', fr: 'insula postérieure (oblique, sortie pariétale supérieure)', target: 'Insula-gyri-longi', dy: -8, dz: -2, exit: 'Superior-parietal-lobule-P1', ex: [-12, 10, -4], oblique: true, samples: 'insula postérieure → Heschl / planum → substance blanche pariétale → pariétal supérieur', group: 'insulaire oblique' },
+    { code: 'Ia', fr: 'insula antérieure (oblique, sortie F2)', target: 'Insula-gyri-brevi', exit: 'F2-caudal', oblique: true, tip: [-37.2, 12.2, -13.4], entry: [-38.0, 40.4, 42.0], n: 12, samples: 'insula antérieure → F3 / sillon frontal inférieur → F2', group: 'insulaire oblique' },
+    { code: 'Im', fr: 'insula moyenne (oblique, sortie précentrale)', target: 'Insula-gyri-longi', exit: 'Precentral-gyrus-upper-limb', oblique: true, tip: [-40.6, 6.4, -12.3], entry: [-49.2, -25.7, 64.6], n: 18, samples: 'insula moyenne → corona radiata → précentral', group: 'insulaire oblique' },
+    { code: 'Ip', fr: 'insula postérieure (oblique, sortie pariétale supérieure)', target: 'Insula-gyri-longi', exit: 'Superior-parietal-lobule-P1', oblique: true, tip: [-39.8, 0.5, -13.9], entry: [-36.2, -36.6, 35.0], n: 18, samples: 'insula postérieure → Heschl / planum → substance blanche pariétale → pariétal supérieur', group: 'insulaire oblique' },
+    { code: 'Ib', fr: 'insula antérieure (oblique, sortie F2 caudal)', target: 'Insula-gyri-brevi', exit: 'F2-caudal', oblique: true, tip: [-41.6, 7.7, -8.3], entry: [-51.0, 20.2, 46.6], n: 12, samples: 'insula antérieure → F3 pars opercularis → F2 caudal', group: 'insulaire oblique' },
     // --- frontal
-    { code: 'FP', fr: 'fronto-polaire (F1 mésial antérieur)', target: 'F1-mesial-prefrontal', dy: 12, dz: -10, samples: 'pôle frontal mésial → F1 latéral → F2 rostral', group: 'frontal' },
-    { code: 'FD', fr: 'frontal dorsal', target: 'F1-mesial-prefrontal', dy: -6, dz: 6, samples: 'F1 mésial préfrontal → F1 latéral → F2', group: 'frontal' },
-    { code: 'OR', fr: 'fronto-orbitaire (oblique)', target: 'Orbito-frontal-cortex', dx: 12, exit: 'F2-rostral', ex: [0, 0, 8], oblique: true, samples: 'orbitofrontal médial → F3 → F2 rostral', group: 'frontal' },
+    { code: 'FP', fr: 'fronto-polaire (F1 mésial antérieur)', target: 'F1-mesial-prefrontal', tip: [-6.2, 62.2, -13.2], entry: [-42.0, 61.0, -8.0], n: 8, samples: 'pôle frontal mésial → F1 latéral → F2 rostral', group: 'frontal' },
+    { code: 'FD', fr: 'frontal dorsal', target: 'F1-mesial-prefrontal', tip: [-3.0, 52.8, 17.7], entry: [-43.0, 51.2, 22.3], n: 8, samples: 'F1 mésial préfrontal → F1 latéral → F2', group: 'frontal' },
+    { code: 'OR', fr: 'fronto-orbitaire (oblique)', target: 'Orbito-frontal-cortex', exit: 'F2-rostral', oblique: true, tip: [-4.0, 47.2, -25.0], entry: [-49.5, 50.3, -6.5], n: 15, samples: 'orbitofrontal médial → F3 → F2 rostral', group: 'frontal' },
     // verticales (v2.4.0) : entrée sur la convexité dorsale (F1, F2), descente vers la face orbitaire
-    { code: 'BM', fr: 'basal médial (verticale, F1 → gyrus droit)', target: 'Gyrus-rectus', dx: -2, exit: 'F1-lateral-prefrontal', ex: [-10, 0, 0], vertical: true, oblique: true, samples: 'gyrus droit → substance blanche frontale → F1', group: 'frontal' },
-    { code: 'BL', fr: 'basal latéral (verticale, F2 → orbitofrontal)', target: 'Orbito-frontal-cortex', exit: 'F2-rostral', vertical: true, oblique: true, samples: 'cortex orbitofrontal → substance blanche frontale → F2', group: 'frontal' },
-    { code: 'R', fr: 'sous-rostral (aire sous-calleuse)', target: 'Subcallosal-area', samples: 'aire sous-calleuse → striatum ventral → orbitofrontal postérieur → F3 orbitaire', group: 'frontal' },
-    { code: 'CR', fr: 'cingulaire rostral (aire 32)', target: 'Anterior-cingulate-cortex', dy: 8, dz: 8, samples: 'cingulaire antérieur rostral → F1 mésial (paracingulaire) → F2 rostral', group: 'frontal' },
-    { code: 'CC', fr: 'cingulaire antérieur (aire 24)', target: 'Middle-cingulate-cortex-anterior-part', dy: 4, samples: 'cingulaire antérieur / moyen antérieur → F1 → F2 caudal', group: 'frontal' },
-    { code: 'PM', fr: 'pré-AMS', target: 'PreSMA', samples: 'pré-AMS → F1 latéral → F2 caudal', group: 'frontal' },
-    { code: 'SA', fr: 'AMS', target: 'SMA', samples: 'AMS → F1 latéral prémoteur', group: 'frontal' },
+    { code: 'BM', fr: 'basal médial (verticale, F1 → gyrus droit)', target: 'Gyrus-rectus', exit: 'F1-lateral-prefrontal', vertical: true, oblique: true, tip: [-4.7, 40.5, -29.1], entry: [-6.2, 42.6, 56.2], n: 18, samples: 'gyrus droit → substance blanche frontale → F1', group: 'frontal' },
+    { code: 'BL', fr: 'basal latéral (verticale, F2 → orbitofrontal)', target: 'Orbito-frontal-cortex', exit: 'F2-rostral', vertical: true, oblique: true, tip: [-33.2, 45.5, -18.7], entry: [-30.4, 47.8, 40.6], n: 18, samples: 'cortex orbitofrontal → substance blanche frontale → F2', group: 'frontal' },
+    { code: 'R', fr: 'sous-rostral (aire sous-calleuse)', target: 'Subcallosal-area', tip: [-3.5, 33.2, -28.3], entry: [-54.4, 30.7, -13.1], n: 12, samples: 'aire sous-calleuse → striatum ventral → orbitofrontal postérieur → F3 orbitaire', group: 'frontal' },
+    { code: 'CR', fr: 'cingulaire rostral (aire 32)', target: 'Anterior-cingulate-cortex', tip: [-4.3, 39.0, 1.2], entry: [-54.1, 41.3, 2.3], n: 10, samples: 'cingulaire antérieur rostral → F1 mésial (paracingulaire) → F2 rostral', group: 'frontal' },
+    { code: 'CC', fr: 'cingulaire antérieur (aire 24)', target: 'Middle-cingulate-cortex-anterior-part', tip: [-6.3, 21.5, 34.3], entry: [-46.8, 21.5, 34.3], n: 12, samples: 'cingulaire antérieur / moyen antérieur → F1 → F2 caudal', group: 'frontal' },
+    { code: 'FA', fr: 'cingulaire moyen antérieur → précentral inférieur', target: 'Middle-cingulate-cortex-anterior-part', tip: [-3.8, 13.9, 28.8], entry: [-63.1, 4.2, 32.0], samples: 'cingulaire moyen antérieur → substance blanche frontale → précentral inférieur (face)', group: 'frontal' },
+    { code: 'PM', fr: 'pré-AMS', target: 'PreSMA', tip: [-4.5, 23.2, 51.3], entry: [-31.0, 23.2, 51.3], n: 8, samples: 'pré-AMS → F1 latéral → F2 caudal', group: 'frontal' },
+    { code: 'SA', fr: 'AMS', target: 'SMA', tip: [-5.1, -6.8, 59.1], entry: [-47.9, 2.4, 57.5], n: 12, samples: 'AMS → F1 latéral prémoteur', group: 'frontal' },
     // --- central / pariétal
-    { code: 'LP', fr: 'lobule paracentral', target: 'Paracentral-lobule', samples: 'lobule paracentral → précentral / postcentral', group: 'central' },
-    { code: 'SC', fr: 'sillon central (main)', target: 'Central-sulcus-upper-limb', samples: 'berges du sillon central → convexité', group: 'central' },
-    { code: 'CP', fr: 'cingulaire paracentral', target: 'Posterior-cingulate-cortex-dorsal', dy: 12, dz: 4, samples: 'cingulaire postérieur dorsal / moyen postérieur → lobule paracentral → postcentral', group: 'central' },
-    { code: 'PA', fr: 'pariétal supérieur antérieur (7A)', target: 'Precuneus', dy: 8, dz: 14, samples: 'précunéus antéro-supérieur → lobule pariétal supérieur', group: 'postérieur' },
-    { code: 'PP', fr: 'pariétal supérieur postérieur (7B)', target: 'Precuneus', dy: -10, dz: 10, samples: 'précunéus postéro-supérieur → lobule pariétal supérieur', group: 'postérieur' },
-    { code: 'PI', fr: 'sub-pariétal (précunéus)', target: 'Precuneus', dy: 2, dz: -10, samples: 'précunéus (sillon sub-pariétal) → supramarginal postérieur', group: 'postérieur' },
-    { code: 'GC', fr: 'isthme du gyrus cingulaire', target: 'Posterior-cingulate-cortex-retrosplenial-gyrus', dz: 4, samples: 'isthme / rétrosplénial → carrefour ventriculaire → T1 postérieur', group: 'postérieur' },
+    { code: 'LP', fr: 'lobule paracentral', target: 'Paracentral-lobule', tip: [-4.2, -40.4, 46.6], entry: [-63.6, -45.8, 43.5], n: 8, samples: 'lobule paracentral → précentral / postcentral', group: 'central' },
+    { code: 'SC', fr: 'sillon central (main)', target: 'Central-sulcus-upper-limb', tip: [-4.2, -29.0, 53.6], entry: [-58.0, -27.0, 55.4], n: 8, samples: 'berges du sillon central → convexité', group: 'central' },
+    { code: 'CP', fr: 'cingulaire paracentral', target: 'Posterior-cingulate-cortex-dorsal', tip: [-2.7, -35.5, 31.2], entry: [-69.0, -32.1, 26.1], n: 18, samples: 'cingulaire postérieur dorsal / moyen postérieur → lobule paracentral → postcentral', group: 'central' },
+    { code: 'PO', fr: 'cingulaire moyen postérieur → sillon central', target: 'Middle-cingulate-cortex-posterior-part', tip: [-3.5, -11.7, 36.8], entry: [-65.4, -12.7, 37.2], samples: 'cingulaire moyen postérieur → corona radiata → sillon central / précentral', group: 'central' },
+    { code: 'PA', fr: 'pariétal supérieur antérieur (7A)', target: 'Precuneus', tip: [-5.1, -52.1, 57.0], entry: [-41.2, -53.4, 61.9], n: 10, samples: 'précunéus antéro-supérieur → lobule pariétal supérieur', group: 'postérieur' },
+    { code: 'PP', fr: 'pariétal supérieur postérieur (7B)', target: 'Precuneus', tip: [-2.8, -68.1, 52.7], entry: [-41.4, -70.0, 53.3], n: 8, samples: 'précunéus postéro-supérieur → lobule pariétal supérieur', group: 'postérieur' },
+    { code: 'PI', fr: 'sub-pariétal (précunéus)', target: 'Precuneus', tip: [-5.1, -51.5, 35.8], entry: [-64.7, -53.3, 36.8], n: 18, samples: 'précunéus (sillon sub-pariétal) → supramarginal postérieur', group: 'postérieur' },
+    { code: 'GC', fr: 'isthme du gyrus cingulaire', target: 'Posterior-cingulate-cortex-retrosplenial-gyrus', tip: [-4.5, -57.2, 13.3], entry: [-64.9, -57.8, 22.0], n: 18, samples: 'isthme / rétrosplénial → carrefour ventriculaire → T1 postérieur', group: 'postérieur' },
+    { code: 'PB', fr: 'cunéus supérieur → gyrus angulaire', target: 'Cuneus', tip: [-1.4, -78.2, 30.1], entry: [-53.3, -74.7, 31.7], samples: 'cunéus supérieur → sillon pariéto-occipital → sillon intrapariétal → gyrus angulaire', group: 'postérieur' },
   ];
 
   const SULCAL = /sulcus|^STS|^ITS|^SFS|Parieto-occipital|Intraparietal|Marginal-branch|Collateral|Occipito-temporal-sulcus|Lingual-sulcus/;
@@ -117,7 +128,8 @@
       for (let i = 0; i < rv.length; i++) { data.fill(rv[i], p, p + rn[i]); p += rn[i]; }
       this.data = data;
     }
-    /** étiquette au point tkrRAS (mm) : 0 hors cerveau, 1–162 région, 200 SB, 201 LCR, 202 autre */
+    /** étiquette au point du gabarit (mm MNI 2009b ; grille centrée sur 128, convention héritée de fsaverage) : 0 hors
+     *  cerveau, 1–162 région, 200 SB, 201 LCR, 202 autre */
     labelAt(x, y, z) {
       const i = Math.round((128 - x) / this.vox) - this.off[0], j = Math.round((128 - z) / this.vox) - this.off[1], k = Math.round((y + 128) / this.vox) - this.off[2];
       if (i < 0 || j < 0 || k < 0 || i >= this.dims[0] || j >= this.dims[1] || k >= this.dims[2]) return 0;
@@ -225,9 +237,22 @@
     return vol.nearestOf(xi, [x0[0] - lat * ex[0], x0[1] + ex[1], x0[2] + ex[2]], 16) || x0;
   }
 
-  /** Électrode de bibliothèque pour un hémisphère, avec recherche d'une entrée hors sillon (décalages ±2…6 mm) */
+  /** Électrode de bibliothèque pour un hémisphère : géométrie explicite (v3.0.0 : pointe et entrée sur le gabarit, miroir à
+   *  droite ; entrée recalculée au bord du cerveau le long de la même direction) ; sinon cible de famille avec recherche d'une
+   *  entrée hors sillon (décalages ±2…6 mm) */
   function fromLibrary(lib, hemi, atlas, vol, opts) {
-    const idx = atlas.idx(lib.target, hemi); if (!idx) return null;
+    const idx = atlas.idx(lib.target, hemi);
+    if (lib.tip && lib.entry) {
+      const mir = p => hemi === 'L' ? p.slice() : [-p[0], p[1], p[2]], tip = mir(lib.tip), entry = mir(lib.entry);
+      const name = SV.Side ? SV.Side.name(lib.code, hemi, opts && opts.sideConv) : lib.code + (hemi === 'L' ? '’' : '');
+      const mk = opts && opts.maker, model = lib.n ? modelFor(mk, lib.n) : null;
+      const e = build(Object.assign({ code: lib.code, lib: lib.code, name, hemi, target: tip, targetIndex: idx || 0, exit: entry, exitFamily: lib.exit || null, overshoot: 0, oblique: !!lib.oblique, fr: lib.fr, maker: mk, model: model ? model.id : undefined }, opts && opts.spec), atlas, vol);
+      // trajectoire placée à la main : la « cible » est la région du plot le plus profond quand la famille nominale n'est pas
+      // échantillonnée (pointe juste en deçà de la structure, par exemple)
+      if (e && !e.regions.has(e.targetIndex)) { const c = e.contacts.find(x => x.label >= 1 && x.label <= 162); if (c) { e.targetIndex = c.label; e.issues = e.issues.filter(i => !/^aucun plot dans la cible/.test(i.text)); } }
+      return e;
+    }
+    if (!idx) return null;
     const lat = hemi === 'L' ? -1 : 1, c0 = atlas.region(idx).centroid;
     const c = vol.nearestOf(idx, [c0[0] - lat * (lib.dx || 0), c0[1] + (lib.dy || 0), c0[2] + (lib.dz || 0)], 14) || c0;
     const exit = exitPoint(lib, hemi, atlas, vol, c);

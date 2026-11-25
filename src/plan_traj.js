@@ -11,7 +11,7 @@
  *   - Au clic : un clic (coupes IRM ou structure profonde en 3D) donne une cible ; la trajectoire faisable la plus courte est cherchée parmi
  *     ~900 directions (incidence ≤ 45°, même côté, hors zones à risque, à distance des autres électrodes, sans
  *     ventricule), puis le modèle choisi.
- * Espaces : « patient » = monde du T1 (plan.tip / plan.entry) ; « gabarit » = tkrRAS fsaverage (target / exit). */
+ * Espaces : « patient » = monde du T1 (plan.tip / plan.entry) ; « gabarit » = MNI 2009b (target / exit). */
 (function (SV) {
   'use strict';
   const M4 = SV.Mat4;
@@ -111,7 +111,7 @@
     for (let s = 0.5; s <= max; s += 0.5) { const f = hull.field(add(tip, dir, s)); if (f < 0.5) { const t = (prev - 0.5) / Math.max(1e-6, prev - f), se = s - 0.5 + 0.5 * t; return { entry: add(tip, dir, se), len: se }; } prev = f; }
     return null;
   }
-  /** règles d'entrée sur le gabarit (tkrRAS) : q = point d'entrée */
+  /** règles d'entrée sur le gabarit (MNI) : q = point d'entrée */
   function zoneIssues(q) {
     const out = [];
     if (q[1] > 40 && q[2] < 0) out.push({ sev: 2, text: 'entrée frontale basse : sinus frontal / orbite' });
@@ -196,7 +196,7 @@
   const A = SV.app, S = SV.Store;
   const hasReal = s => !!(s && s.real && s.real.contacts && s.real.contacts.length);
   const M = {
-    /** contexte de calcul : 'patient' (monde du T1, segmentation du patient) ou 'template' (tkrRAS, volume VEP) */
+    /** contexte de calcul : 'patient' (monde du T1, segmentation du patient) ou 'template' (MNI 2009b, volume VEP) */
     trajCtx(space) {
       const P = this.patientAnat;
       if (space === 'patient') {

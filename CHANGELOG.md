@@ -2,6 +2,36 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [3.0.0] — 2026-11-25
+
+Le gabarit d'EpiScope devient le cerveau moyen **MNI ICBM 152 non linéaire 2009b asymétrique** (MNI152NLin2009bAsym) partout : vue 3D, coupes, parcellation VEP du gabarit, schéma d'implantation, recalage du patient, coordonnées MNI des exports. Chez l'enfant, la transformation vers MNI passe par le gabarit **NIHPD** de l'âge le plus proche. La bibliothèque des électrodes conventionnelles est redéfinie en coordonnées MNI. Les dossiers des versions antérieures sont convertis à l'ouverture.
+
+### Modifié
+
+- **Gabarit MNI 2009b** (Fonov et al. 2009, 2011) à la place de fsaverage (MNI305) :
+  - **surfaces** piale et gonflée segmentées sur le T1 de 2009b à 0,5 mm (≈ 32 000 sommets par hémisphère au lieu de 10 242, topologie sphérique, profondeur sulcale), régions VEP de chaque sommet ; structures profondes ;
+  - **parcellation VEP du gabarit** (volume de 2 mm) : tissus de 2009c, noyaux gris et ventricules de MeshNet, régions corticales reportées depuis l'ancien gabarit par la matrice publiée MNI305 → MNI152 ;
+  - **repères du recalage** patient → gabarit (centres des 104 classes) et **gabarit de la méthode atlas** (T1 extrait du crâne, 104 classes) recalculés sur 2009b ; masque du cerveau et probabilités de substance grise, blanche et de LCR (a priori de la méthode atlas, tissus du gabarit) tirés de la version **2009c** du même gabarit (même espace, 1 mm) ;
+  - **coupes du gabarit** : T1 de 2009b ;
+  - coordonnées « MNI » des exports : `space-MNI152NLin2009bAsym` (électrodes BIDS, `coordsystem.json`, transformations `from-T1w_to-MNI152NLin2009bAsym`), cohorte (`transforms.csv`, `contacts.csv`).
+- **Bibliothèque des électrodes conventionnelles** : chaque trajectoire est définie par sa pointe et son point d'entrée en coordonnées MNI 2009b (jeu placé et corrigé à la main par un épileptologue sur le gabarit, gauche et droite symétriques), au lieu d'une cible déduite des centres des régions ; l'entrée est recalculée au bord du cerveau le long de la même direction, le modèle (nombre de plots) est celui de la bibliothèque. Les 38 trajectoires existantes sont reprises.
+
+### Ajouté
+
+- **Gabarits pédiatriques NIHPD asymétriques intégrés** (4,5–8,5 ; 7–11 ; 7,5–13,5 ; 10–14 ; 13–18,5 ans ; Fonov et al. 2011) : la transformation vers MNI d'un patient de moins de 18,5 ans passe par le gabarit de la tranche dont le centre est le plus proche de son âge au T1 (`S.nearestAgeTemplate`). Un gabarit ajouté à la bibliothèque l'emporte quand sa tranche couvre l'âge ; chaque gabarit intégré peut être désactivé (Gabarits adaptés à l'âge…).
+- **Six trajectoires** dans la bibliothèque : FA (cingulaire moyen antérieur → précentral inférieur), PO (cingulaire moyen postérieur → sillon central), LI (planum temporale), O (pôle occipital), Ib (insulaire oblique antérieure, sortie F2 caudal), PB (cunéus supérieur → gyrus angulaire).
+- Outils de construction des gabarits (hors ligne, reproductibles, à partir des fichiers du MNI téléchargés par l'utilisateur) : `tools/make_templates.mjs`, `make_templates_vol.py`, `make_templates_assets.py`, `make_templates_peds.py` ; données de l'ancien gabarit gardées dans `tools/data`.
+
+### Migration
+
+- Dossier d'une version antérieure (sans `templateSpace`) : transformation patient → gabarit, transformation vers MNI (étape affine ajoutée en fin de chaîne) et cibles / sorties des électrodes du schéma portées de MNI305 vers MNI 2009b (`S.migrateTemplate`, matrice publiée par FreeSurfer) ; révision gardée, conversion inscrite au journal. Les régions VEP figées des plots ne changent pas. Une électrode du schéma posée sur l'ancien gabarit garde sa position en coordonnées MNI ; l'anatomie du gabarit ayant changé, ses plots peuvent tomber dans une région voisine : à revoir. Pour un patient dont l'anatomie est calculée, « Recalculer la transformation non linéaire » l'ajuste sur les nouveaux repères.
+- Gabarits adaptés à l'âge créés dans la bibliothèque avant la 3.0.0 : étape MNI305 → MNI 2009b ajoutée à leur transformation.
+
+### Documentation
+
+- Manuel (fr / en) : Imagerie › Vers l'espace MNI (gabarit 2009b, gabarits NIHPD, conversion des anciens dossiers), SEEG › Planification (bibliothèque en coordonnées MNI, nouvelles trajectoires), Rapports (espace BIDS), glossaire.
+- Crédits et mentions légales : gabarits MNI ICBM 152 2009b, 2009c et NIHPD (avis de copyright du MNI).
+
 ## [2.4.0] — 2026-11-25
 
 Deux interventions types (hémisphérotomie ; résection temporale + déconnexion pariéto-occipitale) et deux électrodes verticales (BM, BL) ; cavité de résection corrigée (référence du LCR lue sur l'image, contacts en bordure signalés) ; reprise d'un schéma d'implantation dans la SEEG ouverte réparée.
