@@ -143,9 +143,12 @@
     uiSlot(d) { const u = (L.user || '').trim(); if (!u) return d.ui; d.ui.byUser = d.ui.byUser || {}; return d.ui.byUser[u] = d.ui.byUser[u] || {}; },
     rememberCtx() { if (!this.dossier) return; const slot = this.uiSlot(this.dossier); slot.lastCtx = this.ctx; if (this.loc) slot.loc = this.loc; slot.at = S.now(); if (slot !== this.dossier.ui) { this.dossier.ui.lastCtx = this.ctx; if (this.loc) this.dossier.ui.loc = this.loc; } LSset('sv_last', { dossierId: this.dossier.id, ctx: this.ctx, loc: this.loc }); },
     /** ouvre une crise ({seizureId}) ou une exploration sans crise ({explorationId}) dans l'espace de travail */
-    openContext(ctx, silent) {
+    /** fresh : le dossier vient d'être modifié hors de l'espace de travail (reprise d'un schéma, restauration depuis la corbeille…)
+     *  après un persistWorkspace déjà fait par l'appelant — on recharge sans réécrire l'ancien espace de travail par-dessus
+     *  (v2.3.1 : sinon la reprise du schéma était effacée aussitôt, la source restant notée) */
+    openContext(ctx, silent, fresh) {
       const d = this.dossier; if (!d) return;
-      if (this.ctx) this.persistWorkspace();
+      if (this.ctx && !fresh) this.persistWorkspace();
       const c = S.resolveCtx(d, ctx); if (!c) return;
       const st = S.toWorkspace(d, ctx);
       this.ctx = { seizureId: c.seizure ? c.seizure.id : null, explorationId: c.exploration.id };
@@ -334,7 +337,7 @@
         for (const m of d.meetings) T.meetings.push({ patient: pid, date: m.date, kind: m.kind, exploration: (S.byId(d.explorations, m.explorationId) || {}).label || '', participants: m.participants, conclusion: m.conclusion });
         for (const H of d.hypotheses) T.hypotheses.push({ patient: pid, lineage: H.lineage, version: H.version, title: H.title, side: H.side, ez: regs(H.ez), propagation: regs(H.prop), confidence: H.confidence, status: H.status, meeting: (S.byId(d.meetings, H.meetingId) || {}).date || '', source: H.source && H.source.kind, created: H.created });
         for (const x of d.decisions) T.decisions.push({ patient: pid, date: x.date, type: x.type, status: x.status, text: x.text, targets: regs(x.targets), meeting: (S.byId(d.meetings, x.meetingId) || {}).date || '' });
-        for (const p of d.procedures) T.procedures.push({ patient: pid, date: p.date, type: p.type, side: p.side, target: p.target, regions: regs(p.regions), histology_codes: (p.histologyCodes || []).join('|'), histology: p.histology, n_resected_contacts: ((p.resection || {}).contacts || []).length, cavity_ml: (p.resection || {}).cavity ? p.resection.cavity.volumeMl : '', complications: p.complications });
+        for (const p of d.procedures) T.procedures.push({ patient: pid, date: p.date, type: p.type, template: p.template || '', side: p.side, target: p.target, regions: regs(p.regions), disconnected_regions: regs((p.regions || []).filter(r => (p.extent || {})[r] === 'disc')), histology_codes: (p.histologyCodes || []).join('|'), histology: p.histology, n_resected_contacts: ((p.resection || {}).contacts || []).length, cavity_ml: (p.resection || {}).cavity ? p.resection.cavity.volumeMl : '', complications: p.complications });
         for (const o of d.outcomes) T.outcomes.push({ patient: pid, date: o.date, months: S.outcomeMonths(d, o), procedure: (S.byId(d.procedures, o.procedureId) || {}).type || '', engel: o.engel, ilae: o.ilae, aeds: o.aeds });
       }
       const csv = rows => { if (!rows.length) return ''; const cols = Object.keys(rows[0]); const q = v => { const s = v == null ? '' : String(v); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }; return '﻿' + cols.join(',') + '\n' + rows.map(r => cols.map(c => q(r[c])).join(',')).join('\n') + '\n'; };

@@ -40,6 +40,12 @@ with sync_playwright() as p:
     r = pg.evaluate("(() => { const p = SV.Store.byId(SV.app.dossier.procedures, window._pid); return { c: p.resection.contacts, head: document.querySelector('.resect .card-h').textContent, on: document.querySelectorAll('.rs-c.on').length }; })()")
     check(len(r['c']) == 2 and all(c['how'] == 'manual' for c in r['c']) and "A'1–2" in r['head'] and r['on'] == 2, f'contacts déclarés à la main, résumé « A\'1–2 » ({r["head"]})')
     check(pg.evaluate("!!document.querySelector('.rs-cav') && /Anatomie du patient/.test(document.querySelector('.rs-cav').textContent)"), 'cavité : prérequis indiqué (anatomie à calculer)')
+    # v2.4.0 : contacts en bordure de la cavité signalés (pointillé, liste « à vérifier »), jamais ajoutés seuls
+    r = pg.evaluate("""(() => { const A = SV.app, p = SV.Store.byId(A.dossier.procedures, window._pid);
+      p.resection.cavity = { imagingId: null, postopId: null, postDate: '2025-07-01', thr: 0.3, minMl: 1, keep: [1], volumeMl: 12.5, nContacts: 0, tolMm: 1.5, margin: [{ e: 'eA', k: 3, mm: 2.4 }, { e: 'eA', k: 1, mm: 3 }], marginMm: 5, regions: [] };
+      A.renderResection(); const b = document.querySelector('.rs-c[data-e=eA][data-k="3"]'), b1 = document.querySelector('.rs-c[data-e=eA][data-k="1"]');
+      return { dashed: b.classList.contains('margin'), title: b.title, onNotDashed: !b1.classList.contains('margin'), txt: document.querySelector('.rs-cav').textContent, n: p.resection.contacts.length }; })()""")
+    check(r['dashed'] and '2,4 mm' in r['title'] and r['onNotDashed'] and 'en bordure' in r['txt'] and r['n'] == 2, f'contacts en bordure : pointillé, distance au survol, liste à vérifier, rien d’ajouté {r["txt"][-80:]}')
     pg.screenshot(path=os.path.join(OUT, 'research_fields_proc.png'), full_page=True)
     # 2. développement : comorbidités à trois états
     pg.evaluate("SV.app.go({ stage: 'dossier', view: 'developpement' })"); pg.wait_for_timeout(1000)

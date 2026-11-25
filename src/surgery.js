@@ -8,7 +8,12 @@
  *     langage) + structures mésiales (amygdale, hippocampe, parahippocampe) ;
  *   - résection antéro-mésiale (Spencer) : pôle, T2–T3 antérieurs en partie, structures mésiales ;
  *   - amygdalo-hippocampectomie sélective : amygdale, hippocampe, cortex entorhinal / parahippocampique antérieur ;
- *   - sur mesure : ZE des hypothèses retenues, lésion déclarée, ou régions choisies.
+ *   - sur mesure : ZE des hypothèses retenues, lésion déclarée, ou régions choisies ;
+ *   - v2.4.0 — déconnexions : étendue « disc » (région déconnectée, laissée en place ; peinte en violet) :
+ *     hémisphérotomie (Delalande 1992, 2007 ; Villemure et Mascott 1995) : tout le cortex de l'hémisphère déconnecté ;
+ *     résection temporale + déconnexion pariéto-occipitale (déconnexion temporo-pariéto-occipitale, Daniel et al. 2007) :
+ *     lobe temporal emporté (néocortex et structures mésiales), cortex pariétal en arrière du gyrus postcentral, occipital
+ *     et pariétal médial (précunéus, cingulaire postérieur) déconnectés ; régions sensorimotrices respectées.
  * Visualisation : vues (latérale, inférieure, médiale en verre) peintes — résection en rouge (partielle en orangé), ZE
  * des hypothèses comprise dans la résection en rouge sombre, ZE hors résection en bleu — et bilan de couverture.   */
 (function (SV) {
@@ -18,6 +23,14 @@
   const h = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
   const MESIAL = [['Amygdala', 1], ['Hippocampus-anterior', 1], ['Hippocampus-posterior', 0.5], ['Parahippocampal-cortex', 0.5], ['Rhinal-cortex', 1]];
+  // familles VEP (data/regions.csv) des déconnexions : tout le cortex (noyaux gris et cervelet exclus) ; lobe temporal ;
+  // cortex pariéto-occipital en arrière du gyrus postcentral (versant latéral et médial)
+  const SYS_FAMS = {
+    temporal: ['Temporal-pole', 'Parahippocampal-cortex', 'Rhinal-cortex', 'Hippocampus-anterior', 'Hippocampus-posterior', 'Amygdala', 'T1-planum-polare', 'Gyrus-of-Heschl', 'T1-planum-temporale', 'T1-lateral-anterior', 'T1-lateral-posterior', 'STS-anterior', 'STS-posterior', 'ITS-anterior', 'ITS-posterior', 'T2-anterior', 'T2-posterior', 'T3-anterior', 'T3-posterior', 'Fusiform-gyrus', 'Occipito-temporal-sulcus', 'Collateral-sulcus'],
+    parietoOcc: ['Postcentral-sulcus', 'Superior-parietal-lobule-P1', 'Supramarginal-anterior', 'Supramarginal-posterior', 'Angular-gyrus', 'Intraparietal-sulcus', 'Precuneus', 'Posterior-cingulate-cortex-dorsal', 'Posterior-cingulate-cortex-retrosplenial-gyrus', 'Parieto-occipital-sulcus', 'Lingual-sulcus', 'Anterior-occipital-sulcus-and-preoccipital-notch', 'O3', 'O2', 'O1', 'Occipital-pole', 'Lingual-gyrus', 'Calcarine-sulcus', 'Cuneus'],
+    other: ['Frontal-pole', 'F3-Pars-Orbitalis', 'F3-Pars-triangularis', 'Inferior-frontal-sulcus', 'F2-rostral', 'Middle-frontal-sulcus', 'SFS-rostral', 'F1-lateral-prefrontal', 'Orbito-frontal-cortex', 'Gyrus-rectus', 'F3-pars-opercularis', 'Central-operculum', 'Parietal-operculum', 'Insula-gyri-brevi', 'Insula-gyri-longi', 'F2-caudal', 'SFS-caudal', 'PreSMA', 'SMA', 'F1-lateral-premotor', 'Precentral-sulcus-inferior-part', 'Precentral-sulcus-superior-part', 'F1-mesial-prefrontal', 'Subcallosal-area', 'Anterior-cingulate-cortex', 'Middle-cingulate-cortex-anterior-part', 'Precentral-gyrus-head-face', 'Precentral-gyrus-upper-limb', 'Central-sulcus-head-face', 'Central-sulcus-upper-limb', 'Paracentral-lobule', 'Postcentral-gyrus', 'Middle-cingulate-cortex-posterior-part', 'Marginal-branch-of-the-cingulate-sulcus'],
+  };
+  const TEMPORAL = SYS_FAMS.temporal, PARIETO_OCC = SYS_FAMS.parietoOcc, HEMI_CORTEX = [...SYS_FAMS.other, ...TEMPORAL, ...PARIETO_OCC];
   const TEMPLATES = {
     atl: { fr: 'lobectomie temporale antérieure réglée', type: 'lobectomy', ref: 'Falconer, Penfield ; Wiebe et al. 2001',
       fams: dominant => [['Temporal-pole', 1], ['T1-planum-polare', dominant ? 0.5 : 1], ['T1-lateral-anterior', dominant ? 0 : 1], ['STS-anterior', dominant ? 0.5 : 1], ['T2-anterior', dominant ? 0.5 : 1], ['ITS-anterior', 1], ['T3-anterior', 1], ['Fusiform-gyrus', 0.5], ['Occipito-temporal-sulcus', 0.5], ['Collateral-sulcus', 0.5]].concat(MESIAL),
@@ -26,11 +39,16 @@
       fams: () => [['Temporal-pole', 1], ['T2-anterior', 0.5], ['ITS-anterior', 0.5], ['T3-anterior', 0.5], ['Fusiform-gyrus', 0.5], ['Collateral-sulcus', 0.5]].concat(MESIAL), note: () => 'néocortex limité (~3–3,5 cm), T1 respectée' },
     sah: { fr: 'amygdalo-hippocampectomie sélective', type: 'resection', ref: 'Yaşargil, Wieser 1982',
       fams: () => [['Amygdala', 1], ['Hippocampus-anterior', 1], ['Hippocampus-posterior', 0.5], ['Rhinal-cortex', 0.5], ['Parahippocampal-cortex', 0.5]], note: () => 'voie trans-sylvienne ou sous-temporale ; néocortex respecté' },
+    hemispherotomy: { fr: 'hémisphérotomie', type: 'disconnection', ref: 'Delalande et al. 1992, 2007 ; Villemure et Mascott 1995',
+      fams: () => HEMI_CORTEX.map(f => [f, 'disc']), note: () => 'tout le cortex de l’hémisphère déconnecté (voie verticale parasagittale ou péri-insulaire) ; peu ou pas de cortex retiré' },
+    tpo: { fr: 'résection temporale + déconnexion pariéto-occipitale', type: 'disconnection', ref: 'Daniel et al. 2007',
+      fams: () => TEMPORAL.map(f => [f, 1]).concat(PARIETO_OCC.map(f => [f, 'disc'])),
+      note: dominant => 'lobe temporal emporté, cortex pariétal (en arrière du postcentral), occipital et pariétal médial déconnectés ; motricité respectée, hémianopsie latérale homonyme attendue' + (dominant ? ' ; côté dominant : langage à évaluer' : '') },
     ez: { fr: 'résection sur mesure : ZE retenue', type: 'resection', custom: 'ez', note: () => 'régions de la zone épileptogène des hypothèses retenues' },
     lesion: { fr: 'lésionectomie', type: 'resection', custom: 'lesion', note: () => 'régions de la lésion déclarée' },
     custom: { fr: 'sur mesure (régions choisies)', type: 'resection', custom: 'manual', note: () => '' },
   };
-  const COL = { res: [220, 62, 62, 0.92], part: [240, 150, 70, 0.8], ezIn: [140, 20, 50, 0.95], ezOut: [78, 168, 255, 0.95] };
+  const COL = { res: [220, 62, 62, 0.92], part: [240, 150, 70, 0.8], disc: [150, 95, 205, 0.85], ezIn: [140, 20, 50, 0.95], ezOut: [78, 168, 255, 0.95] };
 
   const M = {
     surgeryTemplates: TEMPLATES,
@@ -41,16 +59,18 @@
       if (T.custom === 'lesion') { const R = S.lesionRegions(d).filter(r => !side || A.hemiOf[r] === side); return { regions: R, extent: {} }; }
       if (T.custom === 'manual') return { regions: (ctx && ctx.regions) || [], extent: (ctx && ctx.extent) || {} };
       const dominant = (d.patient.dominant || 'L') === side || d.patient.dominant === 'B', regions = [], extent = {};
-      for (const [fam, e] of T.fams(dominant)) { if (!e) continue; const r = A.idx(fam, side); if (!r) continue; regions.push(r); if (e < 1) extent[r] = e; }
+      for (const [fam, e] of T.fams(dominant)) { if (!e) continue; const r = A.idx(fam, side); if (!r) continue; regions.push(r); if (e === 'disc' || e < 1) extent[r] = e; }
       return { regions, extent };
     },
+    /** mention d'une région de l'intervention : partielle, déconnectée (v2.4.0) */
+    surgeryExt(extent, r) { const e = extent && extent[r]; return e === 'disc' ? ' (déconnecté)' : e ? ' (partiel)' : ''; },
     surgeryLabel(o) { const T = TEMPLATES[o.template]; return T ? T.fr + (o.side ? (o.side === 'L' ? ' gauche' : ' droite') : '') : (o.target || ''); },
     /** couverture : ZE des hypothèses comprise dans la résection */
     surgeryCoverage(regions, hyps) { const R = new Set(regions); return hyps.filter(H => H.ez.length).map(H => ({ H, in: H.ez.filter(r => R.has(r)), out: H.ez.filter(r => !R.has(r)) })); },
     /** peinture de la vue : résection (pleine / partielle), ZE comprise ou non */
     surgeryPaint(regions, extent, hyps) {
       const map = new Map(), ez = new Set((hyps || []).flatMap(H => H.ez)), R = new Set(regions);
-      for (const r of regions) map.set(r, extent && extent[r] ? COL.part : COL.res);
+      for (const r of regions) map.set(r, extent && extent[r] === 'disc' ? COL.disc : extent && extent[r] ? COL.part : COL.res);
       for (const r of ez) map.set(r, R.has(r) ? COL.ezIn : COL.ezOut);
       return map;
     },
@@ -89,7 +109,7 @@
       this._slvSurg = { regions: o.regions || [], extent: o.extent || {}, hyps: o.hyps || [] }; this._slvForce = o.key; this._slvForceHost = host;
       const st = this.slvState(), mode = post ? (st.surgMode && (st.surgMode !== 'cmp' || reg(post)) ? st.surgMode : reg(post) ? 'cmp' : 'post') : 'pre';
       const MODES = [['pre', 'T1 pré-op', 'T1 de référence, régions de l’intervention peintes'], ['post', 'post-op', 'IRM post-opératoire, régions de l’intervention peintes'], ['cmp', 'pré / post', 'T1 pré-opératoire en rouge sous l’IRM post-opératoire en gris (fond transparent) : la cavité montre le cortex d’avant l’intervention']];
-      const leg = mode === 'cmp' ? '<span><i style="background:rgb(205,38,30)"></i>T1 pré-opératoire</span><span><i style="background:#bbb"></i>IRM post-opératoire</span>' : '<span><i style="background:rgb(220,62,62)"></i>résection</span><span><i style="background:rgb(240,150,70)"></i>partielle</span><span><i style="background:rgb(140,20,50)"></i>ZE comprise</span><span><i style="background:rgb(78,168,255)"></i>ZE hors résection</span>';
+      const leg = mode === 'cmp' ? '<span><i style="background:rgb(205,38,30)"></i>T1 pré-opératoire</span><span><i style="background:#bbb"></i>IRM post-opératoire</span>' : '<span><i style="background:rgb(220,62,62)"></i>résection</span><span><i style="background:rgb(240,150,70)"></i>partielle</span><span><i style="background:rgb(150,95,205)"></i>déconnectée</span><span><i style="background:rgb(140,20,50)"></i>ZE comprise</span><span><i style="background:rgb(78,168,255)"></i>ZE hors résection</span>';
       host.innerHTML = `<div class="ssl-bar">${p ? `<label title="IRM post-opératoire associée à l’intervention">IRM post-op <select class="ssl-post"><option value="">—</option>${cands.map(im => `<option value="${im.id}"${post === im ? ' selected' : ''}>${esc((V.modality[im.modality] || im.modality) + (im.date ? ' ' + new Date(im.date + 'T12:00:00').toLocaleDateString(SV.LOC) : '') + (im.timepoint ? ' · ' + (V.timepoint[im.timepoint] || '') : '') + (reg(im) ? '' : ' (non recalée)'))}</option>`).join('')}</select></label>
         <span class="seg">${MODES.map(([k, l, t]) => `<button data-m="${k}" title="${esc(t)}" class="${k === mode ? 'on' : ''}"${k !== 'pre' && !post || k === 'cmp' && !reg(post) ? ' disabled' : ''}>${l}</button>`).join('')}</span>` : ''}<span class="ssl-leg">${leg}</span></div>
         ${post && !reg(post) ? '<div class="hint ssl-warn">IRM post-opératoire non recalée sur le T1 : Imagerie › recaler, pour la superposer.</div>' : ''}${!A ? '<div class="hint ssl-warn">Régions : calculez l’anatomie du patient (écran Imagerie) pour les peindre sur son IRM.</div>' : ''}<div class="ssl-ip"></div>`;
@@ -117,8 +137,8 @@
       const box = h('div', 'surg-ed');
       const side0 = obj.side || (list.length ? A.hemiOf[list[0]] : (hyps.find(H => H.side === 'L' || H.side === 'R') || {}).side) || '';
       box.innerHTML = `<div class="form row4"><label class="span2">Intervention <select class="tpl"><option value="">—</option>${Object.entries(TEMPLATES).map(([k, T]) => `<option value="${k}"${obj.template === k ? ' selected' : ''}>${esc(T.fr)}</option>`).join('')}</select></label><label>Côté <select class="side"><option value="">—</option><option value="L"${side0 === 'L' ? ' selected' : ''}>gauche</option><option value="R"${side0 === 'R' ? ' selected' : ''}>droit</option></select></label><label>&nbsp;<span class="btnrow"><button class="mini-btn show3d" title="vue 3D manipulable (tourner, zoomer) dans une fenêtre">⟲ vue 3D</button><button class="mini-btn redraw" title="recalculer les vues">↻ vues</button></span></label></div>
-        <div class="surg-note small muted"></div><div class="surg-wrap"><div class="surg-regs"><span class="lbl">Régions réséquées</span><div class="rp"></div><div class="surg-cov small"></div></div><div class="surg-viz"><div class="hint">vues : choisissez une intervention</div></div></div>
-        <div class="surg-leg small"><i style="background:rgb(220,62,62)"></i> résection <i style="background:rgb(240,150,70)"></i> partielle <i style="background:rgb(140,20,50)"></i> ZE comprise <i style="background:rgb(78,168,255)"></i> ZE hors résection</div>`;
+        <div class="surg-note small muted"></div><div class="surg-wrap"><div class="surg-regs"><span class="lbl">Régions réséquées ou déconnectées</span><div class="rp"></div><div class="surg-cov small"></div></div><div class="surg-viz"><div class="hint">vues : choisissez une intervention</div></div></div>
+        <div class="surg-leg small"><i style="background:rgb(220,62,62)"></i> résection <i style="background:rgb(240,150,70)"></i> partielle <i style="background:rgb(150,95,205)"></i> déconnectée <i style="background:rgb(140,20,50)"></i> ZE comprise <i style="background:rgb(78,168,255)"></i> ZE hors résection</div>`;
       const note = () => { const T = TEMPLATES[obj.template]; box.querySelector('.surg-note').textContent = T ? [T.note((this.dossier.patient.dominant || 'L') === (obj.side || side0)), T.ref].filter(Boolean).join(' · ') : ''; };
       const cov = () => { const c = this.surgeryCoverage(list, hyps); box.querySelector('.surg-cov').innerHTML = c.length ? c.map(x => `<div class="${x.out.length ? 'warn-t' : 'ok-t'}">${esc(x.H.title || 'hypothèse')} : ZE ${x.in.length}/${x.H.ez.length} dans la résection${x.out.length ? ' — hors : ' + x.out.map(r => esc(A.label(r))).join(', ') : ''}</div>`).join('') : '<span class="muted">aucune hypothèse avec ZE à comparer</span>'; };
       // vues mises en cache (même résection, mêmes ZE) : un nouveau rendu de l'écran ne relance pas les captures
@@ -146,5 +166,5 @@
     },
   };
   Object.assign(SV.app, M);
-  SV.Surgery = { TEMPLATES };
+  SV.Surgery = { TEMPLATES, SYS_FAMS };
 })(window.SV = window.SV || {});

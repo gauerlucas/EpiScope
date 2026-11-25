@@ -96,6 +96,13 @@ let seed = 11; const rnd = () => { seed = (seed * 16807) % 2147483647; return se
   const both = CV.select(R, R.comps.map(c => c.id)); ok(both.volumeMl > Sel.volumeMl, 'garder une composante de plus agrandit la cavité (sans recalcul)');
   const vol = { dims: R.dims, affine: R.affine, data: Sel.mask }; ok(CV.contactsIn([cav, [cav[0] + 9, cav[1], cav[2]], [cav[0] + 13, cav[1], cav[2]], [60, 40, 40]], vol, 1.5).join() === 'true,true,false,false', 'contacts dans la cavité (tolérance 1,5 mm)');
   assert.throws(() => CV.segment({ img: { dims: [nn, nn, nn], affine: I4, data: img.map(v => 120 - v) }, lab: { dims: [nn, nn, nn], affine: I4, data: lab } }), /contraste inattendu/); n++;
+  // v2.4.0 : étiquette « LCR » prise en volume partiel avec le cortex (intensité de cortex) : la référence du LCR vient de
+  // l'image (voxels nettement plus sombres que le cortex) — avant, le cortex entier passait sous le seuil
+  const imgPV = img.map((v, q) => lab[q] === 201 ? 62 + 4 * gauss() : v);
+  const R2 = CV.segment({ img: { dims: [nn, nn, nn], affine: I4, data: imgPV }, imgT: null, lab: { dims: [nn, nn, nn], affine: I4, data: lab }, thr: 0.3, minMl: 0.5, side: 'L', hemi });
+  const S2 = CV.select(R2, R2.chosen); ok(Math.abs(S2.volumeMl - Sel.volumeMl) < 0.4 * Sel.volumeMl && R2.norm.csfFrom === 'image' && R2.norm.gmNorm > 0.4 && R2.norm.gmNorm < 0.7, `LCR de la parcellation en volume partiel : cavité ${S2.volumeMl} ml (attendu ≈ ${Sel.volumeMl}), cortex à ${R2.norm.gmNorm}`);
+  const dd = CV.distances([cav, [cav[0] + 12, cav[1], cav[2]], [cav[0] + 15, cav[1], cav[2]], [60, 40, 40]], vol, 8);
+  ok(dd[0] === 0 && dd[1] > 0 && dd[1] <= 3 && dd[2] > 3 && dd[2] <= 8 && dd[3] === Infinity, `distances à la cavité : ${dd.map(x => x === Infinity ? '∞' : x.toFixed(1)).join(', ')} mm`);
 }
 // ---------------------------------------------------------------- export de recherche : champs lus tels qu'établis
 {

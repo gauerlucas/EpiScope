@@ -3,8 +3,12 @@
  * Méthode (différence pré / post, sans apprentissage) : dans l'espace du T1 pré-opératoire de référence, un voxel est
  * candidat s'il était du parenchyme avant l'intervention (régions VEP 1–162 ou substance blanche de la parcellation du
  * patient) et s'il a, sur le T1 post-opératoire recalé (rigide), une intensité de LCR. L'intensité est normalisée entre le
- * LCR (0) et la substance blanche (1) du patient : médianes des voxels étiquetés LCR et substance blanche avant
- * l'intervention, lues sur l'image post-opératoire. Seuil par défaut 0,3 (cortex ≈ 0,6–0,7). Ouverture (1 voxel) contre les
+ * LCR (0) et la substance blanche (1), lus sur l'image post-opératoire : substance blanche = médiane des voxels étiquetés
+ * substance blanche ; LCR = médiane des voxels du cerveau nettement plus sombres que le cortex (sous cortex − (SB − cortex)),
+ * à défaut estimé par le contraste T1 habituel (cortex ≈ 0,6 entre LCR et SB). v2.4.0 : l'étiquette « LCR » de la
+ * parcellation n'est plus la référence — mince et prise en volume partiel avec le cortex, sa médiane pouvait tomber au
+ * niveau du cortex, qui passait alors entier sous le seuil (cavité de plusieurs centaines de ml, contacts en excès).
+ * Contrôle : le cortex doit tomber entre 0,3 et 0,9 ; sinon, erreur (recalage ou séquence à vérifier). Seuil par défaut 0,3. Ouverture (1 voxel) contre les
  * liserés d'un recalage imparfait au fond des sillons, fermeture (2 voxels) qui réunit une cavité morcelée, composantes
  * 26-connexes ≥ 1 ml. La plus grande composante du côté opéré est proposée ; l'utilisateur garde ou écarte chaque
  * composante. Pour chaque région VEP : fraction emportée (voxels de la cavité / voxels de la région avant l'intervention).
@@ -13,7 +17,8 @@
  * pour toute localisation mais demande un bon recalage. Contrôle visuel indispensable (coupes) avant de retenir les contacts.
  *   SV.Cavity.segment(o, progress) — o = { img, imgT, lab, thr, minMl, side, hemi } (worker 'cavity')
  *   SV.Cavity.select(R, keep) — masque et fractions des composantes gardées (sans recalcul)
- *   SV.Cavity.contactsIn(points, vol, tolMm) — contacts dans la cavité (tolérance : demi-longueur du contact et recalage) */
+ *   SV.Cavity.contactsIn(points, vol, tolMm) — contacts dans la cavité (tolérance : demi-longueur du contact et recalage)
+ *   SV.Cavity.distances(points, vol, maxMm) — distance (mm) de chaque contact à la cavité (0 dedans, Infinity au-delà de maxMm) */
 (function (factory) {
   const G = typeof window !== 'undefined' ? (window.SV = window.SV || {}) : (globalThis.SV = globalThis.SV || {});
   factory(G); (G._factories = G._factories || {}).cavity = factory;
@@ -77,9 +82,12 @@
     const toImg = mul4(inv4(Array.from(o.img.affine)), mul4(o.imgT ? inv4(Array.from(o.imgT)) : [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], aff)), smp = sampler(o.img), I = new Float32Array(N);
     for (let k = 0, q = 0; k < nz; k++) { if (k % 16 === 0) prog({ fraction: 0.4 * k / nz, message: 'lecture de l’IRM post-opératoire' }); for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++, q++) { if (!lab[q]) continue; const p = ap(toImg, i, j, k); I[q] = smp(p[0], p[1], p[2]); } }
     // 3. normalisation LCR → 0, substance blanche → 1
-    const wmv = [], csfv = []; for (let q = 0; q < N; q++) { if (lab[q] === 200) wmv.push(I[q]); else if (lab[q] === 201) csfv.push(I[q]); }
-    const wm = median(wmv), csf = median(csfv);
-    if (!(wm > csf)) throw new Error('contraste inattendu : la substance blanche n’est pas plus claire que le LCR (T1 post-opératoire attendu, recalé)');
+    const wmv = [], gmv = []; for (let q = 0; q < N; q++) { const c = lab[q]; if (c === 200) wmv.push(I[q]); else if (c >= 1 && c <= 162) gmv.push(I[q]); }
+    const wm = median(wmv), gm = median(gmv);
+    if (!(wm > gm)) throw new Error('contraste inattendu : la substance blanche n’est pas plus claire que le cortex (T1 post-opératoire attendu, recalé)');
+    const lim = gm - (wm - gm), dark = []; for (let q = 0; q < N; q++) { const c = lab[q]; if (c && c !== 202 && I[q] < lim) dark.push(I[q]); }
+    const minDark = Math.ceil(2000 / vox), csf = dark.length >= minDark ? median(dark) : gm - 1.14 * (wm - gm), gmNorm = (gm - csf) / (wm - csf);
+    if (!(gmNorm > 0.3 && gmNorm < 0.9)) throw new Error(`contraste inattendu : cortex à ${gmNorm.toFixed(2)} entre LCR (0) et substance blanche (1) sur l’IRM post-opératoire (0,3–0,9 attendu) — recalage ou séquence à vérifier`);
     const paren = c => (c >= 1 && c <= 162) || c === 200, cand = new Uint8Array(N), brain = new Uint8Array(N), nrm = new Float32Array(N);
     for (let q = 0; q < N; q++) { const c = lab[q]; if (!c || c === 202) continue; brain[q] = 1; const v = (I[q] - csf) / (wm - csf); nrm[q] = v; if (paren(c) && v < thr) cand[q] = 1; }
     prog({ fraction: 0.55, message: 'nettoyage du masque' });
@@ -101,7 +109,7 @@
     comps.sort((a, b) => b.voxels - a.voxels);
     const side = comps.filter(X => !o.side || X.hemi === o.side || !X.hemi), chosen = side.length ? [side[0].id] : comps.length ? [comps[0].id] : [];
     prog({ fraction: 1, message: `${comps.length} composante${comps.length > 1 ? 's' : ''}` });
-    return { dims, affine: aff, voxMm3: vox, map, comps, chosen, pre: Object.fromEntries(pre), norm: { wm, csf, thr }, nCandidates: C.n };
+    return { dims, affine: aff, voxMm3: vox, map, comps, chosen, pre: Object.fromEntries(pre), norm: { wm, gm, csf, thr, gmNorm: +gmNorm.toFixed(2), csfFrom: dark.length >= minDark ? 'image' : 'contrast' }, nCandidates: C.n };
   }
   /** masque des composantes gardées + fractions par région VEP (sans recalcul) */
   function select(R, keep) {
@@ -122,5 +130,17 @@
       return false;
     });
   }
-  SV.Cavity = { segment, select, contactsIn, components, morph };
+  /** v2.4.0 : distance (mm) de chaque point (monde du T1) au masque, recherche jusqu'à maxMm (au-delà : Infinity) */
+  function distances(points, vol, maxMm) {
+    const Mi = inv4(Array.from(vol.affine)), [nx, ny, nz] = vol.dims, D = vol.data, A = vol.affine, vs = Math.cbrt(Math.abs(A[0] * (A[5] * A[10] - A[6] * A[9]) - A[1] * (A[4] * A[10] - A[6] * A[8]) + A[2] * (A[4] * A[9] - A[5] * A[8]))) || 1, r = Math.ceil((maxMm || 5) / vs);
+    return points.map(p => {
+      const v = ap(Mi, p[0], p[1], p[2]).map(Math.round); let best = Infinity;
+      for (let dz = -r; dz <= r; dz++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        const d2 = (dx * dx + dy * dy + dz * dz) * vs * vs; if (d2 >= best * best || d2 > (maxMm || 5) ** 2 + 1e-9) continue; const i = v[0] + dx, j = v[1] + dy, k = v[2] + dz;
+        if (i < 0 || j < 0 || k < 0 || i >= nx || j >= ny || k >= nz) continue; if (D[i + nx * j + nx * ny * k]) best = Math.sqrt(d2);
+      }
+      return best;
+    });
+  }
+  SV.Cavity = { segment, select, contactsIn, distances, components, morph };
 });

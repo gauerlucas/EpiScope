@@ -19,7 +19,7 @@ lead: De la planification au rapport : schéma d'implantation, électrodes réel
 L'onglet [[Planification]] montre le schéma d'implantation en 3D et sa liste d'électrodes. En tête, l'**état du schéma** (proposé, prévu, réel) et la **couverture des hypothèses** du staff : chaque hypothèse dit si sa zone d'origine est échantillonnée.
 
 - [[Proposer ▾]] : EpiScope choisit, parmi les trajectoires conventionnelles (nomenclature de Talairach et Bancaud, prime = gauche), le plus petit ensemble qui échantillonne les origines, zones symptomatogènes et relais des hypothèses, sans croisement.
-- [[+ Au clic]] : ajouter une électrode en cliquant sur la cible ; [[+ Type ▾]] : une trajectoire conventionnelle par son nom.
+- [[+ Au clic]] : ajouter une électrode en cliquant sur la cible ; [[+ Type ▾]] : une trajectoire conventionnelle par son nom. Parmi elles, deux **verticales** frontales : **BM** (entrée F1, descente vers le gyrus droit) et **BL** (entrée F2, descente vers le cortex orbitofrontal).
 - **Modèle** d'électrode et marque (DIXI, Alcis) : les plots sont posés aux cotes du catalogue.
 - [[Importer la planification chirurgicale…]] : une fois les trajectoires arrêtées par le neurochirurgien, lire un export ROSA (`.ros`), un CSV (nom, entrée, cible) ou un `electrodes.tsv` BIDS. Chaque trajectoire est appariée par son nom à l'électrode du schéma.
 

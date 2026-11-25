@@ -4,7 +4,7 @@
 //   2. Dessin d'un signal hors SV.Wave (polarité) : motif `yc - (… ) * ppu`.
 import fs from 'fs'; import path from 'path';
 const files = []; const walk = d => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) { if (f !== 'vendor') walk(p); } else if (f.endsWith('.js')) files.push(p); } }; walk('src');
-const ALLOW = new Set(['src/electrodes.js:262']);   // phrase de commentaire, pas du code
+const ALLOW = new Set();   // « fichier:ligne » d'une phrase de commentaire prise pour du code (aucune à ce jour)
 const hits = [];
 for (const f of files) fs.readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
   let idx = -1; for (const m of line.matchAll(/\/\//g)) { const pre = line.slice(0, m.index); if ((pre.match(/'/g) || []).length % 2 || (pre.match(/"/g) || []).length % 2 || (pre.match(/`/g) || []).length % 2 || /[:\\]$/.test(pre) || /\/$/.test(pre)) continue; idx = m.index; break; }

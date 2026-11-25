@@ -6,6 +6,7 @@
  * PM, SA, LP, SC, PA/PP, PI…), prime (') = hémisphère gauche. Les insulaires obliques de Lyon (Ia, Im, Ip) entrent
  * haut sur la convexité frontale, précentrale ou pariétale et descendent dans un plan parasagittal vers l'insula
  * antérieure, moyenne ou postérieure ; l'OR est oblique (entrée F2 rostrale, descente vers l'orbitofrontal médial).
+ * BM et BL (v2.4.0) sont verticales : entrée F1 (BM) ou F2 (BL) sur la convexité, descente vers le gyrus droit ou l’orbitofrontal.
  * Modèles DIXI Microdeep / Alcis : Ø 0,8 mm, plots de 2 mm espacés de 1,5 mm (pas 3,5 mm), 5 à 18 plots.
  * Règles (Cardinale 2013, 2016, 2019 ; Isnard 2018 ; Afif 2008) : privilégier l'orthogonal (sauf insula), pas de
  * croisement, minimiser le nombre d'électrodes pour un maximum de structures, éviter les entrées en fond de sillon
@@ -55,7 +56,8 @@
   /** Bibliothèque des trajectoires conventionnelles (nomenclature Talairach–Bancaud, prime = gauche).
    *  target = structure visée (famille VEP) ; dx (médial +), dy (antérieur +), dz (supérieur +) = décalage par rapport au centroïde ;
    *  exit = famille corticale par laquelle l'électrode ressort (direction cible → sortie ; sans exit : orthogonale au plan sagittal) ;
-   *  ex = décalage [médial, antérieur, supérieur] du point de sortie ; oblique = trajectoire oblique assumée. */
+   *  ex = décalage [médial, antérieur, supérieur] du point de sortie ; oblique = trajectoire oblique assumée ;
+   *  vertical (v2.4.0) = sortie cherchée à l'aplomb de la cible dans la famille exit (trajet de haut en bas). */
   const LIBRARY = [
     // --- temporal mésial / basal
     { code: 'TP', fr: 'pôle temporal', target: 'Temporal-pole', dx: 10, dy: 4, samples: 'pôle temporal mésial → latéral', group: 'temporal' },
@@ -86,6 +88,9 @@
     { code: 'FP', fr: 'fronto-polaire (F1 mésial antérieur)', target: 'F1-mesial-prefrontal', dy: 12, dz: -10, samples: 'pôle frontal mésial → F1 latéral → F2 rostral', group: 'frontal' },
     { code: 'FD', fr: 'frontal dorsal', target: 'F1-mesial-prefrontal', dy: -6, dz: 6, samples: 'F1 mésial préfrontal → F1 latéral → F2', group: 'frontal' },
     { code: 'OR', fr: 'fronto-orbitaire (oblique)', target: 'Orbito-frontal-cortex', dx: 12, exit: 'F2-rostral', ex: [0, 0, 8], oblique: true, samples: 'orbitofrontal médial → F3 → F2 rostral', group: 'frontal' },
+    // verticales (v2.4.0) : entrée sur la convexité dorsale (F1, F2), descente vers la face orbitaire
+    { code: 'BM', fr: 'basal médial (verticale, F1 → gyrus droit)', target: 'Gyrus-rectus', dx: -2, exit: 'F1-lateral-prefrontal', ex: [-10, 0, 0], vertical: true, oblique: true, samples: 'gyrus droit → substance blanche frontale → F1', group: 'frontal' },
+    { code: 'BL', fr: 'basal latéral (verticale, F2 → orbitofrontal)', target: 'Orbito-frontal-cortex', exit: 'F2-rostral', vertical: true, oblique: true, samples: 'cortex orbitofrontal → substance blanche frontale → F2', group: 'frontal' },
     { code: 'R', fr: 'sous-rostral (aire sous-calleuse)', target: 'Subcallosal-area', samples: 'aire sous-calleuse → striatum ventral → orbitofrontal postérieur → F3 orbitaire', group: 'frontal' },
     { code: 'CR', fr: 'cingulaire rostral (aire 32)', target: 'Anterior-cingulate-cortex', dy: 8, dz: 8, samples: 'cingulaire antérieur rostral → F1 mésial (paracingulaire) → F2 rostral', group: 'frontal' },
     { code: 'CC', fr: 'cingulaire antérieur (aire 24)', target: 'Middle-cingulate-cortex-anterior-part', dy: 4, samples: 'cingulaire antérieur / moyen antérieur → F1 → F2 caudal', group: 'frontal' },
@@ -210,10 +215,13 @@
   }
 
   /** point de sortie d'une trajectoire de bibliothèque (famille `exit`, décalage `ex`), ou null si orthogonale */
-  function exitPoint(lib, hemi, atlas, vol) {
+  function exitPoint(lib, hemi, atlas, vol, target) {
     if (!lib.exit) return null;
     const xi = atlas.idx(lib.exit, hemi); if (!xi) return null;
-    const lat = hemi === 'L' ? -1 : 1, x0 = atlas.region(xi).centroid, ex = lib.ex || [0, 0, 0];
+    const lat = hemi === 'L' ? -1 : 1, ex = lib.ex || [0, 0, 0];
+    // verticale : point de la famille de sortie le plus proche de l'aplomb de la cible (même x, y ; 30 à 70 mm plus haut)
+    if (lib.vertical && target) for (const up of [50, 40, 60, 30, 70]) { const p = vol.nearestOf(xi, [target[0] - lat * ex[0], target[1] + ex[1], target[2] + up + ex[2]], 12); if (p) return p; }
+    const x0 = atlas.region(xi).centroid;
     return vol.nearestOf(xi, [x0[0] - lat * ex[0], x0[1] + ex[1], x0[2] + ex[2]], 16) || x0;
   }
 
@@ -222,7 +230,7 @@
     const idx = atlas.idx(lib.target, hemi); if (!idx) return null;
     const lat = hemi === 'L' ? -1 : 1, c0 = atlas.region(idx).centroid;
     const c = vol.nearestOf(idx, [c0[0] - lat * (lib.dx || 0), c0[1] + (lib.dy || 0), c0[2] + (lib.dz || 0)], 14) || c0;
-    const exit = exitPoint(lib, hemi, atlas, vol);
+    const exit = exitPoint(lib, hemi, atlas, vol, c);
     const name = SV.Side ? SV.Side.name(lib.code, hemi, opts && opts.sideConv) : lib.code + (hemi === 'L' ? '’' : '');
     const offsets = [[0, 0]]; for (const r of [2, 4, 6]) for (const [dy, dz] of [[0, r], [0, -r], [r, 0], [-r, 0], [r, r], [-r, r], [r, -r], [-r, -r]]) offsets.push([dy, dz]);
     let best = null;
@@ -259,7 +267,7 @@
       const o = result.hypotheses[0].origin, m = atlas.homotopic[o]; if (m > 0) { V.set(m, (V.get(m) || 0) + 1.2); hemis = [fav, fav === 'L' ? 'R' : 'L']; }
     }
     // opts.keep : électrodes déjà présentes (schéma repris) — elles comptent pour la couverture et les croisements, et
-    // leur trajectoire de bibliothèque n'est pas reproposée ; opts.max = nombre d'électrodes à ajouter
+    // leur trajectoire de bibliothèque n'est pas reproposée — opts.max : nombre d'électrodes à ajouter
     const keep = (opts.keep || []).filter(Boolean), keepKey = new Set(keep.map(e => (e.lib || e.code) + ':' + e.hemi));
     const cands = [];
     for (const lib of LIBRARY) for (const h of hemis) { if (keepKey.has(lib.code + ':' + h)) continue; const e = fromLibrary(lib, h, atlas, vol, { maker: opts.maker }); if (e) cands.push(e); }

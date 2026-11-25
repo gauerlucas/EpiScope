@@ -2,6 +2,24 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [2.4.0] — 2026-11-25
+
+Deux interventions types (hémisphérotomie ; résection temporale + déconnexion pariéto-occipitale) et deux électrodes verticales (BM, BL) ; cavité de résection corrigée (référence du LCR lue sur l'image, contacts en bordure signalés) ; reprise d'un schéma d'implantation dans la SEEG ouverte réparée.
+
+### Ajouté
+
+- **Deux interventions types** (décision de staff, Chirurgie › Intervention) : **hémisphérotomie** (tout le cortex de l'hémisphère déconnecté ; Delalande et al. 1992, 2007 ; Villemure et Mascott 1995) et **résection temporale + déconnexion pariéto-occipitale** (lobe temporal emporté ; cortex pariétal en arrière du gyrus postcentral, occipital et pariétal médial déconnectés ; Daniel et al. 2007). Une région déconnectée (étendue `disc`) est peinte en violet et notée « déconnecté » dans les vues, les coupes, le diaporama et les comptes rendus ; la couverture de la zone épileptogène la compte comme traitée. Exports : `template` et `disconnected_regions` dans l'export de recherche (`clinical.json`) et la cohorte.
+- **Électrodes verticales BM et BL** dans la bibliothèque des trajectoires conventionnelles : BM, entrée F1 → gyrus droit ; BL, entrée F2 → cortex orbitofrontal (sortie cherchée à l'aplomb de la cible, option `vertical`).
+
+### Corrigé
+
+- **Cavité de résection et contacts déduits** : la cavité segmentée sur l'IRM post-opératoire pouvait être beaucoup trop grande, avec bien plus de contacts « dans la résection » que n'en marque l'épileptologue. La référence du LCR était la médiane des voxels étiquetés « LCR » par la parcellation, mince et prise en volume partiel avec le cortex : elle pouvait tomber au niveau du cortex, qui passait alors entier sous le seuil. Elle est maintenant lue sur l'image (voxels du cerveau nettement plus sombres que le cortex ; à défaut, contraste T1 habituel), avec un contrôle (cortex attendu entre 0,3 et 0,9 entre LCR et substance blanche, affiché). Les contacts situés de 1,5 à 5 mm de la cavité sont signalés « en bordure, à vérifier » (pointillé) sans être ajoutés. Une cavité calculée avec une version antérieure est à recalculer.
+- **Reprise du schéma d'une autre exploration dans la SEEG ouverte** (bandeau « Le reprendre ici », Importer un schéma, menu des projets « → dans … » et « → nouveau projet ») : le schéma repris était effacé aussitôt — l'espace de travail, rechargé, réécrivait son ancien contenu (aucune électrode) par-dessus, et seule la mention « repris de … » restait. La SEEG ouverte est maintenant rechargée sans réécrire l'ancien espace de travail (`openContext(ctx, silent, fresh)`), de même après une restauration depuis la corbeille. Une reprise faite avec une version antérieure est à refaire.
+
+### Documentation
+
+- Manuel (fr / en) : Chirurgie › L'intervention et contacts dans la résection (référence du LCR, contacts en bordure, limites de la cavité), SEEG › Planification.
+
 ## [2.3.0] — 2026-11-25
 
 Au staff, les hypothèses de réseau proposées tiennent compte de toute la concordance anatomo-électro-clinique (EEG, imagerie, neuropsychologie, SEEG), et plus seulement de la sémiologie des crises.

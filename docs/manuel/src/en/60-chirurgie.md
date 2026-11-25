@@ -16,7 +16,8 @@ lead: The procedure decided at the MDT meeting, the resected regions on the pati
 
 The [[Intervention]] tab describes the procedure: type (resection or corticectomy, lobectomy, disconnection, thermocoagulation, laser, neuromodulation…), date, side, description, histology, complications and notes.
 
-- **Resected regions**: chosen from the list or taken from the retained hypotheses; the 3D view shows the resection against the epileptogenic zone (included in the resection or not).
+- **Standard intervention**: standard anterior temporal lobectomy, anteromesial resection, selective amygdalohippocampectomy, **hemispherotomy**, **temporal resection + parieto-occipital disconnection**, lesionectomy or tailored resection. The chosen side gives the regions; for a disconnection, regions left in place but disconnected are marked *disconnected* and painted purple (hemispherotomy: the whole cortex of the hemisphere; temporal resection + parieto-occipital disconnection: temporal lobe removed, parietal cortex behind the postcentral gyrus, occipital and medial parietal cortex disconnected).
+- **Resected or disconnected regions**: chosen from the list or taken from the retained hypotheses; the 3D view shows the intervention against the epileptogenic zone (included or not).
 - **MRI slices**: the associated post-operative MRI is overlaid on the pre-operative T1; the regions of the procedure are coloured.
 
 ### Histology {#histologie}
@@ -29,10 +30,10 @@ Diagnoses are picked from a closed list — focal cortical dysplasias according 
 
 {refs: arnold2022cavity}
 
-The **Contacts in the resection** card shows the real electrodes of the reference SEEG, one button per contact: a click declares it in the resection (red), hovering recalls its VEP region. On an imported, coregistered post-operative MRI, [[Segment the cavity]] compares the image with the patient's pre-operative parcellation: parenchyma turned into CSF forms the cavity. The components found are kept or discarded, with their volume and the fraction of each region removed; [[Keep this cavity and deduce the contacts]] stores the mask (visible in the slices) and marks the contacts inside the cavity (purple, 1.5 mm tolerance). Contacts declared by hand remain; those of a previous cavity are replaced.
+The **Contacts in the resection** card shows the real electrodes of the reference SEEG, one button per contact: a click declares it in the resection (red), hovering recalls its VEP region. On an imported, coregistered post-operative MRI, [[Segment the cavity]] compares the image with the patient's pre-operative parcellation: parenchyma turned into CSF forms the cavity. Intensities are scaled to the patient's own on the post-operative MRI (CSF 0, white matter 1; the check shows where the cortex falls, expected between 0.3 and 0.9). The components found are kept or discarded, with their volume and the fraction of each region removed; [[Keep this cavity and deduce the contacts]] stores the mask (visible in the slices) and marks the contacts inside the cavity (purple, 1.5 mm tolerance). Contacts 1.5 to 5 mm from the cavity are flagged **at the margin** (dashed, “to be checked” list) without being added. Contacts declared by hand remain; those of a previous cavity are replaced.
 
 !!! attention
-    The cavity depends on the registration of the post-operative MRI and on brain shift after surgery: check it in the slices before keeping the contacts.
+    The cavity shows emptied tissue. It does not see tissue left in place but disconnected, nor a collapsed or filled cavity, and brain shift after surgery (cortex pulled away from the skull, fluid in its place) can make it spill onto contacts still in healthy tissue. Check it in the slices and correct the contacts with a click: the manual declaration prevails.
 
 ![The procedure: type, resected regions, pre / post-operative slices.](shot:chirurgie)
 

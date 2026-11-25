@@ -50,7 +50,7 @@
       this.touch(); await this.flushSave();
       const msg = `« ${r.entry.label || KIND[r.entry.kind] || 'élément'} » restauré` + (r.missing.length ? ` — ${r.missing.length} élément(s) sans parent (supprimé depuis) : ${r.missing.join(', ')}` : '') + (lost.length ? ` — ${lost.length} fichier(s) introuvable(s)` : '');
       this.toast(msg, r.missing.length || lost.length ? 7000 : 3500);
-      if (this.ctx && this.openContext) { try { this.openContext(this.ctx, true); } catch (e) { } }
+      if (this.ctx && this.openContext) { try { this.openContext(this.ctx, true, true); } catch (e) { } }
       this.go({ stage: 'dossier', view: 'journal' });
     },
     async trashPurge() {

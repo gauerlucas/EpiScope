@@ -18,7 +18,7 @@ lead: From planning to report: implantation scheme, actual electrodes on the CT,
 The [[Planning]] tab shows the implantation scheme in 3D and its list of electrodes. At the top, the **status of the scheme** (proposed, planned, actual) and the **coverage of the hypotheses** from the MDT meeting: each hypothesis states whether its origin zone is sampled.
 
 - [[Propose ▾]]: EpiScope picks, among conventional trajectories (Talairach and Bancaud nomenclature, prime = left), the smallest set that samples the origins, symptomatogenic zones and relays of the hypotheses, without crossings.
-- [[+ On click]]: add an electrode by clicking its target; [[+ Type ▾]]: a conventional trajectory by name.
+- [[+ On click]]: add an electrode by clicking its target; [[+ Type ▾]]: a conventional trajectory by name. Among them, two frontal **vertical** electrodes: **BM** (entry F1, down to the gyrus rectus) and **BL** (entry F2, down to the orbitofrontal cortex).
 - Electrode **model** and brand (DIXI, Alcis): contacts are placed at the catalogue dimensions.
 - [[Import the surgical plan…]]: once the trajectories are set by the neurosurgeon, read a ROSA export (`.ros`), a CSV (name, entry, target) or a BIDS `electrodes.tsv`. Each trajectory is matched by name to the scheme's electrode.
 

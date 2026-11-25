@@ -152,7 +152,7 @@
       if (mode === 'replace' && toEx.electrodes.some(e => e.real) && !confirm(`${toEx.label} a des électrodes localisées sur le scanner : les remplacer par le schéma de ${fromEx.label} ?`)) return;
       if (mode === 'replace' && (toEx.stims.length || toEx.thermo.length) && !confirm(`${toEx.label} a déjà des stimulations ou thermocoagulations, liées aux électrodes par leur nom. Remplacer le schéma ?`)) return;
       const r = S.importImplantation(d, fromEx, toEx, mode);
-      this.touch(); if (cur) this.openContext(this.ctx, true);
+      this.touch(); if (cur) this.openContext(this.ctx, true, true);
       this.toast(`${toEx.label} : ${r.added} électrode${r.added > 1 ? 's' : ''} reprise${r.added > 1 ? 's' : ''} de ${fromEx.label}${r.skipped ? ` (${r.skipped} déjà présente${r.skipped > 1 ? 's' : ''})` : ''}${r.noTarget ? ` · ${r.noTarget} sans trajectoire prévue non reprise${r.noTarget > 1 ? 's' : ''}` : ''}`, 5000);
       if (this.ui.screen === 'dossier') this.renderDossier(); if (this.ui.tab === 'electrodes') this.renderElectrodes(); this.updateCrumbs && this.updateCrumbs();
     },

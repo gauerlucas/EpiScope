@@ -575,6 +575,7 @@ td.nowrap { white-space: nowrap; }
 .rs-c { min-width: 22px; height: 20px; padding: 0 3px; font-size: 11px; border: 1px solid var(--line2, #c8d2dc); background: transparent; color: var(--muted); border-radius: 3px; cursor: pointer; }
 .rs-c.on { background: #c0392b; border-color: #c0392b; color: #fff; }
 .rs-c.on.cavity { background: #8e44ad; border-color: #8e44ad; }
+.rs-c.margin { border: 1.5px dashed #8e44ad; color: #8e44ad; }
 .rs-c.on.manual::after { content: ''; }
 .rs-cav { border-top: 1px solid var(--line); padding-top: 6px; display: flex; flex-direction: column; gap: 5px; }
 .rs-run { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .rs-run input[type=number] { width: 58px; }

@@ -453,7 +453,7 @@
           ${dh.length ? `<p><b>Hypothèses</b> : ${dh.map(H => esc(H.title)).join(' · ')}</p>` : ''}`;
         if (['surgery', 'litt'].includes(x.type) && x.targets.length && this.surgeryShots) {
           const cov = this.surgeryCoverage(x.targets, dh);
-          html += `<p><b>Intervention proposée</b> : ${esc(this.surgeryLabel(x) || '')}${x.targets.length ? ' — ' + x.targets.map(r => `<span class="regchip">${L(r)}${x.extent && x.extent[r] ? ' (partiel)' : ''}</span>`).join('') : ''}</p>${cov.length ? `<p class="m">${cov.map(c => `${esc(c.H.title)} : ZE ${c.in.length}/${c.H.ez.length} dans la résection${c.out.length ? ' (hors : ' + c.out.map(L).join(', ') + ')' : ''}`).join(' · ')}</p>` : ''}`;
+          html += `<p><b>Intervention proposée</b> : ${esc(this.surgeryLabel(x) || '')}${x.targets.length ? ' — ' + x.targets.map(r => `<span class="regchip">${L(r)}${this.surgeryExt(x.extent, r)}</span>`).join('') : ''}</p>${cov.length ? `<p class="m">${cov.map(c => `${esc(c.H.title)} : ZE ${c.in.length}/${c.H.ez.length} dans la résection${c.out.length ? ' (hors : ' + c.out.map(L).join(', ') + ')' : ''}`).join(' · ')}</p>` : ''}`;
           if (opts.images) { const imgs = await this._surgeryShots(x.targets, x.extent || {}, dh, x.side, { scale: 1.6 }); html += `<div class="imgs three">${imgs.map((u, k) => R.IMG(u, `Staff_chirurgie_${['lateral', 'inferieur', 'medial'][k]}`)).join('')}</div><p class="m">Rouge : résection ; orangé : résection partielle ; rouge sombre : ZE comprise ; bleu : ZE hors résection.</p>`; }
         } else if (x.targets.length) html += `<p><b>Cibles</b> : ${x.targets.map(r => `<span class="regchip">${L(r)}</span>`).join('')}</p>`;
         if (ex) html += `<p class="m">→ ${esc(ex.label)} : ${ex.electrodes.length} électrode${ex.electrodes.length > 1 ? 's' : ''}${ex.implant && ex.implant.source && ex.implant.source.label ? ' (' + (ex.implant.source.kind === 'import' ? 'schéma repris de ' : '') + esc(ex.implant.source.label) + ')' : ''} : <span class="mono">${esc(ex.electrodes.map(e => e.name).join(' '))}</span></p>`;
@@ -472,7 +472,7 @@
       const A = this.atlas; let html = '';
       for (const p of d.procedures.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)))) {
         const hy = S.latestHypotheses(d).filter(H => ['confirmed', 'testing', 'proposed'].includes(H.status));
-        html += `<h3>${esc((this.surgeryLabel && this.surgeryLabel(p)) || V.procedure[p.type])}${p.date ? ' — ' + fmtDate(p.date) : ''}</h3><p>${p.regions.length ? p.regions.map(r => `<span class="regchip">${esc(A.label(r))}${p.extent && p.extent[r] ? ' (partiel)' : ''}</span>`).join('') : ''}</p>
+        html += `<h3>${esc((this.surgeryLabel && this.surgeryLabel(p)) || V.procedure[p.type])}${p.date ? ' — ' + fmtDate(p.date) : ''}</h3><p>${p.regions.length ? p.regions.map(r => `<span class="regchip">${esc(A.label(r))}${this.surgeryExt(p.extent, r)}</span>`).join('') : ''}</p>
           <p class="m">${[p.target && p.target !== this.surgeryLabel(p) ? esc(p.target) : '', S.histologyText(p) ? 'histologie : ' + esc(S.histologyText(p)) : '', p.complications ? 'complications : ' + esc(p.complications) : ''].filter(Boolean).join(' · ')}</p>`;
         if (opts.images && p.regions.length && this._surgeryShots) { const imgs = await this._surgeryShots(p.regions, p.extent || {}, hy, p.side, { scale: 1.6 }); html += `<div class="imgs three">${imgs.map((u, k) => R.IMG(u, `Chirurgie_${['lateral', 'inferieur', 'medial'][k]}`)).join('')}</div>`; }
       }
