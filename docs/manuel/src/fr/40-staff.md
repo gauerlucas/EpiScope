@@ -21,7 +21,7 @@ L'onglet [[Préparer]] se remplit de haut en bas :
 1. **Date, type** (après phase 1, après SEEG, après chirurgie…), **statut** (brouillon, validé), **participants** et **question posée**.
 2. **Crises prises en compte** : les explorations et les crises à discuter (cases à cocher).
 3. **Revoir** : des raccourcis vers l'histoire clinique, les bilans, l'imagerie et les crises de chaque exploration.
-4. **Synthèse** : un résumé du dossier rédigé d'après les données, et la sémiologie en consensus des crises retenues.
+4. **Synthèse** : un résumé du dossier rédigé d'après les données, la sémiologie en consensus des crises retenues, et les **hypothèses de réseau à discuter** (voir le point 6).
 5. **Concordance anatomo-électro-clinique** : un tableau *systèmes anatomo-fonctionnels × modalités* (sémiologie, EEG intercritique et critique, IRM, TEP, neuropsychologie, SEEG). Les colonnes marquées *auto* sont **préremplies** d'après le dossier ; le détail de chaque case s'affiche au survol et chaque case reste modifiable au clic :
     - **Sémiologie** : consensus du modèle sur les crises prises en compte ;
     - **EEG intercritique** et **EEG critique (scalp)** : cartes 10-20 des explorations prises en compte (pointes et ondes lentes en veille et au sommeil ; début des crises). Chaque électrode compte pour les systèmes qu'elle explore au mieux (C4 : central ; T4 : temporal latéral et mésial) ; un système voisin, ou des ondes lentes seules, reste « en faveur » au plus ;
@@ -29,7 +29,12 @@ L'onglet [[Préparer]] se remplit de haut en bas :
     - **SEEG** : quantifications et stimulations.
 
     [[toutes les régions]] affiche aussi les lignes vides ; [[+ colonne]] ajoute une modalité.
-6. **Hypothèses** : chaque hypothèse (régions, réseau, niveau de confiance) s'illustre en 3D. Une hypothèse révisée à un staff suivant garde son historique.
+6. **Hypothèses** : chaque hypothèse (régions, réseau, niveau de confiance) s'illustre en 3D. Une hypothèse révisée à un staff suivant garde son historique. [[+ depuis le modèle]] propose des réseaux classés d'après **toute la concordance**, pas seulement la sémiologie :
+    - les trajectoires du modèle sur l'ensemble des crises reçoivent un score **sémiologie** (relatif, de 0 à 1) ;
+    - leur zone épileptogène et leur propagation reçoivent un score **concordance** tiré des autres colonnes du tableau (EEG, IRM, TEP, neuropsychologie, SEEG, cases saisies comprises ; une case « − » le fait baisser) ;
+    - une zone concordante (au moins « ++ » ou deux « + » hors sémiologie) qu'aucune trajectoire ne prend pour origine est proposée **d'après la concordance**.
+
+    Les deux scores, et les arguments pour et contre, sont affichés ; ils sont repris dans l'hypothèse créée, qui reste modifiable. La liste suit le tableau : une case corrigée la met à jour.
 7. **Décisions** : SEEG, deuxième SEEG, thermocoagulation, chirurgie, laser, neuromodulation, bilan complémentaire, traitement médical, pas de chirurgie. Une décision de SEEG crée l'exploration SEEG avec un schéma d'implantation ; une décision de chirurgie crée l'intervention.
 8. **Captures à montrer** et **conclusion**.
 

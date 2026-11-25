@@ -20,7 +20,7 @@ The [[Prepare]] tab is filled from top to bottom:
 1. **Date, type** (after phase 1, after SEEG, after surgery…), **status** (draft, validated), **participants** and **question asked**.
 2. **Seizures taken into account**: the explorations and seizures to discuss (check boxes).
 3. **Review**: shortcuts to the clinical history, investigations, imaging and the seizures of each exploration.
-4. **Summary**: a summary of the record written from the data, and the consensus semiology of the selected seizures.
+4. **Summary**: a summary of the record written from the data, the consensus semiology of the selected seizures, and the **network hypotheses to discuss** (see item 6).
 5. **Anatomo-electro-clinical concordance**: a table of *anatomo-functional systems × modalities* (semiology, interictal and ictal EEG, MRI, PET, neuropsychology, SEEG). Columns marked *auto* are **pre-filled** from the record; hovering a cell shows its details and each cell remains editable with a click:
     - **Semiology**: the model's consensus over the seizures taken into account;
     - **Interictal EEG** and **Ictal EEG (scalp)**: 10-20 maps of the explorations taken into account (spikes and slow waves in wakefulness and sleep; seizure onset). Each electrode counts for the systems it explores best (C4: central; T4: lateral and mesial temporal); a neighbouring system, or slow waves alone, stays “in favour” at most;
@@ -28,7 +28,12 @@ The [[Prepare]] tab is filled from top to bottom:
     - **SEEG**: quantifications and stimulations.
 
     [[all regions]] also shows empty rows; [[+ column]] adds a modality.
-6. **Hypotheses**: each hypothesis (regions, network, confidence level) is illustrated in 3D. A hypothesis revised at a later meeting keeps its history.
+6. **Hypotheses**: each hypothesis (regions, network, confidence level) is illustrated in 3D. A hypothesis revised at a later meeting keeps its history. [[+ from the model]] proposes networks ranked from **the whole concordance**, not just semiology:
+    - the model's trajectories over all seizures get a **semiology** score (relative, from 0 to 1);
+    - their epileptogenic zone and propagation get a **concordance** score from the other columns of the table (EEG, MRI, PET, neuropsychology, SEEG, manual cells included; a “−” cell lowers it);
+    - a concordant zone (at least “++” or two “+” outside semiology) that no trajectory takes as its origin is proposed **from the concordance**.
+
+    Both scores, and the arguments for and against, are shown; they are carried into the created hypothesis, which remains editable. The list follows the table: correcting a cell updates it.
 7. **Decisions**: SEEG, second SEEG, thermocoagulation, surgery, laser, neuromodulation, further investigation, medical treatment, no surgery. An SEEG decision creates the SEEG exploration with an implantation scheme; a surgery decision creates the procedure.
 8. **Captures to show** and **conclusion**.
 

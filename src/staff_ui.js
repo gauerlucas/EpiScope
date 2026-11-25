@@ -204,9 +204,9 @@
         html += `<div class="sub-h">Sémiologie : ${cons.n} crise${cons.n > 1 ? 's' : ''} (habituelles ×2)</div><div class="lat-bar"><span class="L" style="width:${pL}%">G ${pL} %</span><span class="R" style="width:${100 - pL}%">D ${100 - pL} %</span></div>`;
         const top = []; for (let i = 1; i < this.atlas.N; i++) if (cons.region[i] >= 0.2) top.push(i); top.sort((a, b) => cons.region[b] - cons.region[a]);
         html += `<div class="small muted" style="margin:6px 0 2px">Origines candidates (consensus)</div>` + top.slice(0, 6).map(i => this.regionRow(i, cons.region[i], '')).join('');
-        html += `<div class="small muted" style="margin:8px 0 2px">Hypothèses récurrentes du modèle</div>` + cons.hyps.slice(0, 4).map(x => `<div class="row-line"><b>${esc(x.name)}</b> ${x.hemi === 'L' ? 'gauche' : 'droit'} <span class="muted">H1 dans ${x.top}/${cons.n} crise${cons.n > 1 ? 's' : ''}, présente dans ${x.n}</span></div>`).join('');
+        html += '<div id="stNets"></div>';
         html += this.signMatrix(cons);
-      } else html += '<div class="hint" style="margin-top:8px">Aucune crise saisie dans les explorations prises en compte.</div>';
+      } else html += '<div class="hint" style="margin-top:8px">Aucune crise saisie dans les explorations prises en compte.</div><div id="stNets"></div>';
       box.innerHTML = html; this.bindRows(box);
     },
     /** matrice signes × crises : rang d'apparition et côté (comparaison des crises) */
@@ -235,6 +235,7 @@
         </tbody></table><div class="hint">++ argument fort · + en faveur · 0 neutre · − contre · ? douteux. Cases <i>auto</i> calculées à partir des données du dossier (survol : détail) ; un clic permet de les corriger. Lignes surlignées : régions des hypothèses du staff.</div>`
         : '<div class="hint">Rien à afficher : saisissez des crises, des lésions, les cartes 10-20 de l’EEG, des bilans localisés, ou cochez « toutes les régions » pour remplir le tableau à la main.</div>';
       box.querySelectorAll('td.cc').forEach(td => td.onclick = e => this.concordanceCellMenu(m, td.dataset.row, td.dataset.col, cols, auto, e));
+      this.renderNetworks(m);
       box.querySelectorAll('.rmcol').forEach(b => b.onclick = e => { e.stopPropagation(); const c = cols.slice(); c.splice(+b.dataset.i, 1); m.concordance.columns = c; this.touch('meeting', m.id); this.renderConcordance(m); });
     },
     concordanceCellMenu(m, row, col, cols, auto, e, after) {
@@ -258,22 +259,63 @@
       const d = this.dossier, latest = S.latestHypotheses(d);
       return latest.filter(H => H.meetingId === m.id || ((!H.meetingId || String((S.byId(d.meetings, H.meetingId) || {}).date || '') <= String(m.date)) && !['refuted', 'abandoned'].includes(H.status)));
     },
+    /** v2.3.0 : cases du tableau de concordance (saisies comprises) → { 'système:côté': { cells: [{ col, label, v }] } } */
+    concordanceRows(m, scope, cons) {
+      const cols = this.meetingColumns(m), auto = this.concordanceAuto(m, scope, cons), man = (m.concordance && m.concordance.cells) || {}, rows = {};
+      for (const sys of SYSTEMS) for (const side of ['L', 'R']) {
+        const k = sys + ':' + side, cells = cols.map(c => { const x = man[k] && man[k][c.key] && man[k][c.key].v !== undefined ? man[k][c.key] : auto[k] && auto[k][c.key]; return x && x.v ? { col: c.key, label: c.label, v: x.v } : null; }).filter(Boolean);
+        if (cells.length) rows[k] = { cells };
+      }
+      return rows;
+    },
+    /** v2.3.0 : hypothèses de réseau à discuter — trajectoires du modèle sur toutes les crises (jusqu'à 4 par crise, H1 pèse 1,
+     *  les suivantes 0,6, crises habituelles ×2) classées avec le reste du tableau de concordance (S.networkRank), et zones
+     *  concordantes qu'aucune trajectoire ne prend pour origine */
+    staffNetworks(m, scope, cons) {
+      const A = this.atlas, sk = r => A.system(r) + ':' + A.hemiOf[r], pool = new Map();
+      for (const { sz, r, w } of cons.per) (r.hypotheses || []).forEach((H, k) => {
+        const key = H.name + '|' + H.hemi, e = pool.get(key) || { key, name: H.name, hemi: H.hemi, n: 0, top: 0, w: 0, H, sz };
+        e.n++; if (k === 0) e.top++; e.w += w * H.score * (k === 0 ? 1 : 0.6); if (H.score > e.H.score) { e.H = H; e.sz = sz; }
+        e.ez = [...new Set(e.H.members.filter(mm => mm.origin).map(mm => sk(mm.region)).concat(sk(e.H.origin)))]; e.prop = [...new Set(e.H.members.filter(mm => !mm.origin).map(mm => sk(mm.region)))];
+        pool.set(key, e);
+      });
+      return S.networkRank([...pool.values()], this.concordanceRows(m, scope, cons), { sysLabel: k => SYS_FR[k] || k });
+    },
+    networkLine(x, cons) {
+      const side = x.hemi === 'L' ? 'gauche' : 'droit', c = x.conc, cs = (c > 0 ? '+' : '') + c.toFixed(2);
+      const src = x.from === 'concordance' ? '<span class="badge">d’après la concordance</span>' : `<span class="muted">H1 dans ${x.top}/${cons.n} crise${cons.n > 1 ? 's' : ''}, présente dans ${x.n}</span>`;
+      const det = [x.forC.length ? 'pour : ' + x.forC.join(' ; ') : '', x.againstC.length ? 'contre : ' + x.againstC.join(' ; ') : ''].filter(Boolean).join(' — ');
+      return `<div class="row-line net-line" title="${esc(det || 'aucune autre donnée du tableau pour cette zone')}"><b>${esc(x.name)}</b> ${side} ${src} <span class="net-sc"><span title="poids sémiologique relatif">sémiologie ${x.semio.toFixed(2)}</span> · <span title="tableau de concordance hors sémiologie">concordance ${cs}</span></span>${x.forC.length || x.againstC.length ? `<div class="small muted">${esc(det)}</div>` : ''}</div>`;
+    },
+    renderNetworks(m) {
+      const box = $('stNets'); if (!box) return; const cons = this._cons, L = this.staffNetworks(m, this._scope, cons);
+      box.innerHTML = L.length ? `<div class="small muted" style="margin:8px 0 2px" title="trajectoires du modèle sur les crises, classées avec les autres colonnes du tableau de concordance (EEG, imagerie, neuropsychologie, SEEG…) ; survol : arguments">Hypothèses de réseau à discuter (sémiologie et concordance)</div>` + L.slice(0, 5).map(x => this.networkLine(x, cons)).join('') : '';
+    },
     modelHypothesisMenu(m, anchor) {
-      const cons = this._cons, d = this.dossier; if (!cons.n) { this.toast('Aucune crise saisie dans les explorations prises en compte'); return; }
-      const items = [{ head: 'Hypothèses du modèle (consensus des crises)' }];
-      for (const x of cons.hyps.slice(0, 8)) items.push({ label: `${x.name} ${x.hemi === 'L' ? 'G' : 'D'} · H1 dans ${x.top}/${cons.n}, présente dans ${x.n}`, run: () => {
-        const H = x.H, ez = H.members.filter(mm => mm.origin).map(mm => mm.region), prop = H.members.filter(mm => !mm.origin).map(mm => mm.region).slice(0, 8);
-        const nm = H.name.charAt(0).toUpperCase() + H.name.slice(1) + (H.hemi === 'L' ? ' gauche' : ' droit');
-        const args = []; if (x.top) args.push({ text: `H1 du modèle dans ${x.top} crise(s) sur ${cons.n}`, ref: { kind: 'model' } }); if (H.explained.length) args.push({ text: 'explique : ' + H.explained.map(e => e.sign.label_fr).join(', '), ref: { kind: 'seizure', id: x.sz.id } });
-        const against = H.unexplained.length ? [{ text: 'n’explique pas : ' + H.unexplained.map(s => s.label_fr).join(', '), ref: { kind: 'seizure', id: x.sz.id } }] : [];
-        const nh = S.addHypothesis(d, { meetingId: m.id, title: nm, side: H.hemi, ez: ez.length ? ez : [H.origin], prop, confidence: x.top >= Math.ceil(cons.n / 2) ? 'medium' : 'low', argsFor: args, argsAgainst: against, source: { kind: 'model', name: H.name, seizureId: x.sz.id, nSeizures: cons.n, nTop: x.top } });
+      const cons = this._cons, d = this.dossier, L = this.staffNetworks(m, this._scope, cons);
+      if (!L.length) { this.toast('Aucune crise ni donnée localisée dans le tableau de concordance'); return; }
+      const items = [{ head: 'Hypothèses proposées (sémiologie et concordance)' }];
+      for (const x of L) items.push({ label: `${x.name} ${x.hemi === 'L' ? 'G' : 'D'} · sémiologie ${x.semio.toFixed(2)} · concordance ${(x.conc > 0 ? '+' : '') + x.conc.toFixed(2)}${x.from === 'concordance' ? ' · d’après la concordance' : ''}`, run: () => {
+        const conc = x.forC.map(t => ({ text: 'concordance : ' + t, ref: { kind: 'concordance' } })), concAg = x.againstC.map(t => ({ text: 'concordance : ' + t, ref: { kind: 'concordance' } }));
+        let nh;
+        if (x.from === 'concordance') {
+          const [sys, side] = x.ez[0].split(':'), regs = this.regionsOf(sys, side);
+          nh = S.addHypothesis(d, { meetingId: m.id, title: (SYS_FR[sys] || sys).replace(/^./, c => c.toUpperCase()) + (side === 'L' ? ' gauche' : ' droit'), side, ez: regs, prop: [], confidence: x.conc >= 0.75 ? 'medium' : 'low', argsFor: conc, argsAgainst: concAg, source: { kind: 'concordance', row: x.ez[0], conc: +x.conc.toFixed(3) } });
+        } else {
+          const H = x.H, ez = H.members.filter(mm => mm.origin).map(mm => mm.region), prop = H.members.filter(mm => !mm.origin).map(mm => mm.region).slice(0, 8);
+          const nm = H.name.charAt(0).toUpperCase() + H.name.slice(1) + (H.hemi === 'L' ? ' gauche' : ' droit');
+          const args = []; if (x.top) args.push({ text: `H1 du modèle dans ${x.top} crise(s) sur ${cons.n}`, ref: { kind: 'model' } }); if (H.explained.length) args.push({ text: 'explique : ' + H.explained.map(e => e.sign.label_fr).join(', '), ref: { kind: 'seizure', id: x.sz.id } });
+          const against = H.unexplained.length ? [{ text: 'n’explique pas : ' + H.unexplained.map(s => s.label_fr).join(', '), ref: { kind: 'seizure', id: x.sz.id } }] : [];
+          const conf = x.top >= Math.ceil(cons.n / 2) && x.conc > 0 ? 'medium' : 'low';
+          nh = S.addHypothesis(d, { meetingId: m.id, title: nm, side: H.hemi, ez: ez.length ? ez : [H.origin], prop, confidence: conf, argsFor: args.concat(conc), argsAgainst: against.concat(concAg), source: { kind: 'model', name: H.name, seizureId: x.sz.id, nSeizures: cons.n, nTop: x.top, semio: +x.semio.toFixed(3), conc: +x.conc.toFixed(3) } });
+        }
         this.touch(); this.ui.openHyp = nh.id; this.renderHypotheses(m); this.renderConcordance(m);
       } });
-      const r = anchor.getBoundingClientRect(); this.popupMenu(items, Math.min(r.left, window.innerWidth - 460), r.bottom + 4);
+      const r = anchor.getBoundingClientRect(); this.popupMenu(items, Math.min(r.left, window.innerWidth - 520), r.bottom + 4);
     },
     renderHypotheses(m) {
       const d = this.dossier, box = $('stHyps'), list = this.meetingHypotheses(m); box.innerHTML = '';
-      if (!list.length) box.innerHTML = '<div class="hint">Aucune hypothèse. « + depuis le modèle » reprend les trajectoires que la sémiologie de toutes les crises suggère ; « + hypothèse » pour une hypothèse posée par l’équipe.</div>';
+      if (!list.length) box.innerHTML = '<div class="hint">Aucune hypothèse. « + depuis le modèle » propose les réseaux que suggèrent la sémiologie de toutes les crises et le reste du tableau de concordance (EEG, imagerie, neuropsychologie, SEEG) ; « + hypothèse » pour une hypothèse posée par l’équipe.</div>';
       list.forEach((H, idx) => {
         const lin = d.hypotheses.filter(x => x.lineage === H.lineage).sort((a, b) => a.version - b.version), open = this.ui.openHyp === H.id;
         const from = S.byId(d.meetings, H.meetingId), fromOther = H.meetingId !== m.id;

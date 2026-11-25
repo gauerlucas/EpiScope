@@ -125,3 +125,5 @@ input[type=date], input[type=datetime-local], input[type=time] { background: var
 .sz-table td:first-child { white-space: nowrap; } .sz-table td:nth-child(5) { white-space: nowrap; color: var(--muted); font-size: 11.5px; }
 .sz-table td:last-child { white-space: nowrap; text-align: right; }
 .card-h .muted { font-weight: 400; font-size: 12px; white-space: nowrap; }
+/* v2.3.0 : hypothèses de réseau à discuter (staff) */
+.net-line .net-sc { color: var(--muted); font-size: 12px; margin-left: 6px; white-space: nowrap; } .net-line .badge { margin-left: 4px; }

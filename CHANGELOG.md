@@ -2,6 +2,22 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [2.3.0] — 2026-11-25
+
+Au staff, les hypothèses de réseau proposées tiennent compte de toute la concordance anatomo-électro-clinique (EEG, imagerie, neuropsychologie, SEEG), et plus seulement de la sémiologie des crises.
+
+### Ajouté
+
+- **Hypothèses de réseau du staff fondées sur toute la concordance anatomo-électro-clinique.** Les hypothèses proposées (« + depuis le modèle ») et la liste de la Synthèse ne venaient que de la sémiologie des crises. Elles sont maintenant classées avec le reste du tableau de concordance (`S.networkRank`) :
+  - **sémiologie** : poids des trajectoires du modèle sur toutes les crises prises en compte (jusqu'à quatre par crise ; H1 pèse 1, les suivantes 0,6 ; crises habituelles ×2), rapporté au plus fort ;
+  - **concordance** : somme des niveaux hors sémiologie (++ 2, + 1, − −1) sur la zone épileptogène, plus la moitié de la meilleure ligne de propagation, rapportée à la ligne la plus concordante ; cases saisies comprises ;
+  - une zone concordante (au moins 2) qu'aucune trajectoire ne prend pour origine est proposée **d'après la concordance** ;
+  - arguments pour et contre affichés et repris dans l'hypothèse créée (source `concordance` pour une proposition sans trajectoire) ; même liste dans le diaporama (page Concordance) et le compte rendu du staff. Les synthèses des crises gardent les hypothèses du modèle, désormais libellées « sémiologie seule ».
+
+### Documentation
+
+- Manuel (fr / en) : Le staff › Préparer, synthèse et hypothèses proposées.
+
 ## [2.2.0] — 2026-11-25
 
 Le tableau de concordance du staff se remplit avec les données de la phase 1 (cartes 10-20 du début des crises et de l'intercritique) et les bilans IRM, TEP et neuropsychologiques, grâce à une localisation par bilan.

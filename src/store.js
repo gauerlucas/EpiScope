@@ -813,6 +813,50 @@
     ['posterior_medial', /precuneus|cingulaire posterieur|parietal\w* (mesial|medial|interne)|retrosplenial/],
     ['occipital', /occipit|calcarin|(?<!pre)cuneus|lingual/],
   ];
+  /** v2.3.0 : hypothèses de réseau à discuter au staff — la sémiologie des crises ET le reste du tableau de concordance.
+   *  pool : [{ key, name, hemi, w (poids sémiologique : somme des scores du modèle sur les crises), ez: ['système:côté'],
+   *          prop: ['système:côté'], ... }] ; rows : { 'système:côté': { cells: [{ col, label, v }] } } (cases du tableau,
+   *          saisies comprises ; la colonne 'semio' est exclue du score de concordance : la sémiologie compte déjà par w).
+   *  Score de concordance d'une ligne R = Σ niveaux hors sémiologie (++ 2, + 1, 0 / ? 0, − −1). Hypothèse :
+   *    sémiologie s = w / max(w) ∈ [0, 1] ; concordance c = (max R des lignes de la ZE + ½ max R⁺ des lignes de propagation) / max R⁺ ;
+   *    total = s + c. Zone concordante (R ≥ 2) qu'aucune hypothèse ne prend pour ZE → proposition « d'après la concordance »
+   *    (s = niveau de la case sémiologie / 2). Renvoie la liste triée, avec arguments pour / contre lisibles. */
+  function networkRank(pool, rows, opts) {
+    const o = Object.assign({ sysLabel: k => k, minConc: 2, max: 8 }, opts || {}), LV = { '++': 2, '+': 1, '0': 0, '?': 0, '−': -1, '-': -1 };
+    const R = {}, sup = {}, con = {};
+    for (const [k, r] of Object.entries(rows || {})) {
+      const cs = (r.cells || []).filter(c => c && c.col !== 'semio' && c.v);
+      R[k] = cs.reduce((s, c) => s + (LV[c.v] || 0), 0);
+      sup[k] = cs.filter(c => LV[c.v] > 0); con[k] = cs.filter(c => LV[c.v] < 0);
+    }
+    const maxR = Math.max(1, ...Object.values(R)), maxW = Math.max(1e-9, ...(pool || []).map(x => x.w || 0));
+    const side = k => (String(k).split(':')[1] === 'L' ? 'G' : 'D'), lab = k => o.sysLabel(String(k).split(':')[0]) + ' ' + side(k);
+    const cellTxt = (k, c) => `${c.label} ${c.v} (${lab(k)})`;
+    const score = (ez, prop) => {
+      const ezR = ez.length ? Math.max(...ez.map(k => R[k] || 0)) : 0, pr = prop.filter(k => !ez.includes(k)), prR = pr.length ? Math.max(0, ...pr.map(k => R[k] || 0)) : 0;
+      return { c: (ezR + 0.5 * prR) / maxR, ezR, prR };
+    };
+    const out = (pool || []).map(x => {
+      const ez = [...new Set(x.ez || [])], prop = [...new Set(x.prop || [])], sc = score(ez, prop), s = (x.w || 0) / maxW;
+      const forC = [...ez.flatMap(k => (sup[k] || []).map(c => cellTxt(k, c))), ...prop.filter(k => !ez.includes(k)).flatMap(k => (sup[k] || []).filter(c => c.v === '++').map(c => cellTxt(k, c) + ', propagation'))];
+      const againstC = ez.flatMap(k => (con[k] || []).map(c => cellTxt(k, c)));
+      return Object.assign({}, x, { ez, prop, semio: s, conc: sc.c, total: s + sc.c, forC: [...new Set(forC)], againstC, from: 'model' });
+    });
+    // zones concordantes sans hypothèse sémiologique qui les prenne pour zone épileptogène
+    const ezAll = new Set(out.flatMap(x => x.ez));
+    for (const [k, r] of Object.entries(R)) {
+      if (r < o.minConc || ezAll.has(k)) continue;
+      const sem = ((rows[k].cells || []).find(c => c && c.col === 'semio') || {}).v, s = (LV[sem] || 0) / 2;
+      out.push({ key: 'conc|' + k, name: o.sysLabel(k.split(':')[0]), hemi: k.split(':')[1], w: 0, ez: [k], prop: [], semio: Math.max(0, s), conc: r / maxR, total: Math.max(0, s) + r / maxR,
+        forC: (sup[k] || []).map(c => cellTxt(k, c)), againstC: (con[k] || []).map(c => cellTxt(k, c)), from: 'concordance' });
+    }
+    // ZE sans aucun appui hors sémiologie alors qu'une autre zone est concordante (R ≥ 2) : argument contre
+    for (const x of out) {
+      const ezR = x.ez.length ? Math.max(...x.ez.map(k => R[k] || 0)) : 0, best = Object.entries(R).filter(([k]) => !x.ez.includes(k)).sort((a, b) => b[1] - a[1])[0];
+      if (ezR <= 0 && best && best[1] >= o.minConc) x.againstC = x.againstC.concat(`zone plus concordante : ${lab(best[0])} (${best[1] > 0 ? '+' : ''}${best[1]})`);
+    }
+    return out.sort((a, b) => b.total - a.total || b.semio - a.semio).slice(0, o.max);
+  }
   function examLocSuggest(x) {
     const T = [x && x.conclusion, x && x.text, ...Object.values((x && x.domains) || {})].filter(Boolean).join(' . ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     if (!T.trim()) return [];
@@ -1113,6 +1157,6 @@
   }
   const mniMethod = d => { const M = d && d.anatomy && d.anatomy.mni; return d && d.anatomy && d.anatomy.toTemplate ? (M && M.method && M.method !== 'affine' ? M.method : 'affine') : null; };
 
-  SV.Store = { EEG_SYS, eegMapSystems, examLocSuggest, anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
+  SV.Store = { networkRank, EEG_SYS, eegMapSystems, examLocSuggest, anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
     projectLocked, ensureProject, projectsOf, switchProject, addProject, renameProject, removeProject, projectElectrodes, revertToPlan, THERMO_ORDER, THERMO_COL, thermoStatusOf, importImplantation, compareImplantations, explorationsSorted, secretsOf, scrub, bindRec, bindRecs, recSetSeizure, recDropSeizure, REC_F, reportedSeizures, reportedAll, explorationOverview, annotatedSeizures, recordingOverlaps, copySemiology, EEG_MAP_KEYS, seizureDays, moveSeizure, migrate3, REPORTED, reportedEx, seizuresOfExploration, allSeizures, contextOf, lesionRegions, refImaging, deriveIlae, ilaeText, stage, summary, log, resolveCtx, toWorkspace, fromWorkspace, migrateCase, bundlePolicy, user: '' };
 });
