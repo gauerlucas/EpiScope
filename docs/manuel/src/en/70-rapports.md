@@ -45,7 +45,7 @@ Patient name ▾ › *Export the record* (or [[Export]] on its row in the list) 
 
 - **full**: with images, recordings and videos;
 - **light**: without the original images or recordings, but with surfaces, parcellation, electrodes and results;
-- **anonymised** (full or light), for sharing outside the department or a multicentre study: the identity is removed, last name, first name, hospital ID, date of birth and the former pseudonym are replaced by the code in all texts (log included), EDF file headers are anonymised (patient and recording fields; the start date is kept) and videos are not included (faces). MRI images and captures remain included: check that none shows a face or a name before sharing.
+- **anonymised** (full or light), for sharing outside the department or a multicentre study: the identity is removed, last name, first name, hospital ID, date of birth and the former pseudonym are replaced by the code in all texts (log included) and in file names (anatomy, electrodes and images stay readable on import; an anonymised archive made before version 2.1.1 should be made again), EDF file headers are anonymised (patient and recording fields; the start date is kept) and videos are not included (faces). MRI images and captures remain included: check that none shows a face or a name before sharing.
 
 The internal archive (full or light) contains the identity: it is meant to move from one computer of the department to another.
 

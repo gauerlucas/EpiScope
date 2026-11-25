@@ -56,6 +56,8 @@
     implantStatus: { proposed: 'schéma proposé', planned: 'implantation prévue', real: 'implantation réelle' },
     thermoStatus: { planned: 'planifiée', validated: 'validée', done: 'réalisée', rejected: 'contre-indiquée' },
     /** bilans datés (dossier › Bilans) */
+    /** systèmes anatomo-fonctionnels (lignes du tableau de concordance du staff, localisation d'un bilan) */
+    systems: { mesial_temporal: 'temporal mésial', lateral_temporal: 'temporal latéral', basal_temporal: 'temporal basal', insulo_opercular: 'insulo-operculaire', orbitofrontal: 'orbitofrontal', prefrontal_mesial: 'préfrontal mésial / cingulaire ant.', prefrontal_lateral: 'préfrontal latéral', premotor: 'prémoteur / AMS', central: 'central (rolandique)', parietal_lateral: 'pariétal latéral', posterior_medial: 'pariétal médian / cingulaire post.', occipital: 'occipital' },
     exam: { veeg: 'vidéo-EEG', mri: 'IRM', pet: 'TEP', spect: 'TEMP (SPECT)', meg: 'MEG / EEG-HR', fmri: 'IRMf', wada: 'Test de Wada', neuropsy: 'Neuropsychologie', psy: 'Psychiatrie', other: 'Autre' },   // « EEG de scalp » (eeg) fondu dans vidéo-EEG (v4.4)
     langDom: { '': '—', L: 'gauche', R: 'droite', B: 'bilatérale', A: 'atypique' },
     neuroDomains: [['efficiency', 'efficience globale'], ['language', 'langage'], ['memory', 'mémoire'], ['executive', 'fonctions exécutives'], ['attention', 'attention'], ['visuospatial', 'fonctions visuo-spatiales'], ['other', 'autres']],
@@ -398,7 +400,7 @@
     d.patient = Object.assign(base.patient, d.patient);
     const c0 = newClin(); d.patient.clin = Object.assign(c0, d.patient.clin || {}); d.patient.clin.antecedents = Object.assign(newClin().antecedents, d.patient.clin.antecedents || {});
     migrateClin(d.patient);
-    for (const x of d.exams || []) { x.imagingIds = x.imagingIds || []; x.attachments = x.attachments || []; if (x.kind === 'eeg') x.kind = 'veeg'; }   // l'EEG de scalp est un vidéo-EEG
+    for (const x of d.exams || []) { x.imagingIds = x.imagingIds || []; x.attachments = x.attachments || []; if (x.kind === 'eeg') x.kind = 'veeg'; x.loc = (Array.isArray(x.loc) ? x.loc : []).filter(k => V.systems[k]); }   // l'EEG de scalp est un vidéo-EEG
     d.rois = d.rois || [];
     d.sliceViews = d.sliceViews && typeof d.sliceViews === 'object' ? d.sliceViews : {};
     for (const k of Object.keys(d.sliceViews)) { const v = d.sliceViews[k]; if (!v || typeof v !== 'object') { delete d.sliceViews[k]; continue; } delete v.elec; delete v.elecK; delete v.pair; }   // réglages d'affichage seulement
@@ -494,7 +496,7 @@
   function addMeeting(d, o) { const m = Object.assign({ id: uid('M'), date: today(), kind: 'post_phase1', explorationId: null, participants: '', summary: '', concordance: { cells: {}, notes: '', columns: null }, hypothesisIds: [], decisionIds: [], galleryIds: [], conclusion: '', status: 'draft', created: now() }, o || {}); d.meetings.push(m); log(d, 'add', 'meeting', m.id, V.meeting[m.kind] + ' ' + m.date); return m; }
   function addProcedure(d, o) { const p = Object.assign({ id: uid('R'), type: 'resection', template: '', date: today(), side: '', target: '', regions: [], extent: {}, histology: '', histologyCodes: [], resection: newResection(), complications: '', notes: '', decisionId: null }, o || {}); d.procedures.push(p); log(d, 'add', 'procedure', p.id, V.procedure[p.type]); return p; }
   function addOutcome(d, o) { const x = Object.assign({ id: uid('O'), date: today(), months: '', monthsManual: false, procedureId: null, engel: '', ilae: '', aeds: '', notes: '' }, o || {}); d.outcomes.push(x); log(d, 'add', 'outcome', x.id, 'Engel ' + (x.engel || '?')); return x; }
-  function addExam(d, o) { const x = Object.assign({ id: uid('X'), kind: 'veeg', date: today(), title: '', text: '', conclusion: '', side: '', domains: {}, explorationId: null, imagingIds: [], attachments: [], added: now() }, o || {}); (d.exams = d.exams || []).push(x); log(d, 'add', 'exam', x.id, (V.exam[x.kind] || x.kind) + ' ' + (x.date || '')); return x; }
+  function addExam(d, o) { const x = Object.assign({ id: uid('X'), kind: 'veeg', date: today(), title: '', text: '', conclusion: '', side: '', loc: [], domains: {}, explorationId: null, imagingIds: [], attachments: [], added: now() }, o || {}); (d.exams = d.exams || []).push(x); log(d, 'add', 'exam', x.id, (V.exam[x.kind] || x.kind) + ' ' + (x.date || '')); return x; }
   /** capture d'écran d'un tracé (galerie) : fichier rangé dans gallery/<id>.<ext> */
   /** type d'élément d'une capture : choisi, sinon déduit (vidéo, examen d'imagerie lié, exploration SEEG, EEG par défaut) */
   function galleryModOf(d, g) {
@@ -763,6 +765,64 @@
   /** cartes 10-20 de l'EEG de scalp (ex.eeg.map) : intercritique en veille (W) et au sommeil (S), début des crises ;
    *  « spikes » et « slow » (avant 2.0.0) = vigilance non précisée, gardés tels quels jusqu'à ce qu'on les range */
   const EEG_MAP_KEYS = ['spikesW', 'spikesS', 'slowW', 'slowS', 'ictal'];
+  /** v2.2.0 : électrode 10-20 → systèmes qu'elle explore au mieux (p : principaux, s : voisins) ; le scalp localise mal : un
+   *  système voisin n'est jamais compté plus que « en faveur ». Électrode médiane (Fz, Cz, Pz) : les deux côtés. */
+  const EEG_SYS = {
+    Fp: { p: ['orbitofrontal', 'prefrontal_mesial'], s: ['prefrontal_lateral'] },
+    F7: { p: ['mesial_temporal', 'lateral_temporal'], s: ['orbitofrontal', 'insulo_opercular'] }, F8: 'F7',
+    F9: { p: ['mesial_temporal', 'basal_temporal'], s: ['lateral_temporal'] }, F10: 'F9',
+    T3: { p: ['lateral_temporal', 'mesial_temporal'], s: ['insulo_opercular'] }, T4: 'T3',
+    T9: { p: ['basal_temporal', 'mesial_temporal'], s: ['lateral_temporal'] }, T10: 'T9',
+    T5: { p: ['lateral_temporal', 'basal_temporal'], s: ['occipital', 'parietal_lateral'] }, T6: 'T5', P9: 'T5', P10: 'T5',
+    F3: { p: ['prefrontal_lateral', 'premotor'], s: [] }, F4: 'F3',
+    Fz: { p: ['premotor', 'prefrontal_mesial'], s: [] },
+    C3: { p: ['central'], s: ['premotor', 'insulo_opercular'] }, C4: 'C3',
+    Cz: { p: ['central', 'premotor'], s: ['posterior_medial'] },
+    P3: { p: ['parietal_lateral'], s: ['central'] }, P4: 'P3',
+    Pz: { p: ['posterior_medial', 'parietal_lateral'], s: [] },
+    O1: { p: ['occipital'], s: [] }, O2: 'O1',
+    T7: 'T3', T8: 'T3', P7: 'T5', P8: 'T5',
+  };
+  const eegSysOf = e => { let r = EEG_SYS[e] || EEG_SYS[String(e).slice(0, 2)]; if (typeof r === 'string') r = EEG_SYS[r]; return r || null; };
+  const eegSidesOf = e => /z$/i.test(e) ? ['L', 'R'] : (+String(e).replace(/\D/g, '') % 2 ? ['L'] : ['R']);
+  /** carte 10-20 ({ électrode: 1–3 }) → { 'système:côté': { v, els: [électrodes] } } ; v = amplitude la plus forte d'une électrode
+   *  qui explore le système à titre principal (1 au plus pour un système voisin) */
+  function eegMapSystems(vals) {
+    const out = {};
+    for (const [e, a] of Object.entries(vals || {})) {
+      const m = eegSysOf(e), v = +a || 0; if (!m || v <= 0) continue;
+      for (const side of eegSidesOf(e)) for (const [list, cap] of [[m.p, 3], [m.s, 1]]) for (const sys of list) {
+        const k = sys + ':' + side, o = out[k] || (out[k] = { v: 0, els: [] }); o.v = Math.max(o.v, Math.min(v, cap)); if (!o.els.includes(e)) o.els.push(e);
+      }
+    }
+    return out;
+  }
+  /** v2.2.0 : systèmes cités dans le texte d'un bilan (conclusion, puis résultats) — une SUGGESTION, jamais appliquée seule :
+   *  l'utilisateur la confirme dans le bilan (x.loc) ; le côté vient de la latéralisation du bilan */
+  const LOC_WORDS = [
+    ['mesial_temporal', /hippocamp|amygdal|parahippocamp|uncus|temporal\w* (interne|mesial|medial)|mesio-?temporal|temporo-?mesial|sclerose (de l.)?hippocamp/],
+    ['basal_temporal', /temporal\w* basal|temporo-?basal|fusiform|gyrus temporal inferieur/],
+    ['lateral_temporal', /temporal\w* (externe|lateral|neocortical)|pole temporal|temporo-?polaire|gyrus temporal (superieur|moyen)|neocortex temporal/],
+    ['insulo_opercular', /insul|opercul/],
+    ['orbitofrontal', /orbito|gyrus droit|frontal\w* basal|fronto-?basal/],
+    ['prefrontal_mesial', /cingulaire anterieur|frontal\w* (interne|mesial|medial)|prefrontal\w* (mesial|medial)|fronto-?mesial/],
+    ['prefrontal_lateral', /prefrontal\w* (lateral|dorso)|dorsolateral|frontal\w* (lateral|dorso|inferieur|moyen)|gyrus frontal (superieur|moyen|inferieur)|broca/],
+    ['premotor', /\bams\b|\bsma\b|aire motrice supplementaire|premot/],
+    ['central', /rolandi|precentral|postcentral|\bcentral|moteur primaire|paracentral/],
+    ['parietal_lateral', /supramarginal|angulaire|parietal\w* (lateral|inferieur|superieur|externe)/],
+    ['posterior_medial', /precuneus|cingulaire posterieur|parietal\w* (mesial|medial|interne)|retrosplenial/],
+    ['occipital', /occipit|calcarin|(?<!pre)cuneus|lingual/],
+  ];
+  function examLocSuggest(x) {
+    const T = [x && x.conclusion, x && x.text, ...Object.values((x && x.domains) || {})].filter(Boolean).join(' . ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (!T.trim()) return [];
+    const out = LOC_WORDS.filter(([, re]) => re.test(T)).map(([k]) => k);
+    // « temporal », « frontal », « pariétal » sans précision : système latéral, seulement si rien de plus précis n'a été trouvé
+    if (!out.some(k => /temporal/.test(k)) && /temporal/.test(T)) out.push('lateral_temporal');
+    if (!out.some(k => /frontal|premotor/.test(k)) && /\bfrontal/.test(T)) out.push('prefrontal_lateral');
+    if (!out.some(k => /parietal|posterior/.test(k)) && /parietal/.test(T)) out.push('parietal_lateral');
+    return Object.keys(V.systems).filter(k => out.includes(k));
+  }
   /** vue d'ensemble d'une exploration (frise) : jours, tracés et crises placés en heure murale ISO
    *  → { t0, t1, days: [{ day, n }], recs: [{ id, title, kind, t0, t1, vigil }], seizures: [{ id, label, t, habitual, events }] } */
   function explorationOverview(d, ex) {
@@ -1053,6 +1113,6 @@
   }
   const mniMethod = d => { const M = d && d.anatomy && d.anatomy.mni; return d && d.anatomy && d.anatomy.toTemplate ? (M && M.method && M.method !== 'affine' ? M.method : 'affine') : null; };
 
-  SV.Store = { anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
+  SV.Store = { EEG_SYS, eegMapSystems, examLocSuggest, anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
     projectLocked, ensureProject, projectsOf, switchProject, addProject, renameProject, removeProject, projectElectrodes, revertToPlan, THERMO_ORDER, THERMO_COL, thermoStatusOf, importImplantation, compareImplantations, explorationsSorted, secretsOf, scrub, bindRec, bindRecs, recSetSeizure, recDropSeizure, REC_F, reportedSeizures, reportedAll, explorationOverview, annotatedSeizures, recordingOverlaps, copySemiology, EEG_MAP_KEYS, seizureDays, moveSeizure, migrate3, REPORTED, reportedEx, seizuresOfExploration, allSeizures, contextOf, lesionRegions, refImaging, deriveIlae, ilaeText, stage, summary, log, resolveCtx, toWorkspace, fromWorkspace, migrateCase, bundlePolicy, user: '' };
 });

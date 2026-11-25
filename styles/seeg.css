@@ -208,6 +208,7 @@ table.aed.dated td.dt { width: 112px; } table.aed.dated td.dt input { width: 100
 /* ---------- Bilans : liens */
 .exam-links { margin-top: 8px; border-top: 1px dashed var(--line2); padding-top: 6px; display: flex; flex-direction: column; gap: 6px; }
 .xl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; } .xl-row .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); min-width: 92px; }
+.ex-loc { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; } .ex-loc .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); min-width: 92px; } .ex-loc .chip b { cursor: pointer; margin-left: 4px; opacity: .7; } .ex-loc .chip.sugg { border-style: dashed; opacity: .85; cursor: pointer; }
 .xl-imgs, .xl-att { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .xl-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line2); border-radius: 999px; padding: 1px 4px 1px 10px; font-size: 12px; } .xl-chip a { color: var(--accent2); }
 .xl-add { font-size: 12px; } .xl-gal .gal-drop { padding: 6px 8px; font-size: 12px; } .xl-badges .badge { margin-left: 4px; }
 .ll-exam circle { fill: none; stroke: light-dark(#52924f, #8fd18b); stroke-width: 2; } .ll-exam.x-eeg circle { stroke: light-dark(#a07a06, #ffd166); } .ll-exam.x-neuropsy circle { stroke: light-dark(#af6488, #f4a3c8); } .ll-exam text { fill: var(--muted); font-size: 11px; }

@@ -108,6 +108,8 @@ Chaque bilan est daté et typé : vidéo-EEG, IRM, TEP, TEMP, MEG, IRMf, Wada, n
 - des **captures** (EEG standard des urgences, coupe d'IRM), collées par <kbd>Ctrl</kbd>+<kbd>V</kbd> dans le bilan ;
 - un lien vers les **images** du dossier : [[voir]] ouvre l'image dans l'écran Imagerie.
 
+**Localisation** (IRM, TEP, TEMP, MEG, neuropsychologie) : les systèmes anatomo-fonctionnels concernés (temporal mésial, prémoteur / AMS…), choisis par [[+ région ▾]] ; le côté est celui de la latéralisation du bilan. EpiScope propose les régions citées dans le texte (« Hypersignal T2 AMS droite » → *prémoteur / AMS*) ; un clic les ajoute, rien n'est ajouté seul. La localisation remplit les colonnes IRM, TEP et neuropsychologie du [tableau de concordance du staff](@staff#preparer).
+
 ![Les bilans, du plus récent au plus ancien, filtrables par type.](shot:dossier-bilans)
 
 ## La galerie

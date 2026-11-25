@@ -2,6 +2,21 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [2.2.0] — 2026-11-25
+
+Le tableau de concordance du staff se remplit avec les données de la phase 1 (cartes 10-20 du début des crises et de l'intercritique) et les bilans IRM, TEP et neuropsychologiques, grâce à une localisation par bilan.
+
+### Ajouté
+
+- **Tableau de concordance du staff alimenté par la phase 1 et les bilans.** Jusqu'ici, seules la sémiologie et les lésions déclarées remplissaient le tableau ; les colonnes EEG, TEP et neuropsychologie restaient à saisir à la main, et un bilan IRM latéralisé n'était pas lu. Désormais :
+  - **EEG critique (scalp)** : carte 10-20 « Début des crises » des explorations prises en compte ; **EEG intercritique** : cartes des pointes et des ondes lentes (veille, sommeil). Chaque électrode est rapportée aux systèmes qu'elle explore au mieux (`S.EEG_SYS`, `S.eegMapSystems`) ; un système voisin, comme des ondes lentes seules, n'est jamais compté plus que « en faveur ». Électrodes médianes : les deux côtés.
+  - **IRM, TEP, neuropsychologie** : bilans datés avant le staff (hors suivi), avec une nouvelle **Localisation** dans Dossier › Bilans (`x.loc`, systèmes anatomo-fonctionnels ; côté = latéralisation du bilan). Les régions citées dans le texte du bilan sont proposées (`S.examLocSuggest` : « AMS » → prémoteur / AMS, « hippocampe » → temporal mésial…), jamais ajoutées seules au bilan ; tant que la localisation n'est pas confirmée, le tableau reprend ces régions, « en faveur » au plus et signalées « à confirmer ». IRM latéralisée et localisée : « argument fort ».
+  - Le détail de chaque case auto est au survol ; toute case reste modifiable.
+
+### Documentation
+
+- Manuel (fr / en) : Localisation des bilans (Le dossier › Les bilans), colonnes préremplies du tableau de concordance (Le staff › Préparer), noms de fichiers de l'archive anonymisée (Rapports › Partager un dossier).
+
 ## [2.1.1] — 2026-11-24
 
 Corrections : l'archive anonymisée (.episcope) garde l'anatomie du patient et les électrodes lisibles après l'import, et l'EI enregistré depuis la visionneuse est rangé avec les analyses critiques de sa crise.

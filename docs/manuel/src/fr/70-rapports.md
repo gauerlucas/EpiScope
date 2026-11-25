@@ -45,7 +45,7 @@ Nom du patient ▾ › *Exporter le dossier* (ou [[Exporter]] sur sa ligne de la
 
 - **complète** : avec les images, les tracés et les vidéos ;
 - **légère** : sans les images d'origine ni les tracés, mais avec les surfaces, la parcellation, les électrodes et les résultats ;
-- **anonymisée** (complète ou légère), pour un partage hors du service ou une étude multicentrique : l'identité est retirée, le nom, le prénom, l'IPP, la date de naissance et l'ancien pseudonyme sont remplacés par le code dans tous les textes (journal compris), les en-têtes des fichiers EDF sont anonymisés (champs patient et enregistrement ; la date de début est gardée) et les vidéos ne sont pas incluses (visages). Les images IRM et les captures restent incluses : vérifiez qu'aucune ne montre un visage ou un nom avant de partager.
+- **anonymisée** (complète ou légère), pour un partage hors du service ou une étude multicentrique : l'identité est retirée, le nom, le prénom, l'IPP, la date de naissance et l'ancien pseudonyme sont remplacés par le code dans tous les textes (journal compris) et dans les noms de fichiers (l'anatomie, les électrodes et les images restent lisibles à l'import ; une archive anonymisée faite avant la version 2.1.1 est à refaire), les en-têtes des fichiers EDF sont anonymisés (champs patient et enregistrement ; la date de début est gardée) et les vidéos ne sont pas incluses (visages). Les images IRM et les captures restent incluses : vérifiez qu'aucune ne montre un visage ou un nom avant de partager.
 
 L'archive interne (complète ou légère) contient l'identité : elle est faite pour passer d'un poste du service à un autre.
 

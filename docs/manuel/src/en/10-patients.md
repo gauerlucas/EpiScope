@@ -107,6 +107,8 @@ Each investigation is dated and typed: video-EEG, MRI, PET, SPECT, MEG, fMRI, Wa
 - **screenshots** (emergency EEG, an MRI slice), pasted with <kbd>Ctrl</kbd>+<kbd>V</kbd> into the investigation;
 - a link to the record's **images**: [[view]] opens the image on the Imaging screen.
 
+**Localization** (MRI, PET, SPECT, MEG, neuropsychology): the anatomo-functional systems involved (mesial temporal, premotor / SMA…), chosen with [[+ region ▾]]; the side is that of the investigation's lateralisation. EpiScope suggests the regions mentioned in the text (“T2 hyperintensity right SMA” → *premotor / SMA*); a click adds them, nothing is added on its own. The localization fills the MRI, PET and neuropsychology columns of the [meeting concordance table](@staff#preparer).
+
 ![Investigations, most recent first, filterable by type.](shot:dossier-bilans)
 
 ## The gallery {#la-galerie}

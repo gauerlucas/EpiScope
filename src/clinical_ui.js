@@ -31,6 +31,8 @@
     });
   }
   const IMG_KINDS = ['mri', 'pet', 'spect', 'meg', 'fmri', 'other'];   // bilans qui peuvent être liés à des images du dossier
+  // v2.2.0 : bilans localisables (systèmes anatomo-fonctionnels, x.loc) — repris dans le tableau de concordance du staff
+  const LOC_KINDS = ['mri', 'pet', 'spect', 'meg', 'neuropsy'];
   const M = {
     // ================================================================ histoire clinique (v4.19 : trois onglets du Dossier)
     /** ancien onglet « Histoire clinique » : redirigé vers « Antécédents et contexte » */
@@ -330,7 +332,7 @@
         const c = h('div', 'card exam k-' + x.kind), open = this.ui.exOpen === x.id || !x.text && !x.conclusion;
         c.innerHTML = `<div class="exam-h"><span class="badge">${esc(V.exam[x.kind] || x.kind)}</span>${x.phase === 'postop' && !o.embed ? '<span class="badge postop" title="bilan de suivi (après l’intervention)">suivi</span>' : ''}<input type="date" data-f="date" value="${esc(x.date)}"><input class="inline title" data-f="title" value="${esc(x.title)}" placeholder="intitulé (ex. IRM 3T protocole épilepsie)"><span class="spacer"></span><select data-a="stage" title="rattacher le bilan : en ambulatoire, ou à une phase 1 / SEEG déjà faite (à faire plus tard si l’exploration n’a pas encore eu lieu)">${stageOpts(x)}</select><button class="mini-btn" data-a="t">${open ? 'replier' : 'détails'}</button><b class="x" data-a="rm" title="supprimer">✕</b></div>
           ${open ? `<div class="form">${x.kind === 'neuropsy' ? `<div class="grid2">${V.neuroDomains.map(([k, l]) => `<label>${esc(l)}<textarea data-dom="${k}" rows="2">${esc((x.domains || {})[k] || '')}</textarea></label>`).join('')}</div>` : `<label>Résultats <textarea class="grow" data-f="text" rows="3" placeholder="${x.kind === 'veeg' ? 'anomalies intercritiques (topographie, veille / sommeil), crises enregistrées' : 'description'}">${esc(x.text)}</textarea></label>`}
-            <div class="grid2"><label>Conclusion <textarea class="grow" rows="1" data-f="conclusion">${esc(x.conclusion)}</textarea></label>${x.kind === 'psy' ? '' : x.kind === 'fmri' ? `<label>Dominance du langage <select data-f="langDom">${opts(V.langDom, x.langDom || '')}</select></label>` : `<label>Latéralisation <select data-f="side">${opts({ '': '—', L: 'gauche', R: 'droite', B: 'bilatérale', N: 'non latéralisante' }, x.side)}</select></label>`}</div></div>
+            <div class="grid2"><label>Conclusion <textarea class="grow" rows="1" data-f="conclusion">${esc(x.conclusion)}</textarea></label>${x.kind === 'psy' ? '' : x.kind === 'fmri' ? `<label>Dominance du langage <select data-f="langDom">${opts(V.langDom, x.langDom || '')}</select></label>` : `<label>Latéralisation <select data-f="side">${opts({ '': '—', L: 'gauche', R: 'droite', B: 'bilatérale', N: 'non latéralisante' }, x.side)}</select></label>`}</div>${LOC_KINDS.includes(x.kind) ? '<div class="ex-loc"></div>' : ''}</div>
             <div class="exam-links">${IMG_KINDS.includes(x.kind) ? '<div class="xl-row"><span class="lbl">Images</span><span class="xl-imgs"></span></div>' : ''}
               <div class="xl-row"><span class="lbl">Captures</span><span class="spacer"></span><button class="mini-btn" data-a="linkcap" title="rattacher une capture existante de la galerie">lier une capture ▾</button></div><div class="xl-gal"></div>
               <div class="xl-row"><span class="lbl">Pièces jointes</span><span class="xl-att"></span><button class="mini-btn" data-a="attach" title="compte rendu PDF, courrier, tableau… (copié dans le dossier du patient)">+ joindre un fichier…</button><input type="file" class="xl-file" multiple hidden></div></div>` : `<div class="exam-sum">${esc(x.conclusion || x.text || Object.values(x.domains || {}).filter(Boolean).join(' · ') || '')}${this.examLinkBadges(x)}</div>`}`;
@@ -340,12 +342,28 @@
         c.querySelector('[data-a=t]').onclick = () => { this.ui.exOpen = open ? null : x.id; redraw(); };
         c.querySelector('[data-a=rm]').onclick = async () => { if (!confirm('Supprimer ce bilan (et ses pièces jointes) ?')) return; for (const a of x.attachments || []) await SV.Library.removeFile(d, a.file).catch(() => { }); S.remove(d, 'exam', x.id); this.touch(); redraw(); };
         if (open) this.bindExamLinks(c, x, () => redraw());
+        if (open && LOC_KINDS.includes(x.kind)) { this.examLocRender(c, x); c.querySelectorAll('[data-f=text], [data-f=conclusion], [data-dom]').forEach(el => el.addEventListener('change', () => this.examLocRender(c, x))); }
         list.appendChild(c);
       }
     },
     /** pastilles du bilan replié : images, captures, pièces jointes */
     examLinkBadges(x) { const d = this.dossier, ni = (x.imagingIds || []).length, ng = (d.gallery || []).filter(g => g.examId === x.id).length, na = (x.attachments || []).length; return ni + ng + na ? ` <span class="xl-badges">${ni ? `<span class="badge">${ni} image${ni > 1 ? 's' : ''}</span>` : ''}${ng ? `<span class="badge">${ng} capture${ng > 1 ? 's' : ''}</span>` : ''}${na ? `<span class="badge">📎 ${na}</span>` : ''}</span>` : ''; },
     /** liens d'un bilan ouvert : images du dossier (voir), captures (coller / lier), pièces jointes */
+    /** v2.2.0 : localisation d'un bilan (x.loc) — systèmes choisis, et systèmes cités dans le texte proposés (jamais ajoutés seuls) ;
+     *  le côté est celui de la latéralisation ; repris dans le tableau de concordance du staff (IRM, TEP, neuropsychologie) */
+    examLocRender(c, x) {
+      const box = c.querySelector('.ex-loc'); if (!box) return; x.loc = x.loc || [];
+      const sugg = S.examLocSuggest(x).filter(k => !x.loc.includes(k)), side = { L: ' G', R: ' D' }[x.side] || '';
+      box.innerHTML = `<span class="lbl" title="systèmes concernés ; le côté est celui de la latéralisation. Repris dans le tableau de concordance du staff.">Localisation</span>
+        ${x.loc.map(k => `<span class="chip on">${esc(V.systems[k])}${side} <b data-rm="${k}" title="retirer">✕</b></span>`).join('')}
+        <button class="mini-btn" data-a="locadd">+ région ▾</button>
+        ${sugg.length ? `<span class="muted small">cité dans le texte :</span>${sugg.map(k => `<button class="chip sugg" data-add="${k}" title="ajouter à la localisation">+ ${esc(V.systems[k])}</button>`).join('')}` : ''}
+        ${!x.loc.length ? `<span class="muted small">${sugg.length ? 'sans localisation confirmée, le tableau de concordance du staff reprend les régions citées dans le texte, « en faveur » au plus' : 'sans localisation, le bilan n’apparaît pas dans le tableau de concordance du staff'}</span>` : ''}`;
+      const add = k => { if (!x.loc.includes(k)) { x.loc.push(k); x.loc.sort((a, b) => Object.keys(V.systems).indexOf(a) - Object.keys(V.systems).indexOf(b)); } this.touch('exam', x.id, V.exam[x.kind]); this.examLocRender(c, x); };
+      box.querySelectorAll('[data-add]').forEach(b => b.onclick = () => add(b.dataset.add));
+      box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { x.loc = x.loc.filter(k => k !== b.dataset.rm); this.touch('exam', x.id, V.exam[x.kind]); this.examLocRender(c, x); });
+      box.querySelector('[data-a=locadd]').onclick = e => { const r = e.currentTarget.getBoundingClientRect(); this.popupMenu([{ head: 'Système concerné' }, ...Object.entries(V.systems).filter(([k]) => !x.loc.includes(k)).map(([k, l]) => ({ label: l, run: () => add(k) }))], Math.min(r.left, window.innerWidth - 300), r.bottom + 4); };
+    },
     bindExamLinks(c, x, redraw) {
       const d = this.dossier, L = SV.Library, imBox = c.querySelector('.xl-imgs');
       const drawImgs = () => { if (!imBox) return;

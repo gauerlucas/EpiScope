@@ -21,8 +21,9 @@
   const LV_SCORE = { '++': 2, '+': 1, '0': 0, '−': -1, '?': 0, '': 0 };
   const DEFAULT_COLS = [
     { key: 'semio', label: 'Sémiologie', auto: true, hint: 'consensus du modèle sur les crises prises en compte (régions d’origine candidates)' },
-    { key: 'eeg_ii', label: 'EEG intercritique' }, { key: 'eeg_ic', label: 'EEG critique (scalp)' },
-    { key: 'mri', label: 'IRM', auto: true, hint: 'lésions déclarées dans le dossier' }, { key: 'pet', label: 'TEP' }, { key: 'neuropsy', label: 'Neuropsychologie' },
+    { key: 'eeg_ii', label: 'EEG intercritique', auto: true, hint: 'cartes 10-20 des explorations prises en compte (pointes, ondes lentes ; veille et sommeil)' },
+    { key: 'eeg_ic', label: 'EEG critique (scalp)', auto: true, hint: 'carte 10-20 « Début des crises » des explorations prises en compte' },
+    { key: 'mri', label: 'IRM', auto: true, hint: 'lésions déclarées dans le dossier, bilans IRM localisés' }, { key: 'pet', label: 'TEP', auto: true, hint: 'bilans TEP localisés' }, { key: 'neuropsy', label: 'Neuropsychologie', auto: true, hint: 'bilans neuropsychologiques localisés' },
     { key: 'seeg_q', label: 'SEEG : quantification', auto: true, seeg: true, hint: 'maximum normalisé des jeux de quantification (EI…) sur les plots du système' },
     { key: 'seeg_stim', label: 'SEEG : stimulations', auto: true, seeg: true, hint: 'réponse la plus forte : crise habituelle, crise, post-décharge, réponse clinique habituelle' },
   ];
@@ -93,6 +94,29 @@
         // IRM : lésions déclarées
         const les = d.lesions.filter(l => (l.regions || []).some(r => regs.includes(r)));
         if (les.length) set(row, 'mri', les.some(l => l.confidence === 'high' || l.source === 'histology') ? '++' : '+', les.map(l => (l.label || V.lesionType[l.type]) + ' (' + V.lesionSource[l.source] + ')').join(' ; '));
+      }
+      // v2.2.0 : EEG de scalp — cartes 10-20 des explorations prises en compte (phase 1…) ; une électrode explore surtout ses
+      // systèmes principaux (S.EEG_SYS), un système voisin reste « en faveur » ; ondes lentes seules : « en faveur » au plus
+      const eeg = {}, put = (col, k, lv, txt) => { const o = (eeg[col] = eeg[col] || {}), c = o[k] || (o[k] = { r: 0, txt: [] }); c.r = Math.max(c.r, lv); if (!c.txt.includes(txt)) c.txt.push(txt); };
+      const MAPS = { ictal: ['eeg_ic', 'début des crises', 2], spikesW: ['eeg_ii', 'pointes en veille', 2], spikesS: ['eeg_ii', 'pointes au sommeil', 2], spikes: ['eeg_ii', 'pointes', 2], slowW: ['eeg_ii', 'ondes lentes en veille', 1], slowS: ['eeg_ii', 'ondes lentes au sommeil', 1], slow: ['eeg_ii', 'ondes lentes', 1] };
+      for (const ex of scope.explorations) for (const [cat, [col, lab, w]] of Object.entries(MAPS)) {
+        const map = ex.eeg && ex.eeg.map && ex.eeg.map[cat]; if (!map) continue;
+        for (const [k, o] of Object.entries(S.eegMapSystems(map))) put(col, k, Math.min(w, o.v >= 2 ? 2 : 1), `${ex.label} : ${lab} (${o.els.join(', ')})`);
+      }
+      for (const [col, rows] of Object.entries(eeg)) for (const [k, c] of Object.entries(rows)) set(k, col, c.r >= 2 ? '++' : '+', c.txt.join(' ; '));
+      // v2.2.0 : bilans localisés (Dossier › Bilans, champ « Localisation » ; côté = latéralisation du bilan), datés avant le staff,
+      // hors bilans de suivi ; IRM : un bilan s'ajoute aux lésions déclarées (la valeur la plus forte l'emporte). Bilan sans
+      // localisation confirmée : systèmes cités dans son texte (S.examLocSuggest), « en faveur » au plus et signalés comme tels
+      const EXCOL = { mri: ['mri', '++'], pet: ['pet', '+'], neuropsy: ['neuropsy', '+'] }, RANK = { '++': 2, '+': 1 };
+      for (const x of d.exams || []) {
+        const ec = EXCOL[x.kind]; if (!ec || x.phase === 'postop' || (m.date && x.date && String(x.date) > String(m.date))) continue;
+        const sure = (x.loc || []).length > 0, loc = sure ? x.loc : S.examLocSuggest(x); if (!loc.length) continue;
+        const sides = x.side === 'L' ? ['L'] : x.side === 'R' ? ['R'] : ['L', 'R'], txt = `${V.exam[x.kind]}${x.date ? ' du ' + fmtDate(x.date) : ''} : ${x.conclusion || x.title || x.text || ''}`.trim() + (sure ? '' : ' (région lue dans le texte du bilan, à confirmer dans Bilans › Localisation)');
+        for (const sys of loc) for (const side of sides) {
+          const k = sys + ':' + side, prev = A[k] && A[k][ec[0]], lv = sure && (x.side === 'L' || x.side === 'R') ? ec[1] : '+';
+          if (prev && RANK[prev.v] > RANK[lv]) { prev.note += ' ; ' + txt; continue; }
+          set(k, ec[0], lv, prev && prev.note ? prev.note + ' ; ' + txt : txt);
+        }
       }
       // SEEG : stimulations et quantifications des explorations SEEG prises en compte
       for (const ex of scope.explorations.filter(e => e.kind === 'seeg')) {
@@ -206,10 +230,10 @@
         if (any || this.ui.stAllRows) rows.push({ key, sys, side, cells, score, hyp: hypRows.has(key) });
       }
       const maxS = Math.max(1, ...rows.map(r => r.score));
-      box.innerHTML = rows.length ? `<table class="conc"><thead><tr><th>Système</th>${cols.map((c, i) => `<th title="${esc(c.hint || 'saisie')}">${esc(c.label)}${c.auto ? ' <i>auto</i>' : ''}${!DEFAULT_COLS.some(x => x.key === c.key) ? ` <b class="rmcol" data-i="${i}" title="retirer la colonne">✕</b>` : ''}</th>`).join('')}<th>Concordance</th></tr></thead><tbody>
+      box.innerHTML = rows.length ? `<table class="conc"><thead><tr><th>Système</th>${cols.map((c, i) => `<th title="${esc(c.hint || 'saisie')}">${esc(c.label)}${(DEFAULT_COLS.find(x => x.key === c.key) || c).auto ? ' <i>auto</i>' : ''}${!DEFAULT_COLS.some(x => x.key === c.key) ? ` <b class="rmcol" data-i="${i}" title="retirer la colonne">✕</b>` : ''}</th>`).join('')}<th>Concordance</th></tr></thead><tbody>
         ${rows.map(r => `<tr class="${r.hyp ? 'hyp-row' : ''}"><td class="sys">${esc(SYS_FR[r.sys])} <b>${r.side === 'L' ? 'G' : 'D'}</b></td>${r.cells.map((c, i) => `<td class="cc lv${c && c.v ? ' v' + ({ '++': 'pp', '+': 'p', '0': 'z', '−': 'm', '?': 'q' }[c.v]) : ''}${c && c.manual ? ' man' : c ? ' aut' : ''}" data-row="${r.key}" data-col="${cols[i].key}" title="${esc((c && c.note ? c.note : '') + (c && c.from ? ' (repris du staff du ' + fmtDate(c.from) + ')' : ''))}">${c && c.v ? esc(c.v) : ''}${c && c.note && c.manual ? '<sup>✎</sup>' : ''}</td>`).join('')}<td class="score"><span class="bar"><i style="width:${Math.max(0, r.score) / maxS * 100}%"></i></span> ${r.score > 0 ? '+' + r.score : r.score}</td></tr>`).join('')}
         </tbody></table><div class="hint">++ argument fort · + en faveur · 0 neutre · − contre · ? douteux. Cases <i>auto</i> calculées à partir des données du dossier (survol : détail) ; un clic permet de les corriger. Lignes surlignées : régions des hypothèses du staff.</div>`
-        : '<div class="hint">Rien à afficher : saisissez des crises, des lésions, ou cochez « toutes les régions » pour remplir le tableau à la main.</div>';
+        : '<div class="hint">Rien à afficher : saisissez des crises, des lésions, les cartes 10-20 de l’EEG, des bilans localisés, ou cochez « toutes les régions » pour remplir le tableau à la main.</div>';
       box.querySelectorAll('td.cc').forEach(td => td.onclick = e => this.concordanceCellMenu(m, td.dataset.row, td.dataset.col, cols, auto, e));
       box.querySelectorAll('.rmcol').forEach(b => b.onclick = e => { e.stopPropagation(); const c = cols.slice(); c.splice(+b.dataset.i, 1); m.concordance.columns = c; this.touch('meeting', m.id); this.renderConcordance(m); });
     },

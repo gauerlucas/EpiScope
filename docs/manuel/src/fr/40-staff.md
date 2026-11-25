@@ -22,7 +22,13 @@ L'onglet [[Préparer]] se remplit de haut en bas :
 2. **Crises prises en compte** : les explorations et les crises à discuter (cases à cocher).
 3. **Revoir** : des raccourcis vers l'histoire clinique, les bilans, l'imagerie et les crises de chaque exploration.
 4. **Synthèse** : un résumé du dossier rédigé d'après les données, et la sémiologie en consensus des crises retenues.
-5. **Concordance anatomo-électro-clinique** : un tableau *systèmes anatomo-fonctionnels × modalités* (sémiologie, EEG intercritique et critique, IRM, TEP, neuropsychologie, SEEG). Quatre colonnes sont **préremplies** d'après le dossier (consensus des crises, lésions, quantifications, stimulations) ; chaque case reste modifiable au clic. [[toutes les régions]] affiche aussi les lignes vides ; [[+ colonne]] ajoute une modalité.
+5. **Concordance anatomo-électro-clinique** : un tableau *systèmes anatomo-fonctionnels × modalités* (sémiologie, EEG intercritique et critique, IRM, TEP, neuropsychologie, SEEG). Les colonnes marquées *auto* sont **préremplies** d'après le dossier ; le détail de chaque case s'affiche au survol et chaque case reste modifiable au clic :
+    - **Sémiologie** : consensus du modèle sur les crises prises en compte ;
+    - **EEG intercritique** et **EEG critique (scalp)** : cartes 10-20 des explorations prises en compte (pointes et ondes lentes en veille et au sommeil ; début des crises). Chaque électrode compte pour les systèmes qu'elle explore au mieux (C4 : central ; T4 : temporal latéral et mésial) ; un système voisin, ou des ondes lentes seules, reste « en faveur » au plus ;
+    - **IRM**, **TEP**, **neuropsychologie** : lésions déclarées et [bilans localisés](@patients#les-bilans) datés avant le staff (hors bilans de suivi). Une IRM localisée et latéralisée est un « argument fort ». Un bilan sans localisation confirmée compte d'après les régions citées dans son texte, « en faveur » au plus, avec la mention *à confirmer* ;
+    - **SEEG** : quantifications et stimulations.
+
+    [[toutes les régions]] affiche aussi les lignes vides ; [[+ colonne]] ajoute une modalité.
 6. **Hypothèses** : chaque hypothèse (régions, réseau, niveau de confiance) s'illustre en 3D. Une hypothèse révisée à un staff suivant garde son historique.
 7. **Décisions** : SEEG, deuxième SEEG, thermocoagulation, chirurgie, laser, neuromodulation, bilan complémentaire, traitement médical, pas de chirurgie. Une décision de SEEG crée l'exploration SEEG avec un schéma d'implantation ; une décision de chirurgie crée l'intervention.
 8. **Captures à montrer** et **conclusion**.
