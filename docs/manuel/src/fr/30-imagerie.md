@@ -39,7 +39,7 @@ Chaque recalage se contrôle dans les coupes, image superposée au T1. S'il est 
 
 - la **segmentation** du cerveau (substance grise, blanche, structures profondes) par un réseau de neurones ;
 - la **parcellation VEP** du patient (162 régions corticales, 18 structures profondes) ;
-- les **surfaces** du cortex, piale et gonflée, pour la vue 3D.
+- les **surfaces** du cortex, piale et gonflée, pour la vue 3D (les poches de fond de sillon sont refermées avant le gonflement, la surface gonflée reste lisse), et celles des structures profondes et du cervelet, lissées.
 
 La carte **Anatomie du patient** résume le résultat et son contrôle de qualité. [[Voir en 3D]] bascule les vues 3D sur le cerveau du patient (bouton [[Patient]] de la barre de vue) ; [[Coupes VEP]] superpose la parcellation aux coupes. [[Autre méthode…]] propose d'autres segmentations, ou de les comparer côte à côte et de choisir à la main ; une segmentation faite ailleurs (FreeSurfer, FastSurfer, CAT12) peut aussi être importée.
 

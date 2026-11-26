@@ -134,6 +134,7 @@ async function stageMesh() {
     const cort = new Uint8Array(vep.data.length); for (let q = 0; q < cort.length; q++) { const v = vep.data[q]; if (v >= lo && v <= hiL) cort[q] = v; }
     const lab = SV.Mesh.sampleLabels(r.pial, r.faces, null, { dims: vep.dims, affine: vep.affine, data: cort }, { depths: [1, 0.5, 1.5, 2, 2.5, 0, 3, 3.5] });
     smoothLabels(r.faces, lab, r.n); out.added = (out.added || []).concat(addMissing(r.pial, lab, vep, lo, hiL));
+    if (r.info.pockets) log('    poches refermées', JSON.stringify(r.info.pockets));
     log('   ', r.n, 'sommets, genre', JSON.stringify(r.info.topology), 'aire', Math.round(r.info.area / 100), 'cm²');
     out.hemis[side === 'L' ? 'lh' : 'rh'] = { n: r.n, pial: Array.from(r.pial, v => +v.toFixed(2)), inflated: Array.from(r.inflated, v => +v.toFixed(2)), faces: Array.from(r.faces), sulc: Array.from(r.sulc, v => +v.toFixed(3)), labels: Array.from(lab), info: { topology: r.info.topology, area: r.info.area, volume: r.info.volume, timings: r.timings } };
   }
@@ -142,7 +143,7 @@ async function stageMesh() {
   const sv = vep.data.slice(); for (let q = 0; q < sv.length; q++) if (sv[q] === 200 && (comp.data[q] === 3 || comp.data[q] === 4)) sv[q] = comp.data[q] === 3 ? 153 : 162;
   out.subcortical = SV.Anat.structures(sv, vep.dims, Array.from(vep.affine), names).map(s => ({ index: s.index, name: s.name, vertices: Array.from(s.vertices, v => +v.toFixed(2)), faces: Array.from(s.faces) }));
   log('régions de fond de sillon ajoutées (région, sommets)', JSON.stringify(out.added));
-  fs.writeFileSync(path.join(WORK, 'meshes.json'), JSON.stringify(out));
+  fs.writeFileSync(path.join(WORK, process.env.TPL_MESHOUT || 'meshes.json'), JSON.stringify(out));
   log('étape mesh terminée');
 }
 

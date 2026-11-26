@@ -162,8 +162,8 @@
   }
   /** étape 2 bis : maillages des structures profondes VEP (145–162) ; names[index] = nom de la région */
   function structures(vep, dims, Ad, names, progress) {
-    const items = []; for (let i = 145; i <= 162; i++) items.push({ name: names[i] || ('région ' + i), labels: [i] });
-    const out = SV.Mesh.pipelineStructures({ dims, affine: M4.from(Ad), data: vep }, items, { targetFaces: 3000 }, p => typeof progress === 'function' && progress({ fraction: p.done / p.total, message: 'structures profondes' }));
+    const items = []; for (let i = 145; i <= 162; i++) items.push({ name: names[i] || ('région ' + i), labels: [i], opts: i === 153 || i === 162 ? { close: 3, sigma: 2 } : null });   // cervelet : enveloppe lisse des folia
+    const out = SV.Mesh.pipelineStructures({ dims, affine: M4.from(Ad), data: vep }, items, { targetFaces: 4000 }, p => typeof progress === 'function' && progress({ fraction: p.done / p.total, message: 'structures profondes' }));
     return out.map(s => ({ index: s.labels[0], name: s.name, vertices: s.pos, faces: s.faces instanceof Uint32Array ? s.faces : Uint32Array.from(s.faces), volume: s.info.volume }));
   }
   /** centres des régions corticales : moyenne des sommets pial de chaque région (comme le gabarit) */

@@ -13,9 +13,10 @@
     /** T1 du gabarit (asset template_spm) et parcellation VEP du gabarit, au format des volumes NIfTI */
     async tplVolumes() {
       if (this._tpl) return this._tpl;
-      const tj = this.asset && this.asset('template_spm'); if (!tj) throw new Error('gabarit MNI absent de cette version');
+      // v3.1.0 : T1 2009b haute résolution ramené à 1 mm, tête entière (template_t1) ; à défaut celui de 2 mm de la méthode atlas
+      const hi = this.asset && this.asset('template_t1'), tj = hi || (this.asset && this.asset('template_spm')); if (!tj) throw new Error('gabarit MNI absent de cette version');
       const t1 = await SV.Nifti.read(SV.b64ToArray(tj.t1, Uint8Array));
-      t1.name = 'T1 MNI ICBM 152 2009b';
+      t1.name = 'T1 MNI ICBM 152 2009b' + (hi ? ' (1 mm)' : '');
       return (this._tpl = { t1, vep: this.tplVepVol() });
     },
     /** volume VEP de l'atlas (2 mm, i = (128 − x)/2, j = (128 − z)/2, k = (y + 128)/2, k le plus rapide) en volume NIfTI */

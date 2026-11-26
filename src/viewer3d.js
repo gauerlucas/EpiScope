@@ -116,6 +116,20 @@
       const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
       for (const q of [a, b, c]) { N[q] += nx; N[q + 1] += ny; N[q + 2] += nz; }
     }
+    // v3.1.0 : sommets pincés de la surface gonflée (triangles d'aire quasi nulle, orientation sans signification : « petits
+    // pics » à l'ombrage) — normale prise sur les voisins, par passes, tant que l'aire incidente est négligeable
+    const W = new Float32Array(n); for (let v = 0; v < n; v++) W[v] = Math.hypot(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]);
+    const med = Float32Array.from(W).sort()[n >> 1] || 1, lim = 0.05 * med;
+    for (let pass = 0; pass < 6; pass++) {
+      const acc = new Float32Array(n * 3), flag = new Uint8Array(n); let any = 0;
+      for (let v = 0; v < n; v++) if (W[v] < lim) { flag[v] = 1; any++; }
+      if (!any) break;
+      for (let f = 0; f < faces.length; f += 3) for (let k = 0; k < 3; k++) {
+        const q = faces[f + k]; if (!flag[q]) continue; const u = faces[f + (k + 1) % 3] * 3, w = faces[f + (k + 2) % 3] * 3;
+        acc[q * 3] += N[u] + N[w]; acc[q * 3 + 1] += N[u + 1] + N[w + 1]; acc[q * 3 + 2] += N[u + 2] + N[w + 2];
+      }
+      for (let v = 0; v < n; v++) if (flag[v]) { N[v * 3] += acc[v * 3]; N[v * 3 + 1] += acc[v * 3 + 1]; N[v * 3 + 2] += acc[v * 3 + 2]; W[v] = Math.hypot(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]); }
+    }
     for (let v = 0; v < n; v++) { const l = Math.hypot(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]) || 1; N[v * 3] /= l; N[v * 3 + 1] /= l; N[v * 3 + 2] /= l; }
     return N;
   }

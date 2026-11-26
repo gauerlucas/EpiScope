@@ -57,7 +57,8 @@
 
   /** Bibliothèque des trajectoires conventionnelles (nomenclature Talairach–Bancaud, prime = gauche).
    *  v3.0.0 : géométrie explicite sur le gabarit MNI 2009b — tip (pointe) et entry (point d'entrée) de l'électrode GAUCHE en mm
-   *  MNI, n = nombre de plots du modèle (null : choisi d'après la longueur) ; à droite, miroir x → −x. Jeu de trajectoires placées
+   *  MNI, n = nombre de plots du modèle (null : choisi d'après la longueur), model = modèle proposé par défaut (DIXI) ; à droite,
+   *  miroir x → −x. Jeu de trajectoires placées
    *  et corrigées à la main par un épileptologue sur le gabarit (gauche et droite symétriques).
    *  target = structure visée (famille VEP : rattachement des propositions, contrôle « plot dans la cible ») ;
    *  exit = famille corticale de sortie (renseignement) ; oblique = trajectoire oblique assumée ; vertical = trajet de haut en bas.
@@ -88,17 +89,17 @@
     { code: 'OC', fr: 'opercule central → insula moyenne', target: 'Insula-gyri-longi', exit: 'Central-operculum', tip: [-40.5, -1.2, 6.5], entry: [-63.6, 5.4, 5.4], n: 8, samples: 'insula moyenne → opercule rolandique', group: 'insulo-operculaire' },
     { code: 'OP', fr: 'opercule pariétal → insula postérieure', target: 'Insula-gyri-longi', exit: 'Parietal-operculum', tip: [-40.7, -13.9, 9.8], entry: [-68.9, -10.6, 15.2], n: 10, samples: 'insula postérieure → opercule pariétal (SII)', group: 'insulo-operculaire' },
     // --- insulaires obliques (Lyon) : entrée haute, trajet parasagittal descendant vers l'insula
-    { code: 'Ia', fr: 'insula antérieure (oblique, sortie F2)', target: 'Insula-gyri-brevi', exit: 'F2-caudal', oblique: true, tip: [-37.2, 12.2, -13.4], entry: [-38.0, 40.4, 42.0], n: 12, samples: 'insula antérieure → F3 / sillon frontal inférieur → F2', group: 'insulaire oblique' },
-    { code: 'Im', fr: 'insula moyenne (oblique, sortie précentrale)', target: 'Insula-gyri-longi', exit: 'Precentral-gyrus-upper-limb', oblique: true, tip: [-40.6, 6.4, -12.3], entry: [-49.2, -25.7, 64.6], n: 18, samples: 'insula moyenne → corona radiata → précentral', group: 'insulaire oblique' },
-    { code: 'Ip', fr: 'insula postérieure (oblique, sortie pariétale supérieure)', target: 'Insula-gyri-longi', exit: 'Superior-parietal-lobule-P1', oblique: true, tip: [-39.8, 0.5, -13.9], entry: [-36.2, -36.6, 35.0], n: 18, samples: 'insula postérieure → Heschl / planum → substance blanche pariétale → pariétal supérieur', group: 'insulaire oblique' },
-    { code: 'Ib', fr: 'insula antérieure (oblique, sortie F2 caudal)', target: 'Insula-gyri-brevi', exit: 'F2-caudal', oblique: true, tip: [-41.6, 7.7, -8.3], entry: [-51.0, 20.2, 46.6], n: 12, samples: 'insula antérieure → F3 pars opercularis → F2 caudal', group: 'insulaire oblique' },
+    { code: 'Ia', fr: 'insula antérieure (oblique, sortie F2)', target: 'Insula-gyri-brevi', exit: 'F2-caudal', oblique: true, tip: [-37.2, 12.2, -13.4], entry: [-38.0, 40.4, 42.0], n: 15, model: 'DIXI D08-15BM', samples: 'insula antérieure → F3 / sillon frontal inférieur → F2', group: 'insulaire oblique' },
+    { code: 'Im', fr: 'insula moyenne (oblique, sortie précentrale)', target: 'Insula-gyri-longi', exit: 'Precentral-gyrus-upper-limb', oblique: true, tip: [-40.6, 6.4, -12.3], entry: [-49.2, -25.7, 64.6], n: 18, model: 'DIXI D08-18CM', samples: 'insula moyenne → corona radiata → précentral', group: 'insulaire oblique' },
+    { code: 'Ip', fr: 'insula postérieure (oblique, sortie pariétale supérieure)', target: 'Insula-gyri-longi', exit: 'Superior-parietal-lobule-P1', oblique: true, tip: [-39.8, 0.5, -13.9], entry: [-36.2, -36.6, 35.0], n: 18, model: 'DIXI D08-18CM', samples: 'insula postérieure → Heschl / planum → substance blanche pariétale → pariétal supérieur', group: 'insulaire oblique' },
+    { code: 'Ib', fr: 'insula antérieure (oblique, sortie F2 caudal)', target: 'Insula-gyri-brevi', exit: 'F2-caudal', oblique: true, tip: [-41.6, 7.7, -8.3], entry: [-51.0, 20.2, 46.6], n: 12, model: 'DIXI D08-12AM', samples: 'insula antérieure → F3 pars opercularis → F2 caudal', group: 'insulaire oblique' },
     // --- frontal
     { code: 'FP', fr: 'fronto-polaire (F1 mésial antérieur)', target: 'F1-mesial-prefrontal', tip: [-6.2, 62.2, -13.2], entry: [-42.0, 61.0, -8.0], n: 8, samples: 'pôle frontal mésial → F1 latéral → F2 rostral', group: 'frontal' },
     { code: 'FD', fr: 'frontal dorsal', target: 'F1-mesial-prefrontal', tip: [-3.0, 52.8, 17.7], entry: [-43.0, 51.2, 22.3], n: 8, samples: 'F1 mésial préfrontal → F1 latéral → F2', group: 'frontal' },
     { code: 'OR', fr: 'fronto-orbitaire (oblique)', target: 'Orbito-frontal-cortex', exit: 'F2-rostral', oblique: true, tip: [-4.0, 47.2, -25.0], entry: [-49.5, 50.3, -6.5], n: 15, samples: 'orbitofrontal médial → F3 → F2 rostral', group: 'frontal' },
     // verticales (v2.4.0) : entrée sur la convexité dorsale (F1, F2), descente vers la face orbitaire
-    { code: 'BM', fr: 'basal médial (verticale, F1 → gyrus droit)', target: 'Gyrus-rectus', exit: 'F1-lateral-prefrontal', vertical: true, oblique: true, tip: [-4.7, 40.5, -29.1], entry: [-6.2, 42.6, 56.2], n: 18, samples: 'gyrus droit → substance blanche frontale → F1', group: 'frontal' },
-    { code: 'BL', fr: 'basal latéral (verticale, F2 → orbitofrontal)', target: 'Orbito-frontal-cortex', exit: 'F2-rostral', vertical: true, oblique: true, tip: [-33.2, 45.5, -18.7], entry: [-30.4, 47.8, 40.6], n: 18, samples: 'cortex orbitofrontal → substance blanche frontale → F2', group: 'frontal' },
+    { code: 'BM', fr: 'basal médial (verticale, F1 → gyrus droit)', target: 'Gyrus-rectus', exit: 'F1-lateral-prefrontal', vertical: true, oblique: true, tip: [-4.7, 40.5, -29.1], entry: [-6.2, 42.6, 56.2], n: 18, model: 'DIXI D08-18CM', samples: 'gyrus droit → substance blanche frontale → F1', group: 'frontal' },
+    { code: 'BL', fr: 'basal latéral (verticale, F2 → orbitofrontal)', target: 'Orbito-frontal-cortex', exit: 'F2-rostral', vertical: true, oblique: true, tip: [-33.2, 45.5, -18.7], entry: [-30.4, 47.8, 40.6], n: 15, model: 'DIXI D08-15BM', samples: 'cortex orbitofrontal → substance blanche frontale → F2', group: 'frontal' },
     { code: 'R', fr: 'sous-rostral (aire sous-calleuse)', target: 'Subcallosal-area', tip: [-3.5, 33.2, -28.3], entry: [-54.4, 30.7, -13.1], n: 12, samples: 'aire sous-calleuse → striatum ventral → orbitofrontal postérieur → F3 orbitaire', group: 'frontal' },
     { code: 'CR', fr: 'cingulaire rostral (aire 32)', target: 'Anterior-cingulate-cortex', tip: [-4.3, 39.0, 1.2], entry: [-54.1, 41.3, 2.3], n: 10, samples: 'cingulaire antérieur rostral → F1 mésial (paracingulaire) → F2 rostral', group: 'frontal' },
     { code: 'CC', fr: 'cingulaire antérieur (aire 24)', target: 'Middle-cingulate-cortex-anterior-part', tip: [-6.3, 21.5, 34.3], entry: [-46.8, 21.5, 34.3], n: 12, samples: 'cingulaire antérieur / moyen antérieur → F1 → F2 caudal', group: 'frontal' },
@@ -245,7 +246,9 @@
     if (lib.tip && lib.entry) {
       const mir = p => hemi === 'L' ? p.slice() : [-p[0], p[1], p[2]], tip = mir(lib.tip), entry = mir(lib.entry);
       const name = SV.Side ? SV.Side.name(lib.code, hemi, opts && opts.sideConv) : lib.code + (hemi === 'L' ? '’' : '');
-      const mk = opts && opts.maker, model = lib.n ? modelFor(mk, lib.n) : null;
+      // modèle de la bibliothèque (v3.1.0 : électrodes à groupes espacés pour BM, BL, Ia, Im, Ip — l'échantillonnage va plus
+      // loin vers la sortie) ; autre marque : modèle standard du même nombre de plots
+      const mk = opts && opts.maker, model = lib.model && mk !== 'Alcis' ? modelById(lib.model) : lib.n ? modelFor(mk, lib.n) : null;
       const e = build(Object.assign({ code: lib.code, lib: lib.code, name, hemi, target: tip, targetIndex: idx || 0, exit: entry, exitFamily: lib.exit || null, overshoot: 0, oblique: !!lib.oblique, fr: lib.fr, maker: mk, model: model ? model.id : undefined }, opts && opts.spec), atlas, vol);
       // trajectoire placée à la main : la « cible » est la région du plot le plus profond quand la famille nominale n'est pas
       // échantillonnée (pointe juste en deçà de la structure, par exemple)

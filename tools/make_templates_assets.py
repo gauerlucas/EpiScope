@@ -14,8 +14,8 @@ Lit le dossier de travail (meshes.json, vep_1mm, seg104_1mm, p{gm,wm,csf}_1mm, b
                             k = (y + 128)/2, coordonnées MNI 2009b) ;
   assets/template_anat.json centres des 104 classes (repères du recalage patient → gabarit et de la transformation vers MNI) ;
                             tables de compatibilité Desikan → VEP et codes de tissu inchangés ;
-  assets/template_spm.json  T1 extrait du crâne, probabilités des tissus et 104 classes sur une grille de 2 mm (méthode atlas,
-                            coupes du gabarit).
+  assets/template_spm.json  T1 extrait du crâne, probabilités des tissus et 104 classes sur une grille de 2 mm (méthode atlas) ;
+  assets/template_t1.json   T1 2009b haute résolution ramené à 1 mm, tête entière (coupes du gabarit, v3.1.0).
 """
 import sys, os, json, gzip, struct, base64
 import numpy as np
@@ -148,10 +148,11 @@ s2 = np.zeros(gi.size, np.uint8); Vn = np.round(V2).astype(int); ok = np.all((Vn
 s2[ok] = seg[Vn[0, ok], Vn[1, ok], Vn[2, ok]]; s2 = s2.reshape(dims)
 
 
-def b64nii(data, dtype):
+def b64nii(data, dtype, Aff=None):
+    Aff = A2 if Aff is None else Aff; vx = np.sqrt((Aff[:3, :3] ** 2).sum(0))
     a = np.asarray(data).astype(dtype); h = bytearray(352); struct.pack_into('<i', h, 0, 348); struct.pack_into('<8h', h, 40, 3, *a.shape, 1, 1, 1, 1)
-    struct.pack_into('<hh', h, 70, 2, 8); struct.pack_into('<8f', h, 76, 1, VOX, VOX, VOX, 0, 0, 0, 0); struct.pack_into('<f', h, 108, 352)
-    struct.pack_into('<2f', h, 112, 1, 0); struct.pack_into('<hh', h, 252, 1, 1); struct.pack_into('<12f', h, 280, *A2[:3].ravel()); h[344:348] = b'n+1\0'
+    struct.pack_into('<hh', h, 70, 2, 8); struct.pack_into('<8f', h, 76, 1, *vx, 0, 0, 0, 0); struct.pack_into('<f', h, 108, 352)
+    struct.pack_into('<2f', h, 112, 1, 0); struct.pack_into('<hh', h, 252, 1, 1); struct.pack_into('<12f', h, 280, *Aff[:3].ravel()); h[344:348] = b'n+1\0'
     h[123] = 2                                                                    # xyzt_units : mm
     return base64.b64encode(gzip.compress(bytes(h) + np.ascontiguousarray(a.transpose(2, 1, 0)).tobytes(), 9)).decode('ascii')
 
@@ -163,3 +164,19 @@ out = {'version': 2, 'space': SPACE, 'vox': VOX, 'dims': dims, 'affine': A2.toli
        't1': b64nii(t1n, np.uint8), 'gm': b64nii(tp['gm'], np.uint8), 'wm': b64nii(tp['wm'], np.uint8), 'csf': b64nii(tp['csf'], np.uint8), 'seg': b64nii(s2, np.uint8)}
 p = os.path.join(ROOT, 'assets', 'template_spm.json'); json.dump(out, open(p, 'w'), separators=(',', ':'))
 print('template_spm.json', round(os.path.getsize(p) / 1e3), 'ko · grille', dims)
+
+# ---------------------------------------------------------------- template_t1.json (coupes du gabarit, v3.1.0)
+# T1 2009b haute résolution ramené de 0,5 à 1 mm (moyenne des blocs 2 × 2 × 2, sans flou ajouté), tête entière comme dans les
+# visionneuses du MNI, recadré sur la tête ; 8 bits, bit de poids faible mis à zéro (128 niveaux : fichier ≈ 30 % plus petit,
+# sans palier visible après fenêtrage)
+hr, Ah = nii_read(os.path.join(SRC, 'mni_icbm152_nlin_asym_09b_nifti', 'mni_icbm152_nlin_asym_09b', 'mni_icbm152_t1_tal_nlin_asym_09b_hires.nii'))
+nx, ny, nz = (np.array(hr.shape) // 2)
+b = hr[:2 * nx, :2 * ny, :2 * nz].astype(np.float32).reshape(nx, 2, ny, 2, nz, 2).mean((1, 3, 5))
+A1h = Ah.copy(); A1h[:3, :3] = Ah[:3, :3] * 2; A1h[:3, 3] = Ah[:3, 3] + 0.5 * Ah[:3, :3].sum(1)
+u = np.clip(b / np.percentile(b, 99.7) * 255, 0, 255).astype(np.uint8)
+head = ndi.binary_opening(u > 12, iterations=1); idx = np.argwhere(head); lo = np.maximum(idx.min(0) - 2, 0); hi_ = np.minimum(idx.max(0) + 3, u.shape)
+u = (u[lo[0]:hi_[0], lo[1]:hi_[1], lo[2]:hi_[2]] & 0xFE).astype(np.uint8); A1h[:3, 3] = A1h[:3, 3] + A1h[:3, :3] @ lo
+out = {'version': 1, 'space': SPACE, 'vox': 1, 'dims': list(u.shape), 'source': 'MNI ICBM 152 NLin 2009b asymétrique, T1 haute résolution (0,5 mm) ramené à 1 mm ; coupes du gabarit',
+       'license': LICENSE, 't1': b64nii(u, np.uint8, A1h)}
+p = os.path.join(ROOT, 'assets', 'template_t1.json'); json.dump(out, open(p, 'w'), separators=(',', ':'))
+print('template_t1.json', round(os.path.getsize(p) / 1e6, 2), 'Mo · grille', list(u.shape))

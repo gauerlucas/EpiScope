@@ -575,6 +575,60 @@
     for (let i = 0; i < X.length; i += 3) for (let k = 0; k < 3; k++) out[i + k] = C[k] + (X[i + k] - P1.c[k]) * s;
     return out;
   }
+  /** aires des faces */
+  function faceAreas(X, F) {
+    const A = new Float64Array(F.length / 3);
+    for (let f = 0; f < F.length; f += 3) { const a = 3 * F[f], b = 3 * F[f + 1], d = 3 * F[f + 2]; const ux = X[b] - X[a], uy = X[b + 1] - X[a + 1], uz = X[b + 2] - X[a + 2], vx = X[d] - X[a], vy = X[d + 1] - X[a + 1], vz = X[d + 2] - X[a + 2]; A[f / 3] = 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx); }
+    return A;
+  }
+  /** poches du pial : surface de fond de sillon (souvent > 100 mm²) qui ne communique avec l'extérieur que par un goulot de
+   *  quelques millimètres (embouchure du sillon pontée par le volume partiel). Invisibles sur le pial, elles se referment en un
+   *  point au gonflement : triangles d'aire nulle, normales sans signification, « petits pics » de la surface gonflée. Repérées
+   *  par les sommets dont l'aire incidente devient négligeable sur la surface gonflée (< 5 % de la médiane), elles sont
+   *  remplacées par un couvercle en éventail sur le goulot (un sommet au centre de l'anneau, adouci), jusqu'à opts.rounds tours
+   *  (défaut 4 : poches emboîtées) avec nouveau gonflement à chaque tour. Le genre reste 0.
+   *  → { pos, faces, inflated, capped, removed, rounds } */
+  function capPockets(pos0, faces0, inflated0, inflOpts, opts) {
+    opts = obj(opts); const rounds = opts.rounds || 4; let P = Float32Array.from(pos0), F = Uint32Array.from(faces0), I = inflated0, capped = 0, removed = 0, done = 0;
+    for (let round = 0; round < rounds; round++) {
+      const n = P.length / 3, VA = new Float64Array(n);
+      for (let f = 0; f < F.length; f += 3) { const a = 3 * F[f], b = 3 * F[f + 1], c = 3 * F[f + 2]; const ux = I[b] - I[a], uy = I[b + 1] - I[a + 1], uz = I[b + 2] - I[a + 2], vx = I[c] - I[a], vy = I[c + 1] - I[a + 1], vz = I[c + 2] - I[a + 2]; const A = len3(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 6; VA[F[f]] += A; VA[F[f + 1]] += A; VA[F[f + 2]] += A; }
+      const med = Float64Array.from(VA).sort()[n >> 1], col = Uint8Array.from(VA, v => v < 0.05 * med ? 1 : 0), adj = adjacency(F, n);
+      const comp = new Int32Array(n).fill(-1), clusters = [];
+      for (let v = 0; v < n; v++) { if (!col[v] || comp[v] >= 0) continue; const L = [v]; comp[v] = clusters.length; for (let q = 0; q < L.length; q++) { const a = L[q]; for (let t = adj.off[a]; t < adj.off[a + 1]; t++) { const u = adj.nbr[t]; if (col[u] && comp[u] < 0) { comp[u] = clusters.length; L.push(u); } } } clusters.push(L); }
+      const dropV = new Uint8Array(n), dropF = new Uint8Array(F.length / 3), newV = [], newF = [], vf = Array.from({ length: n }, () => []);
+      for (let f = 0; f < F.length / 3; f++) for (let k = 0; k < 3; k++) vf[F[3 * f + k]].push(f);
+      let c0 = 0;
+      for (const L of clusters) {
+        if (L.length < 2) continue;
+        const inC = new Set(L), fs = new Set(); for (const v of L) for (const f of vf[v]) fs.add(f);
+        let clash = false; for (const f of fs) if (dropF[f]) { clash = true; break; } if (clash) continue;
+        const half = new Map(); for (const f of fs) for (let k = 0; k < 3; k++) { const a = F[3 * f + k], b = F[3 * f + (k + 1) % 3], kr = b + ',' + a; if (half.has(kr)) half.delete(kr); else half.set(a + ',' + b, [a, b]); }
+        const next = new Map(); let ok = true; for (const [a, b] of half.values()) { if (next.has(a)) { ok = false; break; } next.set(a, b); }
+        if (!ok || next.size < 3) continue;
+        const start = next.keys().next().value, loop = [start]; for (let x = next.get(start); x !== start; x = next.get(x)) { if (loop.length > next.size) { ok = false; break; } loop.push(x); }
+        if (!ok || loop.length !== next.size || loop.some(v => inC.has(v))) continue;
+        const c = [0, 0, 0]; for (const v of loop) for (let k = 0; k < 3; k++) c[k] += P[3 * v + k] / loop.length;
+        const id = n + newV.length; newV.push(c); for (let i = 0; i < loop.length; i++) newF.push(loop[i], loop[(i + 1) % loop.length], id);
+        for (const f of fs) dropF[f] = 1; for (const v of L) dropV[v] = 1; c0++; removed += L.length;
+      }
+      if (!c0) break; capped += c0; done = round + 1;
+      const map = new Int32Array(n + newV.length).fill(-1), pos = []; let m = 0;
+      for (let v = 0; v < n; v++) if (!dropV[v]) { map[v] = m++; pos.push(P[3 * v], P[3 * v + 1], P[3 * v + 2]); }
+      for (let i = 0; i < newV.length; i++) { map[n + i] = m++; pos.push(newV[i][0], newV[i][1], newV[i][2]); }
+      const out = []; for (let f = 0; f < F.length / 3; f++) if (!dropF[f]) out.push(map[F[3 * f]], map[F[3 * f + 1]], map[F[3 * f + 2]]);
+      for (let i = 0; i < newF.length; i++) out.push(map[newF[i]]);
+      P = Float32Array.from(pos); F = Uint32Array.from(out);
+      const ad = adjacency(F, m), mk = new Uint8Array(m); for (let i = 0; i < newV.length; i++) { const v = map[n + i]; mk[v] = 1; for (let t = ad.off[v]; t < ad.off[v + 1]; t++) mk[ad.nbr[t]] = 1; }
+      for (let it = 0; it < 15; it++) for (let v = 0; v < m; v++) { if (!mk[v]) continue; let x = 0, y = 0, z = 0; const a0 = ad.off[v], a1 = ad.off[v + 1]; for (let t = a0; t < a1; t++) { const u = 3 * ad.nbr[t]; x += P[u]; y += P[u + 1]; z += P[u + 2]; } const k = 1 / (a1 - a0); P[3 * v] = 0.5 * P[3 * v] + 0.5 * x * k; P[3 * v + 1] = 0.5 * P[3 * v + 1] + 0.5 * y * k; P[3 * v + 2] = 0.5 * P[3 * v + 2] + 0.5 * z * k; }
+      I = inflate(P, F, Object.assign({}, inflOpts, { adj: ad, stats: null }));
+    }
+    // sommets devenus isolés (couvercle retiré au tour suivant) : retirés
+    const nv = P.length / 3, used = new Uint8Array(nv); for (let f = 0; f < F.length; f++) used[F[f]] = 1;
+    let nu = 0; for (let v = 0; v < nv; v++) if (used[v]) nu++;
+    if (nu < nv) { const map = new Int32Array(nv).fill(-1), P2 = new Float32Array(3 * nu), I2 = new Float32Array(3 * nu); let m = 0; for (let v = 0; v < nv; v++) if (used[v]) { map[v] = m; for (let k = 0; k < 3; k++) { P2[3 * m + k] = P[3 * v + k]; I2[3 * m + k] = I[3 * v + k]; } m++; } P = P2; I = I2; F = Uint32Array.from(F, v => map[v]); }
+    return { pos: P, faces: F, inflated: I, capped, removed, rounds: done };
+  }
   /** faces repliées : normale opposée à la somme des normales de ses sommets → Int32Array d'indices de faces */
   function foldedFaces(X, F) {
     const N = normals(X, F), out = [];
@@ -851,7 +905,10 @@
     const pi = opts.postTaubin != null ? opts.postTaubin : 2; if (pi > 0) mesh.pos = smoothTaubin(mesh.pos, mesh.faces, pi, 0.5, -0.53);
     const adj = adjacency(mesh.faces, mesh.pos.length / 3);
     info.inflate = {}; info.pialFolded = foldedFaces(mesh.pos, mesh.faces).length;
-    const inflated = inflate(mesh.pos, mesh.faces, Object.assign({ adj, stats: info.inflate }, opts.inflate));
+    let inflated = inflate(mesh.pos, mesh.faces, Object.assign({ adj, stats: info.inflate }, opts.inflate));
+    // v3.1.0 : poches (fond de sillon relié à l'extérieur par un goulot étroit) refermées — sinon elles se resserrent en un
+    // point au gonflement (« petits pics »)
+    if (opts.pockets !== false) { const R = capPockets(mesh.pos, mesh.faces, inflated, Object.assign({}, opts.inflate), opts.pockets); if (R.capped) { mesh = { pos: R.pos, faces: R.faces }; inflated = R.inflated; } info.pockets = { capped: R.capped, removed: R.removed, rounds: R.rounds }; }
     tick('inflate');
     const s = sulc(mesh.pos, mesh.faces, inflated, opts.sulc);
     tick('sulc');
@@ -878,13 +935,31 @@
     const VO = VOps(), { dims, affine } = labelVol, L = labels instanceof Set ? labels : new Set([].concat(labels));
     const boxes = opts.boxes || labelBoxes(labelVol.data, dims); let bb = null; for (const l of L) bb = VO.bboxUnion(bb, boxes.get(l) && { min: boxes.get(l).min.slice(), max: boxes.get(l).max.slice() });
     if (!bb) return null;
-    const sigma = opts.sigma != null ? opts.sigma : 0.7, pad = Math.ceil(3 * sigma) + 2;
+    // v3.1.0 : surfaces lisses — distance signée au bord du masque (mm), lissée (opts.sigma mm, défaut 1,2), puis isosurface 0
+    // sur une grille suréchantillonnée (opts.upsample, défaut 2, interpolation trilinéaire) : la forme suit la structure à
+    // l'échelle de quelques millimètres sans les marches des voxels ni le rétrécissement d'un flou de masque binaire ;
+    // opts.close (voxels) ferme d'abord les sillons fins (cervelet : enveloppe des folia)
+    const vs = [0, 1, 2].map(c => Math.hypot(affine[c], affine[4 + c], affine[8 + c])), vmin = Math.min(...vs);
+    const up = Math.max(1, Math.round(opts.upsample != null ? opts.upsample : 2)), sigma = opts.sigma != null ? opts.sigma : 1.2, pad = Math.ceil((3 * sigma + (opts.close || 0) * vmin) / vmin) + 3;
     bb = { min: bb.min.map(v => v - pad), max: bb.max.map(v => v + pad) };
     const C = VO.crop(labelVol.data, dims, bb), cd = C.dims, Ac = VO.cropAffine(affine, bb);
-    let m = VO.maskOf(C.data, L); if (opts.largest !== false) m = VO.keepLargest(m, cd, 26); m = VO.fillHoles(m, cd);
-    let mesh = marchingCubes(sigma > 0 ? VO.gaussian(m, cd, sigma, { border: 'zero' }) : m, cd, 0.5, Ac);
+    let m = VO.maskOf(C.data, L); if (opts.largest !== false) m = VO.keepLargest(m, cd, 26); if (opts.close > 0) m = VO.close(m, cd, opts.close); m = VO.fillHoles(m, cd);
+    const dOut = VO.distanceMap(m, cd, { spacing: vs }), dIn = VO.distanceMap(m, cd, { invert: true, spacing: vs }), F0 = new Float32Array(m.length);
+    for (let v = 0; v < m.length; v++) F0[v] = m[v] ? dIn[v] - 0.5 * vmin : -(dOut[v] - 0.5 * vmin);   // > 0 dedans, bord ≈ 0
+    const Fs = sigma > 0 ? VO.gaussian(F0, cd, sigma / vmin) : F0;
+    let fd = cd, fA = Ac, field = Fs;
+    if (up > 1) {
+      fd = cd.map(d => (d - 1) * up + 1); field = new Float32Array(fd[0] * fd[1] * fd[2]); const sxy = cd[0] * cd[1];
+      for (let k = 0; k < fd[2]; k++) { const z = k / up, k0 = Math.min(cd[2] - 2, Math.floor(z)), wz = z - k0;
+        for (let j = 0; j < fd[1]; j++) { const y = j / up, j0 = Math.min(cd[1] - 2, Math.floor(y)), wy = y - j0;
+          for (let i = 0; i < fd[0]; i++) { const x = i / up, i0 = Math.min(cd[0] - 2, Math.floor(x)), wx = x - i0, o = i0 + cd[0] * j0 + sxy * k0;
+            const c00 = Fs[o] * (1 - wx) + Fs[o + 1] * wx, c10 = Fs[o + cd[0]] * (1 - wx) + Fs[o + cd[0] + 1] * wx, c01 = Fs[o + sxy] * (1 - wx) + Fs[o + sxy + 1] * wx, c11 = Fs[o + sxy + cd[0]] * (1 - wx) + Fs[o + sxy + cd[0] + 1] * wx;
+            field[i + fd[0] * (j + fd[1] * k)] = (c00 * (1 - wy) + c10 * wy) * (1 - wz) + (c01 * (1 - wy) + c11 * wy) * wz; } } }
+      fA = Float64Array.from(Ac); for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) fA[4 * r + c] = Ac[4 * r + c] / up;
+    }
+    let mesh = marchingCubes(field, fd, 0, fA);
     if (opts.largest !== false) mesh = largestComponent(mesh);
-    const ti = opts.taubin != null ? opts.taubin : 6; if (ti > 0) mesh.pos = smoothTaubin(mesh.pos, mesh.faces, ti, 0.5, -0.53);
+    const ti = opts.taubin != null ? opts.taubin : 20; if (ti > 0) mesh.pos = smoothTaubin(mesh.pos, mesh.faces, ti, 0.5, -0.53);
     const tf = opts.targetFaces || 6000; if (mesh.faces.length / 3 > tf) { const d = decimate(mesh.pos, mesh.faces, tf, opts.decimate); mesh = { pos: d.pos, faces: d.faces }; }
     return { pos: mesh.pos, faces: mesh.faces, info: { voxels: VO.count(m), volume: volume(mesh.pos, mesh.faces) } };
   }
@@ -918,7 +993,7 @@
     return { pos: mesh.pos, faces: mesh.faces, components: r.components, timings: T };
   }
 
-  SV.Mesh = {
+  SV.Mesh = { capPockets,
     marchingCubes, topology, opposites, compact, faceComponents, largestComponent, removeSmallComponents, cleanup,
     normals, areas, area, volume, meanEdge, adjacency, smoothLaplacian, smoothTaubin, decimate, inflate, foldedFaces, untangle, sulcRaw, sulc,
     sampleLabels, fillVertexLabels, modeFilterLabels, toObj, fromObj, toGifti, fromGifti, pack, unpack,

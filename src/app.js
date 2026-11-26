@@ -162,7 +162,7 @@
 
     /** structures profondes d'une vue : affichage, opacité, hémisphère, cervelet, sélection de structures, préréglages */
     subMenu(anchor, cellIndex) {
-      const V = this.viewer, i = cellIndex == null ? V.active : cellIndex, cfg = V.cells[i].cfg, F = SV.SUB_FAMS, sel = new Set(cfg.subFams || F.map(f => f.k));
+      const V = this.viewer, i = cellIndex == null ? V.active : cellIndex, cfg = V.cells[i].cfg, F = SV.SUB_FAMS, sel = new Set((cfg.subFams || F.map(f => f.k)).filter(k => !(cfg.subFilter === 'noCb' && k === 'Cerebellar-cortex') && !(cfg.subFilter === 'mtl' && !['Amygdala', 'Hippocampus-anterior', 'Hippocampus-posterior'].includes(k))));
       const PRE = [['all', 'Toutes', F.map(f => f.k)], ['noCb', 'Sans cervelet', F.filter(f => f.k !== 'Cerebellar-cortex').map(f => f.k)], ['mtl', 'Temporal mésial', ['Amygdala', 'Hippocampus-anterior', 'Hippocampus-posterior']], ['bg', 'Noyaux gris', ['Thalamus', 'Caudate-nucleus', 'Putamen', 'Pallidum', 'Nucleus-accumbens']]];
       const same = (a, b) => a.length === b.length && a.every(x => b.includes(x)), cur = [...sel];
       const panel = h('div', 'cell-panel sub-menu');
@@ -178,8 +178,8 @@
       panel.querySelector('[data-k=sub]').onchange = e => set({ sub: e.target.checked });
       panel.querySelector('.sop').oninput = e => { set({ sub: true, subOpacity: +e.target.value / 100 }); panel.querySelector('.sop-v').textContent = e.target.value + ' %'; };
       panel.querySelectorAll('[data-sh]').forEach(b => b.onclick = () => { set({ sub: true, subHemi: b.dataset.sh }); reopen(); });
-      panel.querySelectorAll('[data-pre]').forEach(b => b.onclick = () => { const list = PRE.find(p => p[0] === b.dataset.pre)[2]; set({ sub: true, subFams: list.length === F.length ? null : list.slice() }); reopen(); });
-      panel.querySelectorAll('[data-f]').forEach(x => x.onchange = () => { const list = [...panel.querySelectorAll('[data-f]')].filter(y => y.checked).map(y => y.dataset.f); set({ sub: list.length > 0, subFams: list.length === F.length ? null : list }); reopen(); });
+      panel.querySelectorAll('[data-pre]').forEach(b => b.onclick = () => { const list = PRE.find(p => p[0] === b.dataset.pre)[2]; set({ sub: true, subFams: list.length === F.length ? null : list.slice(), subFilter: 'all' }); reopen(); });
+      panel.querySelectorAll('[data-f]').forEach(x => x.onchange = () => { const list = [...panel.querySelectorAll('[data-f]')].filter(y => y.checked).map(y => y.dataset.f); set({ sub: list.length > 0, subFilter: 'all', subFams: list.length === F.length ? null : list }); reopen(); });
       panel.querySelector('[data-a=copy]').onclick = () => { const c = V.cells[i].cfg; V.setAllCells({ sub: c.sub, subOpacity: c.subOpacity, subHemi: c.subHemi, subFams: c.subFams ? c.subFams.slice() : null }); this.toast('Réglages des structures profondes appliqués à toutes les vues'); };
       const r = anchor.getBoundingClientRect(); this.popupMenu([{ node: panel }], r.left, r.bottom + 4);
     },

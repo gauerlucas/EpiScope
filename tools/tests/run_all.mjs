@@ -5,7 +5,7 @@
 // Aucun test ne lit de données de patient : le garde-fou tools/check_no_data.py refuse ces fichiers dans le dépôt.
 import { spawnSync } from 'child_process'; import fs from 'fs';
 
-const QUICK = ['lint', 'store', 'safety', 'provenance', 'identity', 'anon_export', 'concordance_inputs', 'network_rank', 'bids', 'staff_notes', 'clock', 'research', 'migrate3', 'phases', 'seizure_board', 'rec_slots', 'methods_golden', 'wave_montage', 'timemap', 'v51', 'v52', 'zip', 'nifti', 'growth', 'esi', 'plan_traj', 'pvc', 'sleep', 'ieeg', 'spikenet', 'spikenet2', 'research_fields', 'template_space', 'bem', 'dicom'];
+const QUICK = ['lint', 'store', 'safety', 'provenance', 'identity', 'anon_export', 'concordance_inputs', 'network_rank', 'bids', 'staff_notes', 'clock', 'research', 'migrate3', 'phases', 'seizure_board', 'rec_slots', 'methods_golden', 'wave_montage', 'timemap', 'v51', 'v52', 'zip', 'nifti', 'growth', 'esi', 'plan_traj', 'pvc', 'sleep', 'ieeg', 'spikenet', 'spikenet2', 'research_fields', 'template_space', 'surfaces', 'bem', 'dicom'];
 const NEEDS = { dicom: 'python3 -c "import pydicom, numpy"' };   // dépendance Python (CI : pip install pydicom numpy)
 const HEAVY = {
   coreg: ['EPISCOPE_BRAINCHOP', 'image T1 et étiquettes de brainchop v3 (t1_c.nii.gz, labels.nii.gz)'],

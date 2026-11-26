@@ -2,6 +2,25 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [3.1.0] — 2026-11-26
+
+Gabarit plus net et surfaces plus propres : coupes du gabarit sur le T1 2009b haute résolution, surface gonflée sans « petits pics », noyaux gris et cervelet lisses, cervelet affichable en planification ; électrodes à groupes espacés proposées par défaut pour les trajectoires insulaires et basales.
+
+### Modifié
+
+- **Coupes du gabarit** : T1 MNI 2009b haute résolution (0,5 mm) ramené à 1 mm, tête entière (au lieu du T1 de 2 mm de la méthode atlas) — `assets/template_t1.json`.
+- **Surface gonflée** (gabarit et anatomie des patients) : les poches du pial — fond de sillon relié à l'extérieur par un goulot de quelques millimètres, invisible sur le pial — se refermaient en un point au gonflement (triangles écrasés, ombrage en « petits pics »). Elles sont maintenant refermées par un couvercle avant le gonflement (`SV.Mesh.capPockets`, genre 0 conservé), et la visionneuse prend la normale des voisins pour tout sommet d'aire négligeable.
+- **Structures profondes** (noyaux gris, hippocampes, amygdales, cervelet ; gabarit et patients) : surface tirée de la distance signée au bord de la structure, lissée, sur une grille suréchantillonnée — plus de « gros voxels lissés » bosselés ; le cervelet est l'enveloppe lisse des folia.
+- **Électrodes types de la bibliothèque** : BM, Im, Ip en DIXI D08-18CM (3 × 6 plots espacés), BL, Ia en DIXI D08-15BM (3 × 5), Ib en D08-12AM — l'échantillonnage va plus loin vers la sortie (autre marque : modèle standard du même nombre de plots).
+
+### Corrigé
+
+- Le **cervelet** restait caché en planification même coché dans « Structures profondes » : le choix fait dans ce menu l'emporte désormais sur le filtre « sans cervelet » de la planification.
+
+### Méthodes
+
+- Anatomie du patient calculée à partir de cette version : surface gonflée et structures profondes construites autrement (ci-dessus) ; le pial, les régions et les coordonnées ne changent pas.
+
 ## [3.0.0] — 2026-11-25
 
 Le gabarit d'EpiScope devient le cerveau moyen **MNI ICBM 152 non linéaire 2009b asymétrique** (MNI152NLin2009bAsym) partout : vue 3D, coupes, parcellation VEP du gabarit, schéma d'implantation, recalage du patient, coordonnées MNI des exports. Chez l'enfant, la transformation vers MNI passe par le gabarit **NIHPD** de l'âge le plus proche. La bibliothèque des électrodes conventionnelles est redéfinie en coordonnées MNI. Les dossiers des versions antérieures sont convertis à l'ouverture.

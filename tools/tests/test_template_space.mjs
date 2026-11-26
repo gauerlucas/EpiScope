@@ -24,6 +24,7 @@ const mesh = J('brain_meshes.json'), vj = J('vep_volume.json'), tpl = J('templat
   ok(nm([0, 0, 0]) !== 0 && vol.labelAt(0, 0, 100) === 0 && vol.labelAt(0, 0, -100) === 0, 'cerveau dans la boîte MNI');
   ok(spm.dims.length === 3 && spm.vox === 2 && ['t1', 'gm', 'wm', 'csf', 'seg'].every(k => typeof spm[k] === 'string' && spm[k].length > 1000), 'gabarit de la méthode atlas complet');
   ok(/Louis Collins/.test(mesh.license) && /Louis Collins/.test(spm.license) && /Louis Collins/.test(peds.license), 'avis de copyright du MNI conservé');
+  const t1 = J('template_t1.json'); ok(t1.vox === 1 && t1.space === S.TEMPLATE_SPACE && t1.dims[0] > 150 && typeof t1.t1 === 'string' && t1.t1.length > 1e6 && /Louis Collins/.test(t1.license), 'T1 des coupes du gabarit à 1 mm (2009b haute résolution)');
 }
 // ---------------------------------------------------------------- bibliothèque d'électrodes
 {
@@ -38,6 +39,10 @@ const mesh = J('brain_meshes.json'), vj = J('vep_volume.json'), tpl = J('templat
     if (l.n) assert.equal(E.modelById(L.model).n, l.n, l.code + ' : modèle de la bibliothèque');
   }
   ok(built === lib.length, 'toutes les trajectoires se construisent des deux côtés');
+  const def = { BM: 'DIXI D08-18CM', BL: 'DIXI D08-15BM', Ia: 'DIXI D08-15BM', Im: 'DIXI D08-18CM', Ip: 'DIXI D08-18CM', Ib: 'DIXI D08-12AM' };
+  for (const [code, id] of Object.entries(def)) { const e = E.fromLibrary(lib.find(l => l.code === code), 'L', atlas, vol, {}); assert.equal(e.model, id, code + ' : modèle par défaut ' + id); }
+  ok(E.modelById('DIXI D08-18CM').groups && E.modelById('DIXI D08-15BM').groups, 'BM, Im, Ip (3 × 6) et BL, Ia (3 × 5) : électrodes à groupes espacés par défaut');
+  ok(E.fromLibrary(lib.find(l => l.code === 'BM'), 'L', atlas, vol, { maker: 'Alcis' }).model !== 'DIXI D08-18CM', 'autre marque : modèle de cette marque');
   const fam = (code, h) => { const e = E.fromLibrary(lib.find(l => l.code === code), h, atlas, vol, {}); return e.contacts.slice(0, 3).map(c => c.label >= 1 && c.label <= 162 ? atlas.regions[c.label].family : '').join(' '); };
   ok(/Amygdala/.test(fam('A', 'L')) && /Hippocampus-anterior/.test(fam('B', 'R')) && /Temporal-pole/.test(fam('TP', 'L')), 'plots profonds dans la structure visée (A, B, TP)');
 }

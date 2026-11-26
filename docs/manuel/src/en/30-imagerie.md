@@ -38,7 +38,7 @@ From the T1, EpiScope computes:
 
 - the brain **segmentation** (grey matter, white matter, deep structures) with a neural network;
 - the patient's **VEP parcellation** (162 cortical regions, 18 deep structures);
-- the cortical **surfaces**, pial and inflated, for the 3D view.
+- the cortical **surfaces**, pial and inflated, for the 3D view (sulcal pockets are closed before inflation, so the inflated surface stays smooth), and smoothed surfaces of the deep structures and cerebellum.
 
 The **Patient anatomy** card summarises the result and its quality control. [[View in 3D]] switches the 3D views to the patient's brain ([[Patient]] button in the view bar); [[VEP slices]] overlays the parcellation on the slices. [[Other method…]] offers other segmentations, or compares them side by side so you can choose by hand; a segmentation made elsewhere (FreeSurfer, FastSurfer, CAT12) can also be imported.
 
