@@ -810,7 +810,7 @@
     setTab(tab) {
       if (tab === 'params' || tab === 'connectome') tab = 'model';
       this.ui.tab = tab; $('tabs').querySelectorAll('button[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tab)); this.updatePickFilter();
-      for (const t of ['network', 'onset', 'targets', 'electrodes', 'model', 'seegsz', 'stims', 'thermo', 'quant']) { const el = $('tab-' + t); if (el) el.hidden = t !== tab; }
+      for (const t of ['network', 'onset', 'targets', 'electrodes', 'model', 'seegsz', 'szquant', 'stims', 'thermo', 'quant']) { const el = $('tab-' + t); if (el) el.hidden = t !== tab; }
       if (tab === 'network') this.renderNetwork(this.activationAt(this.ui.t)); if (tab === 'onset') this.renderOnset(); if (tab === 'targets') this.renderTargets(); if (tab === 'electrodes') this.renderElectrodes(); if (tab === 'model') { this.renderParams(); this.renderConnectome(); }
       if (tab === 'stims') this.renderStims(); if (tab === 'thermo') this.renderThermo(); if (tab === 'quant') this.renderQuant(); if (tab === 'seegsz' && this.renderSeegSeizure) this.renderSeegSeizure();
       if (this.refreshMarkers) this.refreshMarkers();

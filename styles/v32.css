@@ -1,0 +1,44 @@
+/* EpiScope v3.2.0 — intercritique pointé, quantifications d'une crise, calques des coupes, écran de l'intervention */
+
+/* ---- pointage intercritique (onglet Intercritique d'une SEEG) */
+.im-card { margin-bottom: 14px; }
+.im-cats { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 10px; }
+.im-cat { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: transparent; color: var(--text); border-radius: 999px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.im-cat i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.im-cat b { font-family: var(--mono); font-weight: 600; } .im-cat small { color: var(--muted); }
+.im-cat.on { border-color: var(--accent, #e8c27a); box-shadow: 0 0 0 1px var(--accent, #e8c27a) inset; color: var(--text-hi); }
+.im-wrap { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .im-wrap { grid-template-columns: 1fr; } }
+.im-grid { max-height: 52vh; user-select: none; touch-action: none; }
+.im-grid .pchip.im-c { cursor: pointer; }
+.im-grid .pchip.im-c.cur { box-shadow: 0 0 0 2px var(--text-hi) inset; }
+.im-ed { display: flex; flex-direction: column; gap: 8px; border-left: 1px solid var(--line); padding-left: 14px; }
+.im-edh { display: flex; align-items: center; gap: 8px; } .im-edh i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: none; }
+.im-edh .im-lab { font-weight: 600; max-width: 220px; }
+.im-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; } .im-row label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; } .im-row label.chip { flex-direction: row; align-items: center; }
+.im-ed label.inph { display: flex; align-items: center; gap: 6px; font-size: 12px; } .im-ed label.inph input { flex: 1; }
+.im-q { margin-top: 10px; }
+.im-qrow { display: flex; align-items: flex-start; gap: 6px; } .im-qrow > .qx-row { flex: 1; } .im-qrow .im-tog { margin-top: 4px; white-space: nowrap; }
+
+/* ---- onglet Quantifs d'une crise */
+.szq-row { margin-bottom: 4px; } .szq-agree { margin: 2px 0 8px 30px; }
+
+/* ---- calques supplémentaires (Multimodalité) */
+.ip-multi .xl-row { flex-wrap: wrap; gap: 4px 10px; }
+
+/* ---- écran de l'intervention : contacts et coupes côte à côte, légendes */
+.resect.with-slices { padding-bottom: 10px; }
+.rs-cols { display: grid; grid-template-columns: minmax(340px, 0.85fr) minmax(0, 1.15fr); gap: 18px; align-items: start; }
+@media (max-width: 1250px) { .rs-cols { grid-template-columns: 1fr; } }
+.rs-side { min-width: 0; } .rs-side-h { margin-bottom: 6px; }
+.rs-side .surg-slices { height: 640px; }
+.rs-leg { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 4px 0 6px; color: var(--muted); }
+.rs-leg span { display: inline-flex; align-items: center; gap: 5px; }
+.rs-sw { min-width: 22px; height: 20px; padding: 0 3px; font-size: 11px; border: 1px solid var(--line2, #c8d2dc); color: var(--muted); border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; }
+.rs-sw.on { background: #c0392b; border-color: #c0392b; color: #fff; } .rs-sw.on.cavity { background: #8e44ad; border-color: #8e44ad; } .rs-sw.margin { border: 1.5px dashed #8e44ad; color: #8e44ad; }
+.ssl-leg { display: inline-flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; }
+.ssl-g { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ssl-g i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; margin-left: 6px; }
+.ssl-g .chip { margin-right: 2px; }
+.ssl-g i.ssl-cav { width: 16px; height: 11px; border-radius: 2px; background: rgba(255,255,255,.45); border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.55); background-clip: padding-box; outline: 1px solid #555; outline-offset: -4px; }
+.surg-leg b { color: var(--text); font-weight: 600; }

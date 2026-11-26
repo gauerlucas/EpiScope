@@ -115,9 +115,12 @@
         <div class="span2 rp"></div><div class="span2 hb"></div><label class="span2">Complications <input data-f="complications" value="${esc(p.complications)}"></label>
         <label class="span2">Notes <textarea data-f="notes" rows="2">${esc(p.notes || '')}</textarea></label></div>`;
       if (this.histologyField) c.querySelector('.hb').replaceWith(this.histologyField(p, () => this.touch('procedure', p.id, 'histologie')));   // v2.1.0 : vocabulaire fermé + texte libre
-      if (this.resectionCard && !['rftc', 'neuromod'].includes(p.type)) c.after(this.resectionCard(p));   // v2.1.0 : contacts dans la résection, cavité
+      if (this.resectionCard && !['rftc', 'neuromod'].includes(p.type)) {   // v2.1.0 : contacts dans la résection, cavité ; v3.2.0 : coupes à côté des contacts
+        const rc = this.resectionCard(p, { slices: true }); c.after(rc); const sl = $('vpSlices'), card = sl && sl.closest('.card'), side = rc.querySelector('.rs-side');
+        if (sl && side) { side.innerHTML = '<div class="rs-side-h"><b>Coupes IRM</b> <span class="muted small">calques : régions cibles de l’intervention, volume de résection segmenté</span></div>'; side.appendChild(sl); if (card) card.remove(); }
+      }
       const hy = S.latestHypotheses(d).filter(H => ['confirmed', 'testing', 'proposed'].includes(H.status));
-      const changed = () => { this.touch('procedure', p.id, V.procedure[p.type]); clearTimeout(this._vpSl); this._vpSl = setTimeout(() => { if (this.slices && this._ipHost && this._ipHost.closest('#vpSlices')) { this._slvSurg = { regions: p.regions, extent: p.extent, hyps: hy }; this.updateImagingLayers(); } }, 300); };   // régions peintes sur les coupes mises à jour
+      const changed = () => { this.touch('procedure', p.id, V.procedure[p.type]); clearTimeout(this._vpSl); this._vpSl = setTimeout(() => { if (this.slices && this._ipHost && this._ipHost.closest('#vpSlices')) { this._slvSurg = { regions: p.regions, extent: p.extent, hyps: hy, proc: p }; this.updateImagingLayers(); } }, 300); };   // régions peintes sur les coupes mises à jour
       if (this.surgeryEditor && ['resection', 'lobectomy', 'litt', 'disconnection', 'other'].includes(p.type)) c.querySelector('.rp').appendChild(this.surgeryEditor(p, hy, changed, 'procedure'));
       else c.querySelector('.rp').appendChild(this.regionPicker(p.regions, changed));
       this.bindFields(c, p, 'procedure', k => { if (k === 'date' || k === 'type') { this.renderParcours(); this.renderSubbar(); } if (k === 'type') this.renderProcedureView(box, this.stageByKey(st.key)); });

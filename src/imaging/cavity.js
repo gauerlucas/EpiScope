@@ -15,7 +15,13 @@
  * Les réseaux appris (p. ex. Arnold et al., NeuroImage Clin 2022, entraîné sur des résections temporales) visent la même
  * cavité sur l'image post-opératoire seule ; ici la segmentation pré-opératoire du patient sert de référence, ce qui vaut
  * pour toute localisation mais demande un bon recalage. Contrôle visuel indispensable (coupes) avant de retenir les contacts.
- *   SV.Cavity.segment(o, progress) — o = { img, imgT, lab, thr, minMl, side, hemi } (worker 'cavity')
+ * v3.2.0 — contraintes anatomiques tirées de la segmentation substance grise / blanche du patient :
+ *   - T1 pré-opératoire (o.pre, même espace que la parcellation) normalisé de même : un voxel déjà sombre avant l'intervention
+ *     (LCR des sillons, kyste, ventricule mal étiqueté ; < 0,45 entre LCR et SB) n'est pas compté dans la cavité ;
+ *   - noyau : seules les composantes qui contiennent un noyau épais (masque érodé de ~2 mm) sont gardées — les liserés minces
+ *     du cortex au fond des sillons (recalage imparfait, volume partiel) ne forment plus de cavité ;
+ *   - composition de la cavité : substance grise (régions VEP) et substance blanche, en ml (select → tissue).
+ *   SV.Cavity.segment(o, progress) — o = { img, imgT, lab, pre?, thr, minMl, side, hemi } (worker 'cavity')
  *   SV.Cavity.select(R, keep) — masque et fractions des composantes gardées (sans recalcul)
  *   SV.Cavity.contactsIn(points, vol, tolMm) — contacts dans la cavité (tolérance : demi-longueur du contact et recalage)
  *   SV.Cavity.distances(points, vol, maxMm) — distance (mm) de chaque contact à la cavité (0 dedans, Infinity au-delà de maxMm) */
@@ -90,11 +96,28 @@
     if (!(gmNorm > 0.3 && gmNorm < 0.9)) throw new Error(`contraste inattendu : cortex à ${gmNorm.toFixed(2)} entre LCR (0) et substance blanche (1) sur l’IRM post-opératoire (0,3–0,9 attendu) — recalage ou séquence à vérifier`);
     const paren = c => (c >= 1 && c <= 162) || c === 200, cand = new Uint8Array(N), brain = new Uint8Array(N), nrm = new Float32Array(N);
     for (let q = 0; q < N; q++) { const c = lab[q]; if (!c || c === 202) continue; brain[q] = 1; const v = (I[q] - csf) / (wm - csf); nrm[q] = v; if (paren(c) && v < thr) cand[q] = 1; }
+    // v3.2.0 : T1 pré-opératoire — un voxel déjà sombre avant l'intervention n'appartient pas à la cavité
+    let preInfo = null;
+    if (o.pre && o.pre.data) {
+      prog({ fraction: 0.45, message: 'T1 pré-opératoire' });
+      const toPre = mul4(inv4(Array.from(o.pre.affine)), aff), sp = sampler(o.pre), P = new Float32Array(N), pw = [], pg = [];
+      for (let k = 0, q = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++, q++) { if (!lab[q]) continue; const p = ap(toPre, i, j, k); P[q] = sp(p[0], p[1], p[2]); if (lab[q] === 200) pw.push(P[q]); else if (lab[q] >= 1 && lab[q] <= 162) pg.push(P[q]); }
+      const w0 = median(pw), g0 = median(pg);
+      if (w0 > g0) {
+        const lim0 = g0 - (w0 - g0), dk = []; for (let q = 0; q < N; q++) if (lab[q] && lab[q] !== 202 && P[q] < lim0) dk.push(P[q]);
+        const c0 = dk.length >= minDark ? median(dk) : g0 - 1.14 * (w0 - g0); let ex = 0;
+        for (let q = 0; q < N; q++) if (cand[q] && (P[q] - c0) / (w0 - c0) < 0.45) { cand[q] = 0; ex++; }
+        preInfo = { excludedMl: +(ex * vox / 1000).toFixed(2), gmNorm: +((g0 - c0) / (w0 - c0)).toFixed(2) };
+      } else preInfo = { skipped: 'contraste du T1 pré-opératoire inattendu' };
+    }
     prog({ fraction: 0.55, message: 'nettoyage du masque' });
     // 4. ouverture 1, fermeture 2 (dans le cerveau d'avant l'intervention)
     let m = morph(morph(cand, dims, true), dims, false, brain);
     m = morph(morph(morph(morph(m, dims, false, brain), dims, false, brain), dims, true), dims, true);
     for (let q = 0; q < N; q++) if (!brain[q] || !paren(lab[q])) m[q] = 0;
+    // v3.2.0 : noyau épais (érosion ~2 mm) — les composantes sans noyau (liserés de cortex au fond des sillons) sont écartées
+    const vs = Math.cbrt(vox), nEr = Math.max(1, Math.round(2 / vs)); let core = m; for (let e = 0; e < nEr; e++) core = morph(core, dims, true);
+    { const C0 = components(m, dims), keepC = new Uint8Array(C0.n + 1); for (let q = 0; q < N; q++) if (core[q] && C0.lab[q]) keepC[C0.lab[q]] = 1; let rm = 0; for (let q = 0; q < N; q++) if (m[q] && !keepC[C0.lab[q]]) { m[q] = 0; rm++; } core = { erodeMm: +(nEr * vs).toFixed(1), removedMl: +(rm * vox / 1000).toFixed(2) }; }
     // 5. composantes
     prog({ fraction: 0.75, message: 'composantes' });
     const C = components(m, dims), minVox = Math.ceil(minMl * 1000 / vox), pre = new Map(); for (let q = 0; q < N; q++) { const c = lab[q]; if (paren(c)) pre.set(c, (pre.get(c) || 0) + 1); }
@@ -109,14 +132,15 @@
     comps.sort((a, b) => b.voxels - a.voxels);
     const side = comps.filter(X => !o.side || X.hemi === o.side || !X.hemi), chosen = side.length ? [side[0].id] : comps.length ? [comps[0].id] : [];
     prog({ fraction: 1, message: `${comps.length} composante${comps.length > 1 ? 's' : ''}` });
-    return { dims, affine: aff, voxMm3: vox, map, comps, chosen, pre: Object.fromEntries(pre), norm: { wm, gm, csf, thr, gmNorm: +gmNorm.toFixed(2), csfFrom: dark.length >= minDark ? 'image' : 'contrast' }, nCandidates: C.n };
+    return { dims, affine: aff, voxMm3: vox, map, comps, chosen, pre: Object.fromEntries(pre), norm: { wm, gm, csf, thr, gmNorm: +gmNorm.toFixed(2), csfFrom: dark.length >= minDark ? 'image' : 'contrast' }, preop: preInfo, core, nCandidates: C.n };
   }
   /** masque des composantes gardées + fractions par région VEP (sans recalcul) */
   function select(R, keep) {
     const K = new Set(keep), mask = new Uint8Array(R.map.length); let n = 0; for (let q = 0; q < mask.length; q++) if (R.map[q] && K.has(R.map[q])) { mask[q] = 1; n++; }
     const cnt = {}; for (const X of R.comps) if (K.has(X.id)) for (const c in X.counts) cnt[c] = (cnt[c] || 0) + X.counts[c];
     const regions = Object.keys(cnt).map(c => ({ code: +c, n: cnt[c], ml: +(cnt[c] * R.voxMm3 / 1000).toFixed(2), frac: R.pre[c] ? +(cnt[c] / R.pre[c]).toPrecision(3) : null })).sort((a, b) => b.n - a.n);
-    return { mask, volumeMl: +(n * R.voxMm3 / 1000).toFixed(2), regions };
+    let g = 0, w = 0; for (const c in cnt) { if (+c === 200) w += cnt[c]; else if (+c >= 1 && +c <= 162) g += cnt[c]; }
+    return { mask, volumeMl: +(n * R.voxMm3 / 1000).toFixed(2), regions, tissue: { gmMl: +(g * R.voxMm3 / 1000).toFixed(2), wmMl: +(w * R.voxMm3 / 1000).toFixed(2) } };
   }
   /** points (monde du T1) dans le masque { dims, affine, data } à tol mm près → booléens */
   function contactsIn(points, vol, tolMm) {

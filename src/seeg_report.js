@@ -37,7 +37,7 @@
     ['Limites et pronostic', '', ['limits', 'riskFunctional', 'riskEpi']],
     ['Thermocoagulations', '', ['thermoAfter']],
   ];
-  const SUG = new Set(['irritative', 'soz', 'ei', 'ez', 'functional', 'thermoAfter']);
+  const SUG = new Set(['lesional', 'irritative', 'soz', 'ei', 'ez', 'functional', 'thermoAfter']);
   const ZONES = { ezRegions: ['Zone épileptogène · régions', '#e12d37', 'ez', 'régions VEP (plots marqués au début des crises) : reprises en rouge dans la vue des thermocoagulations'], propRegions: ['Propagation précoce · régions', '#ff9628', 'prop', 'régions VEP des plots de propagation précoce : en orange dans la vue des thermocoagulations'] };
 
   const M = {
@@ -120,7 +120,9 @@
     seegSuggest(ex, k) {
       const d = this.dossier, els = this.planElectrodes(ex.electrodes), regs = keys => { const R0 = new Map(); for (const key of keys) { const r = this.contactRegion(key, els); if (r) R0.set(r, (R0.get(r) || 0) + 1); } return [...R0.keys()]; };
       if (k === 'soz') { const on = this.onsetSummary(ex); if (!on.n) return ''; const L = Object.entries(on.contacts).filter(([, c]) => c.onset).sort((a, b) => b[1].onset - a[1].onset); if (!L.length) return ''; return `Plots impliqués au début des crises (${on.n} crise${on.n > 1 ? 's' : ''} analysée${on.n > 1 ? 's' : ''}) : ${this.groupContacts(L.map(x => x[0])).join(' ; ')}${regs(L.map(x => x[0])).length ? ' — ' + regs(L.map(x => x[0])).join(', ') : ''}. Propagation précoce : ${this.groupContacts(Object.entries(on.contacts).filter(([, c]) => c.early && !c.onset).map(x => x[0])).join(' ; ') || '—'}.`; }
-      if (k === 'irritative') { const sp = (ex.inter && ex.inter.spikes) || []; if (!sp.length) return ''; return sp.map(s => `${s.contacts}${s.text ? ' : ' + s.text : ''}${s.vig ? ' (' + ({ V: 'veille', S: 'sommeil', VS: 'veille et sommeil' }[s.vig] || s.vig) + ')' : ''}`).join(' ; ') + '.'; }
+      // v3.2.0 : plots pointés dans l'onglet Intercritique (groupes de pointes, rythme lésionnel), puis les lignes libres
+      if (k === 'irritative') { const sp = (ex.inter && ex.inter.spikes) || [], G = S.interSummary(ex).irritative, L = sp.filter(s => (s.contacts || s.text || '').trim()).map(s => `${s.contacts}${s.text ? ' : ' + s.text : ''}${s.vig ? ' (' + ({ V: 'veille', S: 'sommeil', VS: 'veille et sommeil' }[s.vig] || s.vig) + ')' : ''}`); if (!G && !L.length) return ''; return [G, L.length ? L.join(' ; ') + '.' : ''].filter(Boolean).join('\n'); }
+      if (k === 'lesional') { const keys = Object.keys(S.normalizeInter(ex.inter).lesional); if (!keys.length) return ''; const r = regs(keys); return S.interSummary(ex).lesional.replace(/\.$/, '') + (r.length ? ' — ' + r.join(', ') : '') + '.'; }
       if (k === 'ei') {   // v5.1 : chaque analyse quantifiée (synthèses EImax / cEImax / PEImax d'abord), une ligne chacune
         const rank = q => q.eimax || /max/i.test(q.name) ? 0 : 1, L = ex.quant.slice().sort((a, b) => rank(a) - rank(b)), out = [];
         for (const q of L) { const vals = Object.entries(q.values || {}).filter(([, v]) => isFinite(+v)).sort((a, b) => b[1] - a[1]); if (!vals.length) continue; const mx = +vals[0][1], top = vals.filter(([, v]) => +v >= 0.5 * mx).slice(0, 8), r = regs(top.map(([l]) => { const p = Q.parseLabel(l); return p ? p.elec + p.c1 : l; }));
@@ -192,7 +194,9 @@
           body += `${chap('s2', 'EEG intercritique')}${I.sampling ? `<p class="m">Acquisition : ${esc(I.sampling)}.</p>` : ''}
             ${I.wake || I.sleep ? `<h3>Rythme de fond</h3><ul>${I.wake ? `<li><b>À la veille</b> : ${esc(I.wake)}</li>` : ''}${I.sleep ? `<li><b>Au sommeil</b> : ${esc(I.sleep)}</li>` : ''}</ul>` : ''}${I.physiological ? `<h3>Activités physiologiques</h3><p>${esc(I.physiological)}</p>` : ''}
             ${I.slow ? `<h3>Foyer lent</h3><p>${esc(I.slow)}</p>` : ''}${(I.spikes || []).length ? `<h3>Grapho-éléments transitoires pathologiques</h3><table><tr><th>plots</th><th>description</th><th>V / S</th></tr>${I.spikes.map(s => `<tr><td class="mono">${esc(s.contacts)}</td><td>${esc(s.text)}</td><td>${esc(({ V: 'V', S: 'S', VS: 'V, S' })[s.vig] || '')}</td></tr>`).join('')}</table>` : ''}${I.other ? `<p>${esc(I.other)}</p>` : ''}
-            ${!I.wake && !I.sleep && !(I.spikes || []).length && !I.slow ? '<p class="m">—</p>' : ''}${await gal(g => g.kind === 'interictal' || g.kind === 'sleep')}`;
+            ${(() => { const N = S.normalizeInter(I), les = Object.keys(N.lesional), G = N.groups.filter(g => g.contacts.length); if (!les.length && !G.length) return '';   // v3.2.0 : plots pointés
+              return `<h3>Plots pointés</h3><table><tr><th></th><th>plots</th><th>fréquence</th><th>V / S</th><th>moment</th><th>description</th></tr>${les.length ? `<tr><td>Rythme anormal lésionnel</td><td class="mono">${esc(S.contactRanges(les))}</td><td></td><td></td><td></td><td>${esc(N.lesionalText || '')}</td></tr>` : ''}${G.map(g => `<tr><td>${esc(g.label)}${g.sync ? ' <span class="m">(synchrones)</span>' : ''}</td><td class="mono">${esc(S.contactRanges(g.contacts))}</td><td>${esc(S.INTER_FREQ[g.freq] || '')}</td><td>${esc(S.INTER_VIG[g.vig] || '')}</td><td>${esc(g.when || '')}</td><td>${esc(g.text || '')}</td></tr>`).join('')}</table>`; })()}
+            ${!I.wake && !I.sleep && !(I.spikes || []).length && !I.slow && !Object.keys(S.normalizeInter(I).lesional).length && !S.normalizeInter(I).groups.length ? '<p class="m">—</p>' : ''}${await gal(g => g.kind === 'interictal' || g.kind === 'sleep')}`;
           const QI = QG.filter(g => g.kind === 'inter'), recT = r => `${esc(r.title)}${r.vigil ? ' <span class="m">(' + esc(VIG[r.vigil] || r.vigil) + ')</span>' : ''}`;
           if (QI.length === 1) body += `<h3>Analyses quantitatives — ${recT(QI[0].rec)}</h3>${qSets(QI[0], 4)}`;
           else if (QI.length) body += `<h3>Analyses quantitatives</h3>${QI.map(g => `<h4>${recT(g.rec)}</h4>${qSets(g, 5)}`).join('')}`;

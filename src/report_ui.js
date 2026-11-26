@@ -26,7 +26,7 @@
   const M = {
     /** l'exploration a-t-elle un compte rendu rédigé (EEG de scalp, ou intercritique / synthèse SEEG) ? */
     exCrAvailable(ex) {
-      if (ex.kind === 'seeg') { const I = ex.inter || {}, R0 = ex.report || {}; return !!(I.wake || I.sleep || I.slow || I.physiological || (I.spikes || []).length || (R0.ezRegions || []).length || (R0.propRegions || []).length || Object.entries(R0).some(([k, v]) => k !== 'proposal' && typeof v === 'string' && v.trim())); }
+      if (ex.kind === 'seeg') { const I = ex.inter || {}, R0 = ex.report || {}; return !!(I.wake || I.sleep || I.slow || I.physiological || (I.spikes || []).length || (I.groups || []).some(g => (g.contacts || []).length) || Object.keys(I.lesional || {}).length || (R0.ezRegions || []).length || (R0.propRegions || []).length || Object.entries(R0).some(([k, v]) => k !== 'proposal' && typeof v === 'string' && v.trim())); }
       return !!(SV.EegCR && SV.EegCR.crHTML(ex));
     },
     // ================================================================ fenêtre de choix

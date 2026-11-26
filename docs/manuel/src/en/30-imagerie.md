@@ -64,7 +64,8 @@ Slices are read as in MRIcroGL:
 The slice toolbar offers:
 
 - [[Layers ▾]]: base image, stacked overlays (PET, FLAIR, CT) with colour map, opacity and window; parcellation; electrodes and ROIs;
-- [[Multimodality ▾]]: fusion presets (PET on T1, FLAIR + PET…);
+- [[Multimodality ▾]]: what is drawn over the images — parcellation and values, outlines, electrodes, ROIs — and **additional layers** that can be ticked together (target regions of the procedure, segmented resection volume, regions of a seizure's contacts, lesions);
+- **Patient | Template**: in *Template*, the slices move to the MNI 2009b space — MNI T1 (or one of the patient's images) as the base, the patient's coregistered images (PET, sources, post-processing, MRI, CT) overlaid through [[Layers ▾]], brought by the patient → template affine of the computed anatomy, like the 3D view on the template (the patient's anatomy must be computed);
 - [[Electrode ▾]]: align the slices on an electrode (see [Localising the electrodes](@seeg#localiser-les-electrodes));
 - **ROI**: annotate a suspicious area (sphere or arrow) with a name and a colour; it appears in 3D, at the MDT meeting and in the reports;
 - [[Capture ▾]]: file the view in the gallery, or copy it for a document.

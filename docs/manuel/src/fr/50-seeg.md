@@ -43,6 +43,8 @@ Ensuite, **une électrode à la fois** : un clic sur une électrode aligne les c
 
 L'onglet [[Intercritique]] rassemble le compte rendu : acquisition, rythme de fond en veille et en sommeil, activités physiologiques, foyer lent, grapho-éléments pathologiques par plots, et un tableau **par électrode** (localisation des plots d'après la parcellation du patient, activité recueillie). Chaque rubrique a ses phrases types ([[phrases ▾]]).
 
+La carte **Pointage des plots**, en tête de l'onglet, se remplit comme les plots de début d'une crise : choisissez une catégorie — [[Rythme lésionnel]] ou un groupe de pointes ([[+ groupe de pointes]]) — puis cliquez les plots ; un glisser ajoute (ou retire) tous les plots survolés. Un **groupe de pointes** réunit des plots aux pointes synchrones, avec sa fréquence (fréquentes, occasionnelles, rares), la vigilance, le moment (jour, heure, tracé intercritique) et une description ; [[dupliquer]] crée le même groupe pour un autre moment, plus ou moins fréquent selon le jour ou le sommeil. Les **quantifications intercritiques** de l'onglet Analyses (taux de pointes, HFO, détection SpikeNet2…) sont listées dessous : ouvrez un jeu pour voir ou modifier ses valeurs ; [[→ groupe]] reprend ses plots les plus forts (au moins la moitié du maximum). Le rapport SEEG propose la zone lésionnelle électrique et la zone irritative d'après ce pointage.
+
 ## Les crises SEEG
 
 Une crise SEEG se décrit comme en phase 1 (sémiologie, frise). L'onglet [[Électrique]], en premier dans le panneau de droite, marque **plot par plot** :
@@ -50,7 +52,9 @@ Une crise SEEG se décrit comme en phase 1 (sémiologie, frise). L'onglet [[Éle
 - le **début** de la crise, la propagation **précoce** et **tardive** (clics répétés sur les pastilles des plots) ;
 - l'aspect du début (activité rapide de bas voltage, pointes rythmiques, DC-shift…) et une description électrique et clinique.
 
-Les plots marqués apparaissent en 3D et nourrissent la concordance, la proposition des zones du rapport et le staff.
+Les plots marqués apparaissent en 3D et dans les coupes ([[Coupes IRM]] ; case « plots de la crise » de [[Multimodalité ▾]], parcellation « régions des plots de la crise »), et nourrissent la concordance, la proposition des zones du rapport et le staff. [[Affichage ▾]] › *Crise SEEG* colore le cortex et les plots par l'activation du modèle, par les régions des plots marqués, ou ne les colore pas.
+
+L'onglet [[Quantifs]], à côté d'Électrique, montre les jeux de l'onglet Analyses rattachés à la crise ouverte (EI, cEI, PEI, empreinte…) : l'œil les affiche dans la vue active, un jeu ouvert montre ses valeurs (modifiables), et une ligne indique combien de plots marqués « début » figurent parmi ses cinq valeurs les plus fortes.
 
 ![Une crise SEEG : l'onglet Électrique, plots de début et de propagation marqués sur les électrodes.](shot:seeg-crise)
 

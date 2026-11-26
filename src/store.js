@@ -130,6 +130,63 @@
   const mulA = (A, B) => { const C = new Array(16).fill(0); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) for (let k = 0; k < 4; k++) C[4 * r + c] += A[4 * r + k] * B[4 * k + c]; return C; };
   const applyA = (T, p) => [0, 1, 2].map(r => +(T[4 * r] * p[0] + T[4 * r + 1] * p[1] + T[4 * r + 2] * p[2] + T[4 * r + 3]).toFixed(3));
   const isPt = p => Array.isArray(p) && p.length >= 3 && p.slice(0, 3).every(v => typeof v === 'number' && isFinite(v));
+  // ---------------------------------------------------------------- intercritique SEEG pointé sur les plots (v3.2.0)
+  /** fréquence d'un groupe de pointes, vigilance */
+  const INTER_FREQ = { frequent: 'fréquentes', occasional: 'occasionnelles', rare: 'rares' }, INTER_VIG = { V: 'veille', S: 'sommeil', VS: 'veille et sommeil' };
+  /** ex.inter : textes du tracé de fond, lignes de grapho-éléments (spikes), et depuis la v3.2.0 le pointage des plots —
+   *  lesional : { 'A’1': 1 } plots à rythme anormal lésionnel ; groups : [{ id, label, contacts: ['A’1', …], freq, vig,
+   *  when (jour / heure, texte), sync (pointes synchrones sur ces plots), text }] groupes de pointes */
+  function normalizeInter(I) {
+    // en place : les objets (groupes) gardent leur identité (corbeille, références de l'interface)
+    if (!I || typeof I !== 'object') I = {};
+    for (const [k, v] of Object.entries({ sampling: '', wake: '', sleep: '', physiological: '', slow: '', other: '', lesionalText: '' })) if (typeof I[k] !== 'string') I[k] = I[k] == null ? v : String(I[k]);
+    if (!I.lesional || typeof I.lesional !== 'object' || Array.isArray(I.lesional)) I.lesional = {};
+    if (!Array.isArray(I.spikes)) I.spikes = [];
+    if (!Array.isArray(I.groups)) I.groups = [];
+    for (let i = I.groups.length - 1; i >= 0; i--) if (!I.groups[i] || typeof I.groups[i] !== 'object' || Array.isArray(I.groups[i])) I.groups.splice(i, 1);
+    I.groups.forEach((g, i) => { for (const [k, v] of Object.entries({ label: 'Groupe ' + (i + 1), freq: 'frequent', vig: 'VS', when: '', sync: true, text: '' })) if (g[k] === undefined) g[k] = v; if (!g.id) g.id = uid('G'); g.contacts = Array.isArray(g.contacts) ? [...new Set(g.contacts.map(String))] : []; });
+    return I;
+  }
+  function addInterGroup(ex, o) { const I = ex.inter = normalizeInter(ex.inter), n = I.groups.length + 1; let lab = 'Groupe ' + n; for (let k = n; I.groups.some(g => g.label === lab); k++) lab = 'Groupe ' + (k + 1); const g = Object.assign({ id: uid('G'), label: lab, contacts: [], freq: 'frequent', vig: 'VS', when: '', sync: true, text: '' }, o || {}); I.groups.push(g); return g; }
+  /** plot ajouté / retiré d'une catégorie : 'lesional' ou l'id d'un groupe de pointes → true si le plot y est désormais */
+  function toggleInterContact(ex, cat, key) {
+    const I = ex.inter = normalizeInter(ex.inter);
+    if (cat === 'lesional') { if (I.lesional[key]) { delete I.lesional[key]; return false; } I.lesional[key] = 1; return true; }
+    const g = I.groups.find(x => x.id === cat); if (!g) return false; const i = g.contacts.indexOf(key);
+    if (i >= 0) { g.contacts.splice(i, 1); return false; } g.contacts.push(key); return true;
+  }
+  /** par plot : { lesional: bool, groups: [ids] } */
+  function interMarks(ex) {
+    const I = normalizeInter(ex && ex.inter), out = {};
+    for (const k of Object.keys(I.lesional)) (out[k] = out[k] || { lesional: false, groups: [] }).lesional = true;
+    for (const g of I.groups) for (const k of g.contacts) (out[k] = out[k] || { lesional: false, groups: [] }).groups.push(g.id);
+    return out;
+  }
+  /** ordre naturel des plots (électrode puis numéro) et regroupement en plages : A’1, A’2, A’3, B4 → « A’1-3, B4 » */
+  function contactRanges(keys) {
+    const by = new Map(); for (const k of keys) { const m = String(k).match(/^(.*?)(\d+)$/); if (!m) continue; const L = by.get(m[1]) || []; L.push(+m[2]); by.set(m[1], L); }
+    const out = []; for (const [e, L] of [...by.entries()].sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))) { L.sort((a, b) => a - b); let a = L[0], b = L[0]; const flush = () => out.push(e + (a === b ? a : a + '-' + b)); for (let i = 1; i < L.length; i++) { if (L[i] === b + 1) b = L[i]; else { flush(); a = b = L[i]; } } if (L.length) flush(); }
+    return out.join(', ');
+  }
+  /** phrases du rapport : zone lésionnelle électrique et zone irritative d'après le pointage */
+  function interSummary(ex) {
+    const I = normalizeInter(ex && ex.inter), les = Object.keys(I.lesional), groups = I.groups.filter(g => g.contacts.length);
+    const lesional = les.length ? `Rythme anormal d’allure lésionnelle sur ${contactRanges(les)}${I.lesionalText ? ' (' + I.lesionalText + ')' : ''}.` : '';
+    const irritative = groups.map(g => `${g.label} : ${g.sync ? 'pointes synchrones' : 'pointes'} ${INTER_FREQ[g.freq] || ''} sur ${contactRanges(g.contacts)}${g.vig ? ' (' + (INTER_VIG[g.vig] || g.vig) + ')' : ''}${g.when ? ', ' + g.when : ''}${g.text ? ' — ' + g.text : ''}`.replace(/\s+/g, ' ')).join(' ; ');
+    return { lesional, irritative: irritative ? irritative + '.' : '' };
+  }
+  /** v3.2.0 : intervention la plus récente qui porte des régions cibles ou une cavité segmentée (calques des coupes) */
+  function lastSurgery(d) { return ((d && d.procedures) || []).filter(p => (p.regions || []).length || (p.resection && p.resection.cavity && p.resection.cavity.imagingId)).slice().sort(sortDate).pop() || null; }
+  /** v3.2.0 : jeux de valeurs (Analyses) rattachés à une crise : rangement de la crise dans chaque tracé (rec.sz[crise] :
+   *  quantIds, ei.quantId) et jeux qui portent la crise (q.seizureId) → Set des identifiants */
+  function seizureQuantIds(d, szId) {
+    const out = new Set(); if (!d || !szId) return out;
+    for (const ex of d.explorations || []) {
+      for (const r of ex.recordings || []) { const s = r && r.sz && r.sz[szId]; if (!s) continue; for (const v of Object.values(s.quantIds || {})) if (v) out.add(v); if (s.ei && s.ei.quantId) out.add(s.ei.quantId); }
+      for (const q of ex.quant || []) if (q && q.seizureId === szId) out.add(q.id);
+    }
+    return out;
+  }
   /** gabarit pédiatrique de l'âge le plus proche (centre de la tranche) parmi list [{ageMin, ageMax, off}] ; null à partir de
    *  18,5 ans (fin des tranches NIHPD) ou sans âge : gabarit adulte MNI 2009b directement */
   function nearestAgeTemplate(list, age) {
@@ -437,7 +494,7 @@
     d.rois = d.rois || [];
     d.sliceViews = d.sliceViews && typeof d.sliceViews === 'object' ? d.sliceViews : {};
     for (const k of Object.keys(d.sliceViews)) { const v = d.sliceViews[k]; if (!v || typeof v !== 'object') { delete d.sliceViews[k]; continue; } delete v.elec; delete v.elecK; delete v.pair; }   // réglages d'affichage seulement
-    for (const ex of d.explorations) { for (const k of ['electrodes', 'stims', 'thermo', 'quant']) ex[k] = ex[k] || []; (ex.recordings || []).forEach(bindRec); ex.eeg = ex.eeg || {}; if (ex.eeg.map) for (const k of EEG_MAP_KEYS) ex.eeg.map[k] = ex.eeg.map[k] || {}; ex.context = ex.kind === 'other' ? ex.context || '' : ''; if (ex.kind === 'seeg') { ex.implant = Object.assign({ adopted: null, by: '', showReal: true, showPlan: false, compare: null }, ex.implant || {}); ex.inter = Object.assign({ sampling: '', wake: '', sleep: '', physiological: '', slow: '', spikes: [], other: '' }, ex.inter || {}); ex.elecNotes = ex.elecNotes || {}; ex.report = ex.report || {}; ex.recordings = Array.isArray(ex.recordings) ? ex.recordings : []; } }
+    for (const ex of d.explorations) { for (const k of ['electrodes', 'stims', 'thermo', 'quant']) ex[k] = ex[k] || []; (ex.recordings || []).forEach(bindRec); ex.eeg = ex.eeg || {}; if (ex.eeg.map) for (const k of EEG_MAP_KEYS) ex.eeg.map[k] = ex.eeg.map[k] || {}; ex.context = ex.kind === 'other' ? ex.context || '' : ''; if (ex.kind === 'seeg') { ex.implant = Object.assign({ adopted: null, by: '', showReal: true, showPlan: false, compare: null }, ex.implant || {}); ex.inter = normalizeInter(ex.inter); ex.elecNotes = ex.elecNotes || {}; ex.report = ex.report || {}; ex.recordings = Array.isArray(ex.recordings) ? ex.recordings : []; } }
     { const R = migrate3(d); if (R.changed && (R.sessions || R.seizures)) { d._snap = d._snap || 'migrate'; d._migrated = R; log(d, 'edit', 'dossier', d.id, `format 2.0 — séances fondues dans leur exploration : ${R.sessions} ; crises rattachées : ${R.seizures}${R.orphans ? ` ; crises rapportées (séance sans exploration) : ${R.orphans}` : ''}`); } }
     for (const sz of d.seizures) { sz.events = sz.events || []; sz.params = sz.params || {}; if (sz.explorationId === undefined) sz.explorationId = null; if (sz.origin === undefined) sz.origin = sz.explorationId ? '' : 'reported'; }
     for (const m of d.meetings) { m.galleryIds = m.galleryIds || []; if (m.deck && typeof m.deck !== 'object') delete m.deck; m.snapshots = Array.isArray(m.snapshots) ? m.snapshots : []; }   // v1.1.0 : surcouche du diaporama, instantanés (staff_deck.js)
@@ -506,7 +563,7 @@
   function addExploration(d, o) {
     o = o || {}; const kind = o.kind || 'phase1', ctx = kind === 'other' ? o.context || '' : '', rank = d.explorations.filter(e => e.kind === kind && (e.context || '') === ctx).length + 1;
     const ex = Object.assign({ id: uid('E'), kind, rank, label: kind === 'seeg' ? 'SEEG ' + rank : kind === 'phase1' ? (rank > 1 ? 'Phase 1 (' + rank + ')' : 'Phase 1') : 'Exploration ' + rank, start: today(), end: '', center: '', status: 'ongoing', notes: '', entryHypothesisIds: [], electrodes: [], stims: [], thermo: [], quant: [], ctImageId: null, eeg: {} }, o);
-    if (kind === 'seeg') { ex.inter = Object.assign({ sampling: '', wake: '', sleep: '', physiological: '', slow: '', spikes: [], other: '' }, ex.inter || {}); ex.elecNotes = ex.elecNotes || {}; ex.report = ex.report || {}; }
+    if (kind === 'seeg') { ex.inter = normalizeInter(ex.inter); ex.elecNotes = ex.elecNotes || {}; ex.report = ex.report || {}; }
     ex.context = ctx; if (!o.label) ex.label = kind === 'seeg' ? 'SEEG ' + ex.rank : ctx === 'ambu' ? 'EEG ambulatoire' + (rank > 1 ? ' (' + rank + ')' : '') : ctx === 'postop' ? 'Vidéo-EEG post-opératoire' + (rank > 1 ? ' (' + rank + ')' : '') : ex.label;
     d.explorations.push(ex); log(d, 'add', 'exploration', ex.id, ex.label); return ex;
   }
@@ -1192,6 +1249,6 @@
   }
   const mniMethod = d => { const M = d && d.anatomy && d.anatomy.mni; return d && d.anatomy && d.anatomy.toTemplate ? (M && M.method && M.method !== 'affine' ? M.method : 'affine') : null; };
 
-  SV.Store = { TEMPLATE_SPACE, MNI305_TO_MNI152, migrateTemplate, nearestAgeTemplate, networkRank, EEG_SYS, eegMapSystems, examLocSuggest, anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
+  SV.Store = { lastSurgery, seizureQuantIds, INTER_FREQ, INTER_VIG, normalizeInter, addInterGroup, toggleInterContact, interMarks, contactRanges, interSummary, TEMPLATE_SPACE, MNI305_TO_MNI152, migrateTemplate, nearestAgeTemplate, networkRank, EEG_SYS, eegMapSystems, examLocSuggest, anonymizer, eiSetSeizures, newDev, newPathway, newResection, normalizeResearch, histologyLabel, histologyGroup, histologyText, devText, pathwaySuggest, setPathway, resectionExploration, contactName, resectedContacts, setResected, toggleResected, stampContactRegions, contactRegion, contactRegionStatus, toMNI, mniMethod, onsetText, onsetYears, ONSET_UNIT, renumberSeizures, SCHEMA, V, uid, now, today, clone, newDossier, normalize, newClin, migrateClin, syncPatient, etiologyText, fmtPartial, ageAt, addRoi, byId, addExploration, addSeizure, addImaging, addLesion, addMeeting, addProcedure, addOutcome, addExam, addGalleryItem, galleryModOf, addAed, outcomeProcedure, outcomeMonthsAuto, outcomeMonths, addHypothesis, hypothesisLineages, latestHypotheses, addDecision, remove, discard, restoreTrash, purgeTrash, filesIn, filesUsed, cmpVersion, polarityNote, newIdentity, cleanSite, makeSubject, subjectLabel, displayName, parseName, anonymize, syncBirth, addStaffNote, notesFor, clockAbs, clockT, isoDiff, isoAdd, stampMarks, rebaseMarks, stampAll, addSyncLink, syncOf, videoAbs, videoT, fitSync, videoStartFromName, videosAt, addResult, resultById, resultLineage, implantations, implantLabel, implantState, adoptRealImplant,
     projectLocked, ensureProject, projectsOf, switchProject, addProject, renameProject, removeProject, projectElectrodes, revertToPlan, THERMO_ORDER, THERMO_COL, thermoStatusOf, importImplantation, compareImplantations, explorationsSorted, secretsOf, scrub, bindRec, bindRecs, recSetSeizure, recDropSeizure, REC_F, reportedSeizures, reportedAll, explorationOverview, annotatedSeizures, recordingOverlaps, copySemiology, EEG_MAP_KEYS, seizureDays, moveSeizure, migrate3, REPORTED, reportedEx, seizuresOfExploration, allSeizures, contextOf, lesionRegions, refImaging, deriveIlae, ilaeText, stage, summary, log, resolveCtx, toWorkspace, fromWorkspace, migrateCase, bundlePolicy, user: '' };
 });

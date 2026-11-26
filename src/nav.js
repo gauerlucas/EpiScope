@@ -37,7 +37,7 @@
   };
   /** vues de l'espace de travail 3D → mode */
   const WORK = { crise: 'semio', planif: 'plan', analyses: 'quant', stim: 'stim', thermo: 'thermo' };
-  const WM_TABS = { semio: ['network', 'onset', 'targets', 'model'], semioSeeg: ['seegsz', 'network', 'onset', 'targets', 'model'], plan: ['electrodes'], stim: ['stims'], thermo: ['thermo'], quant: ['quant'] };
+  const WM_TABS = { semio: ['network', 'onset', 'targets', 'model'], semioSeeg: ['seegsz', 'szquant', 'network', 'onset', 'targets', 'model'], plan: ['electrodes'], stim: ['stims'], thermo: ['thermo'], quant: ['quant'] };
   const PROC_SHORT = { resection: 'Chirurgie', lobectomy: 'Chirurgie', disconnection: 'Chirurgie', rftc: 'Thermocoagulation', litt: 'Laser', neuromod: 'Neuromodulation', other: 'Procédure' };
   /** vues rendues dans la section générique #scr-view → méthode */
   const VIEW_FN = { apercu: 'renderExplorationOverview', antecedents: 'renderAntecedentsView', maladie: 'renderDiseaseView', developpement: 'renderDevView', histoire: 'renderHistoryView', bilans: 'renderExamsView', galerie: 'renderGalleryView', journal: 'renderJournalView', crises: 'renderSeizureListView', synthese: 'renderSzSynthesisView', loc: 'renderLocalisationView', inter: 'renderInterView', rapport: 'renderSeegReportView', intervention: 'renderProcedureView', suivi: 'renderFollowupView' };

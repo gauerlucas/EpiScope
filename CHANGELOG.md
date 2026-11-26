@@ -2,6 +2,30 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [3.2.0] — 2026-11-26
+
+Intercritique SEEG pointé sur les plots, quantifications de chaque crise à côté de l'analyse visuelle, plots de la crise dans les coupes et sur le cortex, cavité de résection contrainte par la segmentation substance grise / blanche et affichée en calque distinct des régions cibles, écran de l'intervention réorganisé, imagerie du patient dans l'espace MNI.
+
+### Ajouté
+
+- **Intercritique SEEG pointé sur les plots** (onglet Intercritique, carte « Pointage des plots », sur le modèle des plots de début d'une crise) : une catégorie active — rythme anormal lésionnel, ou un groupe de pointes — et un clic sur un plot l'y ajoute ou l'en retire ; un glisser fait de même sur les plots survolés. Un **groupe de pointes** réunit des plots aux pointes synchrones, avec sa fréquence (fréquentes, occasionnelles, rares), la vigilance, le moment (jour, heure, tracé intercritique) et une description ; « dupliquer » crée le même groupe pour un autre moment. Les **jeux de valeurs intercritiques** (Analyses) sont listés dans la carte, modifiables ; « → groupe » reprend leurs plots les plus forts. Rapport SEEG : « Zone lésionnelle électrique » et « Zone irritative › proposer » reprennent le pointage, le compte rendu imprimable le tableau des plots pointés. Données : `ex.inter.lesional`, `ex.inter.lesionalText`, `ex.inter.groups` (`S.normalizeInter`, `toggleInterContact`, `interMarks`, `interSummary`, `contactRanges`).
+- **Onglet « Quantifs » d'une crise** (à côté d'Électrique, Réseau à t, Origine…) : jeux de l'onglet Analyses rattachés à la crise ouverte (EI, cEI, PEI, empreinte, EM… — `S.seizureQuantIds`), affichables dans la vue active et modifiables, avec leur accord avec l'analyse visuelle (plots marqués « début » parmi les cinq valeurs les plus fortes).
+- **Plots de la crise dans les coupes** : plots de début (rouge), de propagation précoce (orangé) et tardive (jaune) par-dessus les électrodes du volet « Coupes IRM », comme dans la vue 3D (case de « Multimodalité ▾ ») ; parcellation « régions des plots de la crise ».
+- **Cortex 3D d'une crise SEEG** : « Affichage ▾ › Crise SEEG » colore le cortex et les plots par l'activation du modèle (défaut), par les régions des plots marqués, ou ne les colore pas ; les plots de début et de propagation se masquent.
+- **Calques supplémentaires des coupes** (« Multimodalité ▾ ») : régions cibles de l'intervention, volume de résection segmenté (voile et contour blancs), régions des plots de la crise, lésions — plusieurs à la fois, par-dessus la parcellation choisie, avec leur opacité.
+- **Imagerie dans l'espace du gabarit MNI** : bascule « Patient | Gabarit » de l'écran Imagerie ; en gabarit, T1 MNI 2009b ou image du patient en base, images recalées du patient (TEP, sources, post-traitements, IRM, scanner) en superposition, ramenées par l'affine patient → gabarit de l'anatomie calculée (comme la vue 3D sur gabarit).
+
+### Modifié
+
+- **Cavité de résection** : segmentation contrainte par la segmentation substance grise / blanche du patient — un voxel déjà sombre sur le T1 pré-opératoire (LCR des sillons, kyste, ventricule) n'est plus compté, et seules les composantes qui contiennent un noyau épais (~2 mm) sont gardées (les liserés minces de cortex au fond des sillons, nés d'un recalage imparfait, disparaissent) ; composition de la cavité en substance grise et blanche, contraintes rangées avec la cavité (`p.resection.cavity.tissue`, `constraints`).
+- **Écran de l'intervention** : coupes IRM à côté des contacts (et non plus dans une carte en dessous) ; légende des contacts (dans la résection, déclaré à la main ; dans la cavité segmentée ; en bordure, à vérifier ; hors résection) ; « régions cibles » et « volume de résection segmenté » sont deux calques cochables ensemble.
+- **Légende de l'intervention** (coupes, vues 3D, diaporama) rangée selon ce qu'elle désigne : régions cibles de l'intervention (réséquée, réséquée en partie, déconnectée) ; zone épileptogène des hypothèses (dans l'intervention, hors intervention) ; volume de résection segmenté.
+- Ligne de grapho-éléments retirée de l'onglet Intercritique : par la corbeille du dossier.
+
+### Méthodes
+
+- Cavité de résection segmentée à partir de cette version : contraintes anatomiques ci-dessus (méthode notée dans `p.resection.cavity.method`) ; les cavités déjà retenues ne changent pas.
+
 ## [3.1.0] — 2026-11-26
 
 Gabarit plus net et surfaces plus propres : coupes du gabarit sur le T1 2009b haute résolution, surface gonflée sans « petits pics », noyaux gris et cervelet lisses, cervelet affichable en planification ; électrodes à groupes espacés proposées par défaut pour les trajectoires insulaires et basales.

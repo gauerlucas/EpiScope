@@ -130,7 +130,7 @@
       const d = this.dossier; if (!host || !d) return;
       this._slvForce = (o && o.key) || null; this._slvForceHost = this._slvForce ? host : null;   // contexte imposé par l'appelant (sinon : écran, mode, crise)
       const ref = S.refImaging(d), st = this.slvState(), tok = this._ipMount = (this._ipMount || 0) + 1;
-      const space = host === $('sliceDock') && this.ui.screen === 'work' && this.dockSpace ? this.dockSpace() : 'pat';   // v5.1 : volet de l'espace de travail sur le gabarit MNI
+      const space = host === $('sliceDock') && this.ui.screen === 'work' && this.dockSpace ? this.dockSpace() : host === $('imPanel') && this.ui.imSpace === 'tpl' && this.patientAnat && this.patientAnat.toTemplate ? 'tpl' : 'pat';   // v3.2.0 : écran Imagerie dans l'espace MNI   // v5.1 : volet de l'espace de travail sur le gabarit MNI
       host.classList.add('ip-host'); host.innerHTML = '<div class="ip-bar"></div><div class="ip-slices"></div>';
       const box = host.querySelector('.ip-slices');
       if (!ref && space !== 'tpl') { box.innerHTML = '<div class="hint" style="padding:30px">Ajoutez au moins un T1 (référence) pour afficher les coupes : écran Imagerie (F7).</div>'; return; }
@@ -170,10 +170,11 @@
     /** calques des coupes d'après l'état : image de base, superpositions (dans l'ordre), parcellation */
     async updateImagingLayers() {
       const d = this.dossier, S3 = this.slices, st = this.slvState(); if (!S3 || !d) return;
-      if (this.slvSpace() === 'tpl') {   // gabarit : T1 MNI, parcellation du gabarit, électrodes (pas d'images du patient, ni ROI, ni contours)
+      if (this.slvSpace() === 'tpl') {   // gabarit : T1 MNI, parcellation du gabarit, électrodes ; v3.2.0 : images du patient ramenées par l'affine patient → gabarit (ni ROI, ni contours)
         const T = await this.tplVolumes(); if (S3 !== this.slices) return;
         const lab = st.labels && st.labels !== 'seg' && this.sliceLabelLayer && this.sliceLabelLayer(st.labels, 'tpl');
-        S3.setLayers([{ id: 'base', name: 'T1 MNI', vol: T.t1, T: null, kind: st.baseKind || 'gray', opacity: 1, win: null }].concat(lab ? [Object.assign(lab, { opacity: st.labOpacity })] : [])); S3.wlTarget = 'base';
+        const pl = await this.tplPatientLayers(st), xl = this.extraLayers ? await this.extraLayers('tpl') : []; if (S3 !== this.slices) return;
+        S3.setLayers(pl.base.concat(pl.overlays, lab ? [Object.assign(lab, { opacity: st.labOpacity })] : [], xl)); S3.wlTarget = pl.base[0].id === 'base' && st.wlTarget && st.wlTarget !== 'base' && pl.overlays.some(L => L.id === 'ov:' + st.wlTarget) ? 'ov:' + st.wlTarget : 'base';
         if (st.elec) this.electrodeCheckMarkers(); else if (this.sliceMarkers) this.sliceMarkers();
         S3.setRois([]); if (S3.setContours) S3.setContours([]);
         if (this.updateSlices3d && this.slices3dShown && this.slices3dShown()) this.updateSlices3d();
@@ -191,8 +192,10 @@
           const D0 = im.derived || {}; layers.push({ id: 'ov:' + im.id, name: (im.modality === 'other' && im.derived ? '' : (V.modality[im.modality] || im.modality) + ' · ') .replace(/ · $/, '') + (im.derived ? (im.modality === 'other' ? '' : ' · ') + (im.derived.short || 'dérivée') : o.native ? ' (sans recalage)' : ''), vol, T: !o.native && im !== ref && im.coreg && im.coreg.T ? M4.from(im.coreg.T) : null, mip: o.mip || 0, mipPlanes: MIP_PLANES, kind: o.kind || kindOf(im), opacity: o.opacity == null ? (D0.cmap ? 0.8 : 0.5) : o.opacity, visible: o.on !== false, win: o.win || (ct ? [500, 3000] : D0.win ? D0.win.slice() : null), threshold: ct ? (o.threshold == null ? 500 : o.threshold) : D0.thr != null ? D0.thr : null, unregistered: im !== ref && !(im.coreg && im.coreg.T) });
         }
       } catch (e) { this.toast(e.message, 4000); }
+      const xl = this.extraLayers ? await this.extraLayers('pat') : [];   // v3.2.0 : calques supplémentaires (layers_extra.js)
       if (tok !== this._ipTok || S3 !== this.slices) return;
       const lab = this.sliceLabelLayer && this.sliceLabelLayer(st.labels); if (lab) layers.push(Object.assign(lab, { opacity: st.labOpacity }));
+      layers.push(...xl);
       S3.setLayers(layers); S3.wlTarget = st.wlTarget === 'base' ? 'base' : 'ov:' + st.wlTarget;
       if (st.elec) this.electrodeCheckMarkers(); else if (this.sliceMarkers) this.sliceMarkers();
       this.sliceRois(); this.updateContours();
@@ -202,7 +205,7 @@
      *  interface substance blanche / substance grise (segmentation aparc+aseg, jaune, comme dans FreeSurfer) */
     updateContours() {
       const S3 = this.slices, st = this.slvState(), A = this.patientAnat; if (!S3 || !S3.setContours) return;
-      const C = st.contours || {}, out = []; if (!A || this.slvSpace() === 'tpl') { S3.setContours([]); return; }
+      const C = st.contours || {}, out = []; if (!A || this.slvSpace() === 'tpl') { S3.setContours([]); if (!A && this.cavityContour) this.cavityContour().then(c => { if (c && S3 === this.slices) S3.setContours([c]); }); return; }
       if (C.pial) {
         if (!this._pialWorld || this._pialWorld.A !== A) {
           const Di = A.fromDisplay, parts = [];
@@ -221,6 +224,7 @@
         out.push(this._whiteMask.part);
       }
       S3.setContours(out);
+      if (this.cavityContour) this.cavityContour().then(c => { if (c && S3 === this.slices) S3.setContours(out.concat([c])); });   // v3.2.0 : volume de résection segmenté
     },
     /** ROI annotées du dossier (calque « ROI ») dans les coupes et dans la vue 3D */
     sliceRois() {
@@ -271,9 +275,9 @@
       const modeH = `<div class="seg ip-mode" title="action de la souris dans les coupes">${[['cursor', '✛', 'curseur : cliquer / glisser'], ['wl', WL_ICON, 'contraste et luminosité : glisser ↔ contraste, ↕ luminosité (sans déplacer le curseur) — aussi Maj + glisser dans le mode curseur'], ['pan', '✋', 'déplacer la vue (aussi clic droit + glisser)']].map(([m, i, t]) => `<button data-m="${m}" class="${st.mode === m ? 'on' : ''}" title="${t}">${i}</button>`).join('')}</div>`;
       const zoomH = `<button class="mini-btn" data-a="zin" title="zoom +">＋</button><button class="mini-btn" data-a="zout" title="zoom −">－</button>`;
       const resetH = `<button class="mini-btn ip-home" data-a="reset" title="vue d’origine : recentrer, zoom 1, contraste par défaut"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2.2 7.6 8 2.6l5.8 5M3.9 6.3v7.2h3V9.9h2.2v3.6h3V6.3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/></svg></button>`;
-      const layersH = tpl ? '' : `<button class="mini-btn" data-a="layers" title="image de base, superpositions, électrodes, ROI, fenêtres">Calques ▾</button>`;
+      const layersH = tpl && !(this.patientAnat && this.patientAnat.toTemplate) ? '' : `<button class="mini-btn" data-a="layers" title="image de base, superpositions, électrodes, ROI, fenêtres">Calques ▾</button>`;
       const elecH = `<button class="mini-btn${E ? ' on' : ''}" data-a="elec" title="aligner les coupes sur une électrode (vérification)">Électrode ▾</button>`;
-      const nMulti = [st.labels && st.labels !== 'none', st.showElec !== false, st.showRois !== false && (d.rois || []).length, st.showTc, (st.contours || {}).pial || (st.contours || {}).white].filter(Boolean).length;
+      const nMulti = [st.labels && st.labels !== 'none', (st.extraLabs || []).length, st.showElec !== false, st.showRois !== false && (d.rois || []).length, st.showTc, (st.contours || {}).pial || (st.contours || {}).white].filter(Boolean).length;
       const multiH = `<button class="mini-btn${nMulti ? ' on' : ''}" data-a="multi" title="ce qui s’affiche par-dessus les images : parcellation, valeurs, contours, électrodes (de quelle exploration), ROI, thermocoagulations">Multimodalité ▾</button>`;
       const optH = `<button class="mini-btn" data-a="opts" title="options des coupes : convention radiologique, réglages par défaut">⚙</button>`;
       const pngH = `<button class="mini-btn" data-a="shot" title="capture des coupes : galerie (à montrer au staff, à lier à une lésion), fichier PNG, presse-papiers">Capture ▾</button>`
@@ -322,7 +326,7 @@
       };
     },
     sliceLabHtml(st) { const anat = this.patientAnat;
-      return `<select class="ip-lab" title="parcellation affichée"><option value="none">parcellation —</option>${anat ? `<option value="vep"${st.labels === 'vep' ? ' selected' : ''}>régions VEP</option><option value="act"${st.labels === 'act' ? ' selected' : ''}>activation de la crise</option><option value="seg"${st.labels === 'seg' ? ' selected' : ''}>segmentation</option><option value="quant"${st.labels === 'quant' ? ' selected' : ''} title="régions colorées par la valeur maximale (ou moyenne) des plots qu'elles contiennent, pour le jeu affiché dans Analyses (EI, cEI, PEI, taux…)">valeurs (Analyses)</option>` : ''}<option value="lesion"${st.labels === 'lesion' ? ' selected' : ''}>lésions</option>${this._slvSurg ? `<option value="surg"${st.labels === 'surg' ? ' selected' : ''}>régions de l’intervention</option>` : ''}</select>`;
+      return `<select class="ip-lab" title="parcellation affichée"><option value="none">parcellation —</option>${anat ? `<option value="vep"${st.labels === 'vep' ? ' selected' : ''}>régions VEP</option><option value="act"${st.labels === 'act' ? ' selected' : ''}>activation de la crise</option>${this.ui.wm === 'semioSeeg' ? `<option value="onset"${st.labels === 'onset' ? ' selected' : ''}>régions des plots de la crise</option>` : ''}<option value="seg"${st.labels === 'seg' ? ' selected' : ''}>segmentation</option><option value="quant"${st.labels === 'quant' ? ' selected' : ''} title="régions colorées par la valeur maximale (ou moyenne) des plots qu'elles contiennent, pour le jeu affiché dans Analyses (EI, cEI, PEI, taux…)">valeurs (Analyses)</option>` : ''}<option value="lesion"${st.labels === 'lesion' ? ' selected' : ''}>lésions</option>${this._slvSurg ? `<option value="surg"${st.labels === 'surg' ? ' selected' : ''}>régions de l’intervention</option>` : ''}</select>`;
     },
     sliceContourHtml(st) { const anat = this.patientAnat;
       return anat ? `<span class="ip-contours" title="contours de l'anatomie calculée, pour vérifier la segmentation"><label class="chip" title="surface piale : maillage du cortex utilisé dans la 3D (rouge)"><input type="checkbox" class="ip-cp"${(st.contours || {}).pial ? ' checked' : ''}> <i class="ct-sw" style="background:#ff5a5a"></i>piale</label><label class="chip" title="interface substance blanche / substance grise, d'après la segmentation (jaune)"><input type="checkbox" class="ip-cw"${(st.contours || {}).white ? ' checked' : ''}> <i class="ct-sw" style="background:#ffd23f"></i>SB / SG</label></span>` : '';
@@ -336,6 +340,8 @@
         const ct = this.sliceContourHtml(st);
         panel.innerHTML = `<div class="ctx-head">Multimodalité · par-dessus les coupes</div>
           <div class="ipm-sec"><div class="ipm-h">Parcellation, valeurs</div><div class="row">${this.sliceLabHtml(st)}<input type="range" class="lop" min="0" max="100" value="${Math.round(st.labOpacity * 100)}" title="opacité"></div>${ct ? `<div class="row">${ct}</div>` : ''}</div>
+          ${this.extraLayersHtml ? this.extraLayersHtml(st) : ''}
+          ${this.ui.wm === 'semioSeeg' && this.ui.screen === 'work' ? `<div class="ipm-sec"><label class="chip" title="plots marqués début (rouge), propagation précoce (orangé) et tardive (jaune) de la crise ouverte, comme dans la vue 3D"><input type="checkbox" class="sons"${st.showOnset !== false ? ' checked' : ''}> plots de la crise (début, précoce, tardive)</label></div>` : ''}
           <div class="ipm-sec"><div class="ipm-h"><label class="chip"><input type="checkbox" class="sel"${st.showElec !== false ? ' checked' : ''}> Électrodes</label><span class="muted small">réelles, détectées, prévues</span></div>
             ${exs.length > 1 ? `<div class="row">${exs.map(e => `<label class="chip"><input type="checkbox" data-ex="${e.id}"${sel.size ? (sel.has(e.id) ? ' checked' : '') : (W.ex === e ? ' checked' : '')}> ${esc(e.label)}${e.start ? ' · ' + fmtDate(e.start) : ''}</label>`).join('')}</div>` : exs.length ? `<div class="muted small">${esc(exs[0].label)}</div>` : '<div class="muted small">aucune électrode dans le dossier</div>'}
             <div class="row"><span>opacité</span><input type="range" class="eop" min="10" max="100" step="5" value="${Math.round((st.elecAlpha != null ? st.elecAlpha : 1) * 100)}"></div></div>
@@ -349,6 +355,8 @@
         panel.querySelector('.eop').oninput = e => this.setElecAlpha(+e.target.value / 100);
         panel.querySelector('.sroi').onchange = e => { st.showRois = e.target.checked; this.sliceRois(); this.renderImagingBar(); };
         panel.querySelector('[data-a=rois]').onclick = () => { this.closeMenu(); this.roiMenu(anchor); };
+        if (this.extraLayersBind) this.extraLayersBind(panel, st);
+        const so = panel.querySelector('.sons'); if (so) so.onchange = e => { st.showOnset = e.target.checked; if (this.sliceMarkers) this.sliceMarkers(); this.renderImagingBar(); };
         panel.querySelector('.stc').onchange = e => { st.showTc = e.target.checked; if (this.sliceThermo) this.sliceThermo(); this.renderImagingBar(); };
       };
       draw(); const r = anchor.getBoundingClientRect(); this.popupMenu([{ node: panel }], Math.min(r.left, window.innerWidth - 460), r.bottom + 4);
@@ -401,19 +409,20 @@
       const L = id => S3.layers.find(x => x.id === id), CM = SV.Slices.CMAP_FR;
       const mipSel = v => `<label class="ipl-mip" title="projection d’intensité maximale sur une tranche épaisse : les électrodes du scanner apparaissent en entier sur la coupe sagittale (et sur les coupes le long de l’axe d’une électrode), pour reconnaître les électrodes voisines"><span>MIP</span><select class="mip"><option value="0"${!v ? ' selected' : ''}>non</option>${[10, 20, 30, 50].map(x => `<option value="${x}"${v === x ? ' selected' : ''}>${x} mm</option>`).join('')}</select></label>`;
       const draw = () => {
-        const baseIm = (st.base && S.byId(d.imaging, st.base)) || ref, used = new Set(st.overlays.map(o => o.id).concat([baseIm.id]));
-        const imgs = d.imaging.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+        // v3.2.0 : gabarit MNI — base « T1 MNI » ou image du patient, images recalées seulement (affine patient → gabarit)
+        const tpl = this.slvSpace() === 'tpl', baseIm = tpl ? (st.tplBase && S.byId(d.imaging, st.tplBase)) || null : (st.base && S.byId(d.imaging, st.base)) || ref, used = new Set(st.overlays.map(o => o.id).concat(baseIm ? [baseIm.id] : []));
+        const imgs = d.imaging.filter(im => !tpl || im === ref || (im.coreg && im.coreg.T)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
         const lbl = im => im.derived && im.modality === 'other' ? (im.label || im.derived.short) : `${V.modality[im.modality] || im.modality}${im.derived ? ' · ' + (im.derived.short || 'dérivée') : ''} ${V.timepoint[im.timepoint] || ''} ${fmtDate(im.date)}${im !== ref && !(im.coreg && im.coreg.T) ? ' (non recalée)' : ''}`;
         const bl = L('base');
         panel.innerHTML = `<div class="ctx-head">Calques des coupes</div>
-          <div class="ipl-row base"><label class="ipl-radio" title="cible du contraste à la souris"><input type="radio" name="wlt" value="base"${st.wlTarget === 'base' ? ' checked' : ''}>${WL_ICON}</label><b>Base</b><select class="ipl-base">${imgs.map(im => `<option value="${im.id}"${im === baseIm ? ' selected' : ''}>${esc(lbl(im))}</option>`).join('')}</select><select class="cm-base" title="palette de l’image de base">${Object.entries(CM).map(([k, f]) => `<option value="${k}"${(st.baseKind || 'gray') === k ? ' selected' : ''}>${f}</option>`).join('')}</select><span class="mono small ipl-win-base">${bl && bl.win ? Math.round(bl.win[0]) + '–' + Math.round(bl.win[1]) : ''}</span><button class="mini-btn" data-rw="base" title="fenêtre par défaut">⟲</button>${baseIm.modality === 'CT' ? mipSel(st.baseMip || 0) : ''}</div>
+          <div class="ipl-row base"><label class="ipl-radio" title="cible du contraste à la souris"><input type="radio" name="wlt" value="base"${st.wlTarget === 'base' ? ' checked' : ''}>${WL_ICON}</label><b>Base</b><select class="ipl-base">${tpl ? `<option value=""${!baseIm ? ' selected' : ''}>T1 MNI (gabarit)</option>` : ''}${imgs.map(im => `<option value="${im.id}"${im === baseIm ? ' selected' : ''}>${esc(lbl(im))}${tpl ? ' (patient)' : ''}</option>`).join('')}</select><select class="cm-base" title="palette de l’image de base">${Object.entries(CM).map(([k, f]) => `<option value="${k}"${(st.baseKind || 'gray') === k ? ' selected' : ''}>${f}</option>`).join('')}</select><span class="mono small ipl-win-base">${bl && bl.win ? Math.round(bl.win[0]) + '–' + Math.round(bl.win[1]) : ''}</span><button class="mini-btn" data-rw="base" title="fenêtre par défaut">⟲</button>${baseIm && baseIm.modality === 'CT' && !tpl ? mipSel(st.baseMip || 0) : ''}</div>
           ${st.overlays.map((o, i) => { const im = S.byId(d.imaging, o.id); if (!im || im === baseIm) return ''; const l = L('ov:' + o.id); return `<div class="ipl-row" data-i="${i}"><label class="ipl-radio" title="cible du contraste à la souris"><input type="radio" name="wlt" value="${o.id}"${st.wlTarget === o.id ? ' checked' : ''}>${WL_ICON}</label><input type="checkbox" class="on"${o.on !== false ? ' checked' : ''} title="afficher"><span class="nm">${esc(lbl(im))}</span>
             <select class="cm">${Object.entries(CM).map(([k, f]) => `<option value="${k}"${(o.kind || kindOf(im)) === k ? ' selected' : ''}>${f}</option>`).join('')}</select><input type="range" class="op" min="0" max="100" value="${Math.round((o.opacity == null ? 0.5 : o.opacity) * 100)}" title="opacité">
             <span class="mono small ipl-win-${o.id}">${l && l.win ? Math.round(l.win[0]) + '–' + Math.round(l.win[1]) : ''}</span><button class="mini-btn" data-rw="ov:${o.id}" title="fenêtre par défaut">⟲</button><button class="mini-btn" data-up="${i}" title="${i === 0 ? 'monter : devient l’image de base (la base actuelle passe en superposition)' : 'monter d’un rang (dessinée sous les suivantes)'}">↑</button><b class="x" data-rm="${i}" title="retirer">✕</b>${im.modality === 'CT' ? mipSel(o.mip || 0) : ''}</div>`; }).join('')}
           <div class="ipl-row"><select class="ipl-add"><option value="">+ superposition…</option>${imgs.filter(im => !used.has(im.id)).map(im => `<option value="${im.id}">${esc(lbl(im))}</option>`).join('')}</select></div>
           <div class="ipl-foot muted small">Parcellation, électrodes, ROI : « Multimodalité ▾ » · convention, réglages par défaut : ⚙</div>`;
         panel.querySelector('.cm-base').onchange = e => { st.baseKind = e.target.value; S3.updateLayer('base', { kind: st.baseKind }); this.syncSlices3d(); };
-        panel.querySelector('.ipl-base').onchange = e => { st.base = e.target.value === (ref && ref.id) ? null : e.target.value; st.baseWin = null; this.updateImagingLayers().then(draw); };
+        panel.querySelector('.ipl-base').onchange = e => { if (tpl) st.tplBase = e.target.value || null; else st.base = e.target.value === (ref && ref.id) ? null : e.target.value; st.baseWin = null; this.updateImagingLayers().then(draw); };
         const bm = panel.querySelector('.ipl-row.base .mip'); if (bm) bm.onchange = e => { st.baseMip = +e.target.value || 0; S3.updateLayer('base', { mip: st.baseMip, mipPlanes: MIP_PLANES }); };
         panel.querySelectorAll('input[name=wlt]').forEach(r => r.onchange = () => { st.wlTarget = r.value; S3.wlTarget = r.value === 'base' ? 'base' : 'ov:' + r.value; });
         panel.querySelectorAll('.ipl-row[data-i]').forEach(row => {
@@ -428,6 +437,7 @@
         // ↑ : vers la base ; la première superposition qui monte devient la base, l'ancienne base redescend en superposition
         panel.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const i = +b.dataset.up;
           if (i > 0) { const [o] = st.overlays.splice(i, 1); st.overlays.splice(i - 1, 0, o); }
+          else if (tpl) { const o = st.overlays.splice(0, 1)[0]; if (st.tplBase) st.overlays.unshift({ id: st.tplBase, on: true, opacity: 0.5 }); st.tplBase = o.id; st.baseWin = null; }
           else { const o = st.overlays[0], oldBase = (st.base && S.byId(d.imaging, st.base)) || ref; st.overlays.splice(0, 1); if (oldBase) st.overlays.unshift({ id: oldBase.id, on: true, opacity: 0.5, kind: st.baseKind && st.baseKind !== 'gray' ? st.baseKind : undefined }); st.base = o.id === (ref && ref.id) ? null : o.id; st.baseKind = o.kind || kindOf(S.byId(d.imaging, o.id) || {}); if (st.baseKind === 'pet') st.baseKind = 'pet'; st.baseWin = null; if (st.wlTarget === o.id) st.wlTarget = 'base'; }
           this.updateImagingLayers().then(() => { draw(); this.renderImagingBar(); }); });
         panel.querySelector('.ipl-add').onchange = e => { if (e.target.value) { this.addOverlay(e.target.value); this.updateImagingLayers().then(draw); } };

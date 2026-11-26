@@ -42,6 +42,8 @@ Then, **one electrode at a time**: clicking an electrode aligns the slices on it
 
 The [[Interictal]] tab holds the report: acquisition, background rhythm awake and asleep, physiological activity, slow focus, pathological graphoelements by contact, and a table **per electrode** (contact locations from the patient's parcellation, recorded activity). Each section has its standard sentences ([[sentences ▾]]).
 
+The **Contact marking** card, at the top of the tab, works like the onset contacts of a seizure: choose a category — [[Lesional rhythm]] or a spike group ([[+ spike group]]) — then click the contacts; dragging adds (or removes) every contact passed over. A **spike group** gathers contacts with synchronous spikes, with its frequency (frequent, occasional, rare), vigilance, timing (day, hour, interictal recording) and a description; [[duplicate]] creates the same group for another time, more or less frequent depending on the day or on sleep. The **interictal quantifications** of the Analyses tab (spike rate, HFOs, SpikeNet2 detection…) are listed below: open a set to see or edit its values; [[→ group]] takes its strongest contacts (at least half of the maximum). The SEEG report suggests the electrical lesional zone and the irritative zone from this marking.
+
 ## SEEG seizures {#les-crises-seeg}
 
 An SEEG seizure is described as in phase 1 (semiology, timeline). The [[Electrical]] tab, first in the right-hand panel, marks **contact by contact**:
@@ -49,7 +51,9 @@ An SEEG seizure is described as in phase 1 (semiology, timeline). The [[Electric
 - seizure **onset**, **early** and **late** propagation (repeated clicks on the contact chips);
 - the onset pattern (low-voltage fast activity, rhythmic spikes, DC shift…) and an electrical and clinical description.
 
-Marked contacts appear in 3D and feed the concordance, the suggested report zones and the MDT meeting.
+Marked contacts appear in 3D and in the slices ([[MRI slices]]; "seizure contacts" box of [[Multimodality ▾]], "regions of the seizure contacts" parcellation), and feed the concordance, the suggested report zones and the MDT meeting. [[Display ▾]] › *SEEG seizure* colours the cortex and contacts by the model's activation, by the regions of the marked contacts, or not at all.
+
+The [[Quantifs]] tab, next to Electrical, shows the Analyses sets attached to the open seizure (EI, cEI, PEI, fingerprint…): the eye shows a set in the active view, an open set shows its values (editable), and a line tells how many contacts marked "onset" are among its five strongest values.
 
 ![An SEEG seizure: the Electrical tab, onset and propagation contacts marked on the electrodes.](shot:seeg-crise)
 

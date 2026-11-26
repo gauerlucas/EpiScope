@@ -20,7 +20,7 @@
   const SHOT = { scale: 1.6, crop: true };
   const ROLE = () => (SV.SeegFlow && SV.SeegFlow.ROLE_COL) || { onset: '#e5484d', early: '#f2994a', late: '#e8d44d' };
   const INTER = [['sampling', 'Acquisition'], ['wake', 'Rythme de fond (veille)'], ['sleep', 'Sommeil'], ['physiological', 'Activités physiologiques'], ['slow', 'Foyer lent'], ['other', 'Autres']];
-  const SURG_LEG = 'Rouge : résection ; orangé : partielle ; violet : déconnectée ; rouge sombre : ZE comprise ; bleu : ZE hors résection.';
+  const SURG_LEG = 'Régions cibles : rouge, réséquée ; orangé, réséquée en partie ; violet, déconnectée. Zone épileptogène des hypothèses : rouge sombre, dans l’intervention ; bleu, hors intervention.';
 
   const M = {
     // ================================================================ plan : chapitres SEEG

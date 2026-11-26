@@ -575,9 +575,15 @@
         return { id: 'lab', name: 'activation', vol: vv, kind: 'labels', lut, names: v => label(v) + (act[v] != null && v <= 162 ? ' · ' + act[v].toFixed(2) : '') };
       }
       // v5.2 : intervention (proposée ou réalisée) — mêmes couleurs que ses vues 3D : résection, partielle, ZE comprise, ZE hors résection
-      if (kind === 'surg' && vv && this._slvSurg && this.surgeryPaint) {
-        const G = this._slvSurg, lut = new Map(); for (const [r, c] of this.surgeryPaint(G.regions || [], G.extent || {}, G.hyps || [])) lut.set(r, [c[0], c[1], c[2], 1]);
+      // v3.2.0 : hors de l'écran d'une intervention, celle de la dernière intervention du dossier (calque « régions cibles »)
+      if (kind === 'surg' && vv && this.surgeryPaint && (this._slvSurg || (this.dossier && S.lastSurgery(this.dossier)))) {
+        const P0 = !this._slvSurg && S.lastSurgery(this.dossier), G = this._slvSurg || { regions: P0.regions || [], extent: P0.extent || {}, hyps: [] }, lut = new Map(); for (const [r, c] of this.surgeryPaint(G.regions || [], G.extent || {}, G.hyps || [])) lut.set(r, [c[0], c[1], c[2], 1]);
         return lut.size ? { id: 'lab', name: 'intervention', vol: vv, kind: 'labels', lut, names: label } : null;
+      }
+      // v3.2.0 : régions des plots marqués de la crise ouverte (début, précoce, tardive)
+      if (kind === 'onset' && vv && this.szOnsetRegions) {
+        const R = this.szOnsetRegions(), C = SV.SzLayers.ROLE_COL, F = SV.SzLayers.ROLE_FR, lut = new Map(); for (const [r, role] of R) { const c = C[role]; lut.set(r, [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16), role === 'onset' ? 1 : 0.8]); }
+        return { id: 'lab', name: 'plots de la crise', vol: vv, kind: 'labels', lut, names: v => label(v) + (R.has(v) ? ' · ' + F[R.get(v)] : '') };
       }
       if (kind === 'lesion' && vv) {
         const regs = new Set(S.lesionRegions ? S.lesionRegions(this.dossier) : []), lut = new Map(); for (const r of regs) lut.set(r, [255, 70, 200, 1]);

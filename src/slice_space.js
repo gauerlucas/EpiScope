@@ -63,6 +63,7 @@
     vepVolFor(space) { space = space || this.slvSpace(); return space === 'tpl' ? this.tplVepVol() : this.patientAnat && this.patientAnat.vepVol; },
     /** bascule du volet (gabarit ↔ patient) */
     setDockSpace(sp) {
+      const im = $('imPanel'); if (im && this._ipHost === im) { this.ui.imSpace = sp; if (this.slvState().elec) this.slvState().elec = null; if (this._ipSpace !== (sp === 'tpl' && this.patientAnat && this.patientAnat.toTemplate ? 'tpl' : 'pat')) this.mountImagingPanel(im); return; }   // v3.2.0 : écran Imagerie
       this.ui.dockSpace = sp; const dock = $('sliceDock');
       if (this.ui.dock && dock && this._ipHost === dock && this.dockSpace() !== this._ipSpace) {
         if (this.slvState().elec) this.slvState().elec = null;
@@ -71,6 +72,10 @@
     },
     /** boutons du volet ; rien hors de l'espace de travail ni sans T1 du patient */
     slvSpaceHtml() {
+      const imP = $('imPanel'); if (imP && this._ipHost === imP && this.dossier && S.refImaging(this.dossier)) {   // v3.2.0 : écran Imagerie — images du patient dans l'espace du patient ou du gabarit MNI
+        const ok = !!(this.patientAnat && this.patientAnat.toTemplate), sp = this.slvSpace();
+        return `<div class="seg ip-space" title="${ok ? 'espace des coupes : IRM du patient, ou gabarit MNI 2009b (images du patient ramenées par l’affine patient → gabarit)' : 'gabarit : calculez d’abord l’anatomie du patient (transformation vers le gabarit MNI)'}">${[['pat', 'Patient', 'monde du T1 de référence du patient'], ['tpl', 'Gabarit', 'gabarit MNI ICBM 152 NLin 2009b asymétrique : T1 MNI, parcellation du gabarit, images recalées du patient (TEP, sources, post-traitements, IRM, scanner) ramenées par l’affine patient → gabarit']].map(([k, l, t]) => `<button data-sp="${k}" class="${sp === k ? 'on' : ''}" title="${t}"${k === 'tpl' && !ok ? ' disabled' : ''}>${l}</button>`).join('')}</div>`;
+      }
       const dock = $('sliceDock'), d = this.dossier; if (!dock || this._ipHost !== dock || this.ui.screen !== 'work' || !d || !S.refImaging(d) || ['stim', 'thermo'].includes(this.ui.wm)) return '';
       const sp = this.slvSpace();
       return `<div class="seg ip-space" title="images du volet : gabarit MNI (comme la vue 3D sur gabarit) ou IRM du patient">${[['tpl', 'MNI', 'gabarit : T1 MNI ICBM 152 NLin 2009b asymétrique, parcellation VEP du gabarit, électrodes prévues sur le gabarit'], ['pat', 'Patient', 'IRM du patient, sa segmentation, électrodes réelles']].map(([k, l, t]) => `<button data-sp="${k}" class="${sp === k ? 'on' : ''}" title="${t}">${l}</button>`).join('')}</div>`;

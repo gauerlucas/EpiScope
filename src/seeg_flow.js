@@ -226,6 +226,7 @@
       const d = this.dossier, ex = st.obj, I = ex.inter || (ex.inter = { spikes: [] }); I.spikes = I.spikes || []; ex.elecNotes = ex.elecNotes || {};
       const els = this.planElectrodes ? this.planElectrodes(ex.electrodes) : [];
       box.innerHTML = `<div class="scr-inner wide"><div class="view-head"><h3>EEG intercritique · ${esc(ex.label)}</h3><span class="muted">repris dans le rapport SEEG (V = veille, S = sommeil)</span></div>
+        <div id="inMarks"></div>
         <div class="hx-grid"><div class="card form"><div class="card-h">Tracé de fond</div>
           <label>Acquisition <input data-f="sampling" value="${esc(I.sampling)}" placeholder="ex. 512 Hz, bande observable 0–200 Hz"></label>
           <label><span class="srl">Rythme de fond à la veille<span class="spacer"></span><button class="mini-btn" data-ph="wake" title="phrases types à insérer">phrases ▾</button></span><textarea data-f="wake" rows="2" placeholder="différenciation antéro-postérieure, rythme alpha (plots), réactivité…">${esc(I.wake)}</textarea></label>
@@ -240,10 +241,11 @@
           ${els.length ? els.map(e => `<tr data-n="${esc(e.name)}"><td><b>${esc(e.name)}</b><div class="muted small">${e.nContacts} plots${e.real ? ' · réelle' : ' · prévue'}</div></td><td><textarea rows="2" data-k="loc" placeholder="${esc(SV.Electrodes.contactSummary(e, this.atlas))}">${esc((ex.elecNotes[e.name] || {}).loc || '')}</textarea></td><td class="inph"><textarea rows="2" data-k="act" placeholder="rythme, pointes, plots plats…">${esc((ex.elecNotes[e.name] || {}).act || '')}</textarea><button class="mini-btn" data-aph="1" title="termes types">▾</button></td></tr>`).join('') : '<tr><td colspan="3" class="hint">Aucune électrode : Planification ou Localisation.</td></tr>'}</tbody></table>
           <div class="hint">Laissez « Localisation » vide pour reprendre le texte proposé (grisé) d’après la parcellation VEP.</div></div></div>`;
       this.bindFields(box.querySelector('.card.form'), I, 'exploration');
+      if (this.interMarksRender) this.interMarksRender($('inMarks'), ex, els);   // v3.2.0 : plots pointés (inter_marks.js)
       const draw = () => {
         const t = $('inSpk'); t.innerHTML = I.spikes.length ? `<thead><tr><th>plots</th><th>description</th><th>V/S</th><th></th></tr></thead><tbody>${I.spikes.map((s, i) => `<tr data-i="${i}"><td><input data-k="contacts" value="${esc(s.contacts)}" placeholder="A’3-5, B’1-2"></td><td class="inph"><input data-k="text" value="${esc(s.text)}" placeholder="pointes-ondes en salves…"><button class="mini-btn" data-sph="${i}" title="termes types">▾</button></td><td><select data-k="vig">${opts({ '': '—', V: 'V', S: 'S', VS: 'V, S' }, s.vig)}</select></td><td><b class="x" data-rm="${i}">✕</b></td></tr>`).join('')}</tbody>` : '<tr><td class="hint">—</td></tr>';
         t.querySelectorAll('tr[data-i]').forEach(tr => { const s = I.spikes[+tr.dataset.i]; tr.querySelectorAll('[data-k]').forEach(el => el.oninput = el.onchange = () => { s[el.dataset.k] = el.value; this.touch('exploration', ex.id, 'intercritique'); }); });
-        t.querySelectorAll('[data-rm]').forEach(x => x.onclick = () => { I.spikes.splice(+x.dataset.rm, 1); this.touch(); draw(); });
+        t.querySelectorAll('[data-rm]').forEach(x => x.onclick = () => { const it = I.spikes[+x.dataset.rm]; if (it && (it.contacts || it.text)) { if (!it.id) it.id = 'sp' + Date.now().toString(36); S.discard(d, { kind: 'grapho-élément', label: it.contacts || it.text, list: 'explorations', id: ex.id, field: 'inter.spikes', item: it }); } else I.spikes.splice(+x.dataset.rm, 1); this.touch(); draw(); });
         t.querySelectorAll('[data-sph]').forEach(b => b.onclick = ev => { ev.preventDefault(); const inp = b.previousElementSibling; this.phraseMenu(b, inp, IN_PH.spike, v => { I.spikes[+b.dataset.sph].text = v; this.touch('exploration', ex.id, 'intercritique'); }, ', '); });
       };
       $('inAdd').onclick = () => { I.spikes.push({ contacts: '', text: '', vig: 'VS' }); this.touch(); draw(); };

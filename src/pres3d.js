@@ -99,7 +99,7 @@
         side = side || (regions.length ? V.atlas.hemiOf[regions[0]] : 'L');
         V.setCellConfig(0, Object.assign({}, BASE, { paint: 'surgery_pop', sub: true, subFilter: 'mtl', subHemi: side, hemi: side, borders: true, view: side === 'L' ? 'latL' : 'latR' }), true);
         return { views: [[side === 'L' ? 'latL' : 'latR', 'latérale'], ['infRad', 'inférieure'], [side === 'L' ? 'medL' : 'medR', 'médiale']] };
-      }, { legend: '<span><i style="background:rgb(220,62,62)"></i>résection</span><span><i style="background:rgb(240,150,70)"></i>partielle</span><span><i style="background:rgb(140,20,50)"></i>ZE comprise</span><span><i style="background:rgb(78,168,255)"></i>ZE hors résection</span>' });
+      }, { legend: '<span><b>Régions cibles</b></span><span><i style="background:rgb(220,62,62)"></i>réséquée</span><span><i style="background:rgb(240,150,70)"></i>en partie</span><span><i style="background:rgb(150,95,205)"></i>déconnectée</span><span><b>ZE des hypothèses</b></span><span><i style="background:rgb(140,20,50)"></i>dans l’intervention</span><span><i style="background:rgb(78,168,255)"></i>hors intervention</span>' });
     },
     /** réseau d'une hypothèse récurrente (synthèse des crises) en 3D interactive */
     openSynthHyp3d(hy, title) {

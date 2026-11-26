@@ -65,7 +65,8 @@ Les coupes se lisent comme dans MRIcroGL :
 La barre des coupes propose :
 
 - [[Calques ▾]] : image de base, superpositions empilées (TEP, FLAIR, scanner) avec palette, opacité et fenêtre ; parcellation ; électrodes et ROI ;
-- [[Multimodalité ▾]] : des préréglages de fusion (TEP sur T1, FLAIR + TEP…) ;
+- [[Multimodalité ▾]] : ce qui s'affiche par-dessus les images — parcellation et valeurs, contours, électrodes, ROI — et des **calques supplémentaires** cochables ensemble (régions cibles de l'intervention, volume de résection segmenté, régions des plots d'une crise, lésions) ;
+- **Patient | Gabarit** : en *Gabarit*, les coupes passent dans l'espace MNI 2009b — T1 MNI (ou une image du patient) en base, les images recalées du patient (TEP, sources, post-traitements, IRM, scanner) en superposition par [[Calques ▾]], ramenées par l'affine patient → gabarit de l'anatomie calculée, comme la vue 3D sur gabarit (l'anatomie du patient doit être calculée) ;
 - [[Électrode ▾]] : aligner les coupes sur une électrode (voir [Localiser les électrodes](@seeg#localiser-les-electrodes)) ;
 - **ROI** : annoter une zone suspecte (sphère ou flèche) avec un nom et une couleur ; elle est reprise en 3D, au staff et dans les comptes rendus ;
 - [[Capture ▾]] : ranger la vue dans la galerie, ou la copier pour un document.

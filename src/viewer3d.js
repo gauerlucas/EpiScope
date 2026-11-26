@@ -69,8 +69,8 @@
     aslL: { pos: [-255, 255, 252], hemi: 'both', fr: '3/4 ant.-sup. G', rot: [35, 135] }, aslR: { pos: [255, 255, 252], hemi: 'both', fr: '3/4 ant.-sup. D', rot: [35, -135] },
   };
   /** configuration d'affichage par défaut d'une cellule */
-  const CELL_DEFAULTS = { view: 'latL', hemi: 'both', inflate: 0, opacity: 1, sub: true, borders: false, fibers: true, nodes: true, sync: true, electrodes: true, elecHemi: 'both', labels: true, netLabels: true, hubLabels: false, thermo: true, stims: true, quant: null, ccep: false, neutral: false, tilt: 0, frontGlass: true, subFilter: 'all', stimSet: 'all', subOpacity: 0.95, subHemi: 'both', subFams: null, hyps: [], slices3d: false, clip: '', paint: null, title: '', viewFr: '', tcStatus: null, probe: true, zones: null, rois: true };
-  const DISPLAY_KEYS = ['tcStatus', 'inflate', 'opacity', 'sub', 'borders', 'fibers', 'nodes', 'sync', 'electrodes', 'elecHemi', 'labels', 'netLabels', 'hubLabels', 'thermo', 'stims', 'quant', 'ccep', 'neutral', 'frontGlass', 'subFilter', 'stimSet', 'subOpacity', 'subHemi', 'subFams', 'hyps', 'slices3d', 'clip', 'paint'];
+  const CELL_DEFAULTS = { view: 'latL', hemi: 'both', inflate: 0, opacity: 1, sub: true, borders: false, fibers: true, nodes: true, sync: true, electrodes: true, elecHemi: 'both', labels: true, netLabels: true, hubLabels: false, thermo: true, stims: true, quant: null, ccep: false, neutral: false, tilt: 0, frontGlass: true, subFilter: 'all', stimSet: 'all', subOpacity: 0.95, subHemi: 'both', subFams: null, hyps: [], slices3d: false, clip: '', paint: null, title: '', viewFr: '', tcStatus: null, probe: true, zones: null, rois: true, onsetMarks: true };
+  const DISPLAY_KEYS = ['tcStatus', 'inflate', 'opacity', 'sub', 'borders', 'fibers', 'nodes', 'sync', 'electrodes', 'elecHemi', 'labels', 'netLabels', 'hubLabels', 'thermo', 'stims', 'quant', 'ccep', 'neutral', 'frontGlass', 'subFilter', 'stimSet', 'subOpacity', 'subHemi', 'subFams', 'hyps', 'slices3d', 'clip', 'paint', 'onsetMarks'];
   const LAYOUTS = {
     single: { cols: 1, rows: 1, fr: '1 vue', cells: [{ view: 'latL' }] },
     duo: { cols: 2, rows: 1, fr: '2 vues', cells: [{ view: 'latL' }, { view: 'medL', hemi: 'L' }] },
@@ -481,7 +481,7 @@
         // cortex transparent : les marqueurs profonds (dans l'hippocampe, l'amygdale…) restent visibles à travers les structures
         const through = cfg.opacity < 0.6;
         for (const m of this.markObjs) {
-          const d = m.userData.m, on = (ef === 'both' || m.userData.hemi === ef) && vis[m.userData.hemi] && (!this.elecFilter || this.elecFilter.has(m.userData.eid)) && (d.kind === 'thermo' ? !!cfg.thermo && (!d.status || !cfg.tcStatus || cfg.tcStatus.includes(d.status)) : d.kind === 'stim' ? !!cfg.stims && (d.set || 'all') === (cfg.stimSet === 'clin' ? 'func' : cfg.stimSet || 'all') : d.kind === 'quant' ? cfg.quant === d.set : true);
+          const d = m.userData.m, on = (ef === 'both' || m.userData.hemi === ef) && vis[m.userData.hemi] && (!this.elecFilter || this.elecFilter.has(m.userData.eid)) && (d.kind === 'thermo' ? !!cfg.thermo && (!d.status || !cfg.tcStatus || cfg.tcStatus.includes(d.status)) : d.kind === 'stim' ? !!cfg.stims && (d.set || 'all') === (cfg.stimSet === 'clin' ? 'func' : cfg.stimSet || 'all') : d.kind === 'quant' ? cfg.quant === d.set : d.kind === 'onset' ? cfg.onsetMarks !== false : true);
           m.visible = on; m.renderOrder = cfg.frontGlass ? 30 : 7; if (m.material.depthTest !== !through) { m.material.depthTest = !through; m.material.needsUpdate = true; }
           if (m.userData.halo) { m.userData.halo.visible = on; m.userData.halo.renderOrder = cfg.frontGlass ? 29 : 6; if (m.userData.halo.material.depthTest !== !through) { m.userData.halo.material.depthTest = !through; m.userData.halo.material.needsUpdate = true; } }
         }
