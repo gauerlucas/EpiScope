@@ -17,6 +17,13 @@ const mesh = J('brain_meshes.json'), vj = J('vep_volume.json'), tpl = J('templat
   ok(atlas.regions.length === 163 && atlas.regions.slice(1).every(r => r.centroid && r.n_vertices > 0), 'chaque région VEP a des sommets et un centre');
   for (const h of ['lh', 'rh']) { const H = atlas.hemis[h]; ok(H.n > 20000 && H.n < 65536 && H.faces.length === 3 * mesh.hemis[h].n_faces && H.labels.length === H.n, h + ' : maillage propre (' + H.n + ' sommets, index 16 bits)'); }
   const xs = atlas.hemis.lh.pial.filter((_, i) => i % 3 === 0); ok(Math.max(...xs) < 5 && Math.min(...xs) > -80, 'hémisphère gauche à gauche (x < 0), dimensions MNI');
+  // v3.3.0 : surfaces du modèle ICBM152_2026 de Brainstorm (FreeSurfer 8.2.0 sur 2009c), mention de la source ; structures
+  // profondes et cervelet de l'aseg du même modèle, découpées selon les régions VEP (hippocampe antérieur / postérieur)
+  ok(/Brainstorm/.test(mesh.source) && /Tadel/.test(mesh.license) && /FreeSurfer/.test(mesh.license), 'surfaces : Brainstorm et FreeSurfer cités');
+  const subIdx = mesh.subcortical.map(s => s.region_index).sort((a, b) => a - b);
+  ok(subIdx.length === 18 && subIdx[0] === 145 && subIdx[17] === 162, '18 structures profondes VEP (145–162)');
+  for (const [a, p] of [[145, 146], [154, 155]]) { const A = atlas.regions[a].centroid, P = atlas.regions[p].centroid; ok(A[1] > P[1] + 5 && Math.abs(A[0] - P[0]) < 10, 'hippocampe antérieur en avant du postérieur (' + a + ', ' + p + ')'); }
+  ok(atlas.regions[153].centroid[2] < -20 && atlas.regions[153].centroid[1] < -40, 'cervelet en bas et en arrière');
   ok(Object.keys(tpl.centroids).length >= 90, 'repères du recalage : ' + Object.keys(tpl.centroids).length + ' classes');
   const vol = new E.Volume(vj), nm = (p) => { const l = vol.labelAt(...p); return l >= 1 && l <= 162 ? atlas.regions[l].name : l; };
   ok(/Amygdala/.test(nm([-22, -5, -18])) && /Amygdala/.test(nm([22, -4, -18])), 'amygdales aux coordonnées MNI attendues');

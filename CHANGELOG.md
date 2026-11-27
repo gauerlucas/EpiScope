@@ -2,6 +2,20 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [3.3.0] — 2026-11-27
+
+Surfaces du gabarit MNI tirées du modèle ICBM152 de Brainstorm (ICBM 2009c traité par FreeSurfer 8.2.0) : cortex aux sillons ouverts, surface gonflée plus régulière, noyaux gris, hippocampes, amygdales et cervelet aux formes du gabarit, découpés selon les régions VEP.
+
+### Modifié
+
+- **Surfaces du gabarit MNI** : cortex (piale, gonflée, profondeur sulcale) tiré du modèle **ICBM152_2026 de Brainstorm** — gabarit ICBM 152 NLin 2009c asymétrique, même espace que 2009b, traité par FreeSurfer 8.2.0 — à la place de la piale segmentée sur le T1 2009b : sillons ouverts jusqu'au fond, régions VEP des sillons visibles sur le cortex, surface gonflée plus régulière (≈ 32 000 sommets par hémisphère, topologie sphérique ; écart médian à l'ancienne surface ≈ 1 mm). Les régions VEP des sommets viennent toujours de la parcellation VEP du gabarit ; les coordonnées MNI 2009b, le volume VEP, les repères du recalage et la bibliothèque des électrodes ne changent pas.
+- **Noyaux gris, hippocampes, amygdales et cervelet du gabarit** : maillés sur l'aseg FreeSurfer du même modèle (formes du gabarit, plus celles de MeshNet), puis découpés selon les régions VEP (hippocampe antérieur et postérieur…) ; surfaces lisses comme en 3.1.0.
+- **Crédits** : modèle ICBM152 de Brainstorm (Tadel et al. 2011) et FreeSurfer (Fischl 2012) cités dans « Crédits et sources » et dans `brain_meshes.json` ; avis de copyright du MNI conservé.
+
+### Outils
+
+- `tools/make_templates_bst.py` + `tools/make_templates_bst.mjs` : surfaces du gabarit reconstruites depuis `ICBM152_2026.zip` (Brainstorm, fourni par l'utilisateur) ; étiquettes VEP des sommets mises en commun dans `tools/tpl_labels.mjs`.
+
 ## [3.2.0] — 2026-11-26
 
 Intercritique SEEG pointé sur les plots, quantifications de chaque crise à côté de l'analyse visuelle, plots de la crise dans les coupes et sur le cortex, cavité de résection contrainte par la segmentation substance grise / blanche et affichée en calque distinct des régions cibles, écran de l'intervention réorganisé, imagerie du patient dans l'espace MNI.
