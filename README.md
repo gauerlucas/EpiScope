@@ -17,6 +17,7 @@ The first idea behind this app was sketched as a <a href="https://github.com/Rom
 - **Follow the patient through the surgical pathway.** One record from the history to follow-up: phase 1 video-EEG, multidisciplinary meetings, SEEG, surgery, outcome (Engel, ILAE).
 - **Combine the modalities.** MRI, CT and PET registered and segmented in the browser, real electrode contacts located on the CT, scalp EEG (spikes, source imaging, sleep stages) and SEEG (planning, seizures, quantification, direct cortical stimulations and thermoablation) on the same 3D brain.
 - **Prepare and present the meeting.** Staff slides, printable reports, annotated captures.
+- - **All multimodal data in one common space.** Everything (imaging, electrodes, source localization, semiology, lesions...) is normalized to MNI space, ready for future research.
 
 ## Principles
 
