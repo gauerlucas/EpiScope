@@ -87,7 +87,7 @@
       this.open3dPopup(title, V => {
         V.setElectrodes(els || []); if (V.setElectrodeStyle) V.setElectrodeStyle('dark-bg');
         V.setMarkers((markers || []).filter(m => m.kind === kind && (!set || m.set === set) && (kind !== 'thermo' || m.status !== 'rejected')));
-        V.setCellConfig(0, Object.assign({}, BASE, { opacity: 0.3, electrodes: true, labels: true, sub: true, subFilter: 'noCb', subOpacity: 0.3, neutral: kind !== 'quant', stims: kind === 'stim', stimSet: kind === 'stim' ? set : 'all', thermo: kind === 'thermo', quant: kind === 'quant' ? set : null, view: 'latL' }), true);
+        V.setCellConfig(0, Object.assign({}, BASE, { opacity: 0.3, electrodes: true, labels: true, sub: true, subFilter: 'noCb', subOpacity: 0.3, neutral: kind !== 'quant', stims: kind === 'stim', stimSet: kind === 'stim' ? set : 'all', thermo: kind === 'thermo', quant: kind === 'quant' ? set : null, inter: kind === 'inter' ? set : null, view: 'latL' }), true);
         const hs = [...new Set((els || []).map(e => e.hemi))];
         return { views: [['latL', 'latéral G'], ['latR', 'latéral D'], ['medL', 'mésial G'], ['medR', 'mésial D'], ['infRad', 'inférieur'], ['sup', 'supérieur']].filter(([v]) => !(/L$/.test(v) && hs.length === 1 && hs[0] === 'R') && !(/R$/.test(v) && hs.length === 1 && hs[0] === 'L')) };
       }, { legend });

@@ -2,6 +2,35 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [3.4.0] — 2026-11-27
+
+Staff recomposé page par page (une idée par diapositive, sans défilement) et intercritique pointé visible partout : analyse visuelle dans les vues 3D et les coupes, le rapport SEEG et le diaporama ; concordance lisible d'un coup d'œil, avec des colonnes SEEG intercritique et critique ; hypothèses choisies et modifiées pendant le staff ; courbes de croissance de la naissance à l'âge adulte ; schéma d'implantation 2D classique.
+
+### Ajouté
+
+- **Analyse visuelle de l'intercritique SEEG** (onglet Analyses, sous les quantifications intercritiques) : une ligne pour toutes les catégories pointées superposées, puis une par catégorie (rythme lésionnel, chaque groupe de pointes) ; l'œil les affiche dans la vue active et dans les coupes, une couleur par catégorie (`cfg.inter` de la cellule). Même vue dans le **rapport SEEG** (« Plots pointés : vues », avec légende) et sur la page *Intercritique* de la SEEG au staff.
+- **Affichage des catégories dans la grille** de pointage : toutes superposées ou la catégorie choisie seule ; œil par catégorie pour la masquer.
+- **Schéma d'implantation 2D** (page d'implantation du staff, bascule « Vues 3D | Schéma 2D ») : grille de Talairach (lignes CA-CP, VCA, VCP ; colonnes A à I, rangées 1 à 12) avec points d'entrée et plots en projection sagittale, électrodes obliques en pointillés ; face latérale, face mésiale et insula séparées ; liste des électrodes ; un hémisphère par page (`implant2d.js`, `brain_glyph.js`).
+- **Résultat du staff précédent** (staff après SEEG) : concordance, hypothèses et conclusion du staff qui a décidé la SEEG, avant l'implantation réalisée, en lecture seule.
+- **Captures intercritiques en diaporama** (EEG de phase 1) : une capture par page, comme les médias d'une crise ; les vignettes de la page *EEG intercritique* y mènent.
+- **Concordance, colonnes « SEEG intercritique » et « SEEG critique »** (staff dont la portée comprend une SEEG) : plots pointés de l'onglet Intercritique (groupe de pointes fréquentes : argument fort ; autre groupe, rythme lésionnel : en faveur) ; plots de début des crises SEEG prises en compte (au début de la moitié des crises au moins : argument fort, sinon en faveur). Ajoutées aussi aux colonnes reprises d'un staff précédent ; une colonne SEEG retirée à la main ne revient pas.
+- **Courbes de croissance de la naissance à l'âge du patient** (Dossier, diaporama, compte rendu) : poids pour l'âge du CDC 2000 de 10 à 20 ans (relais de l'OMS, raccord entre 9 et 10 ans ; `src/growth_cdc.js`, `tools/make_growth_cdc.py`, données du domaine public), z-score et centile du poids jusqu'à 20 ans ; âge adulte en pointillés — taille : centiles de fin de croissance ; IMC : seuils 18,5, 25 et 30 ; poids : poids de ces IMC à la taille adulte mesurée.
+- **Hypothèses modifiables pendant le staff** : « ＋ Hypothèse ▾ » sous la concordance (proposition d'après la sémiologie et la concordance, ou hypothèse vide) ; sur la page d'une hypothèse, statut, confiance, côté, régions, titre et arguments ; une hypothèse d'un staff précédent est révisée dans ce staff.
+
+### Modifié
+
+- **Concordance, colonne EEG intercritique** : lit aussi la localisation des pointes de scalp quand elle existe (sources des pointes retenues, ESI), en plus des cartes 10-20 ; les plots pointés d'une SEEG vont dans la colonne « SEEG intercritique ».
+- **Tableau de concordance du diaporama** : hémisphères gauche et droit séparés, vignette du cerveau avec la région colorée sur chaque ligne, pictogrammes (et non des émojis) en tête des colonnes, cases réduites au symbole (détail au survol), douze lignes les plus concordantes (et celles des hypothèses) sans barre de défilement, « toutes les régions » pour le reste. Même vignette et mêmes pictogrammes dans *Préparer*.
+- **Page EEG intercritique** (phase 1) : intercritique seul, sans les crises, sous un bandeau des jours où sont placés les captures et tracés intercritiques.
+- **Synthèse de l'électrophysiologie** (anciennement synthèse des crises) : crises et intercritique sous le même bandeau des jours, cartes des pointes et catégories pointées en SEEG.
+- **Pages patient du diaporama** : *Développement* — étapes psychomotrices renseignées en tableau à marqueurs, courbes de taille, de poids et d'IMC en petit, plus de tableau des mesures ni d'échelle vide ; *Antécédents* — personnels aux deux tiers, familiaux au tiers, latéralité en pictogrammes ; *Mode de vie* — grandes cartes qui occupent la page ; *Histoire de l'épilepsie* — repères en tuiles, chaque champ modifiable depuis le staff (mode édition) en plus du commentaire.
+- **Développement actuel** (Dossier) : pastilles des comorbidités retirées de la carte, et la mention sur les échelles standardisées.
+
+### Corrigé
+
+- **Liste des images de l'écran Imagerie** : catégories écrasées en colonne étroite (lettres à la verticale), à cause d'un nom de classe de la v3.2.0 partagé avec la carte de pointage intercritique.
+- **Gonflement du cortex dans la vue 3D** : à mi-gonflement, les deux hémisphères ne se chevauchent plus (vue de face, ils semblaient fusionner avant de se séparer au gonflement maximal). L'écartement latéral était appliqué au carré du niveau de gonflement, donc en retard sur la forme ; il suit maintenant le niveau, et sa valeur est calculée sur les surfaces (face médiale de chaque hémisphère gonflé à 1 mm du plan médian : les hémisphères gonflés se touchent presque) au lieu d'un décalage fixe de 32 mm, trop court pour les surfaces de la 3.3.0. Les électrodes, étiquettes et centres des régions, qui suivaient déjà le niveau, restent sur la surface à tous les niveaux. Vaut aussi pour les surfaces du patient.
+
 ## [3.3.0] — 2026-11-27
 
 Surfaces du gabarit MNI tirées du modèle ICBM152 de Brainstorm (ICBM 2009c traité par FreeSurfer 8.2.0) : cortex aux sillons ouverts, surface gonflée plus régulière, noyaux gris, hippocampes, amygdales et cervelet aux formes du gabarit, découpés selon les régions VEP.

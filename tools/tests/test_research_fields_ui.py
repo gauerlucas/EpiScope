@@ -47,14 +47,10 @@ with sync_playwright() as p:
       return { dashed: b.classList.contains('margin'), title: b.title, onNotDashed: !b1.classList.contains('margin'), txt: document.querySelector('.rs-cav').textContent, n: p.resection.contacts.length }; })()""")
     check(r['dashed'] and '2,4 mm' in r['title'] and r['onNotDashed'] and 'en bordure' in r['txt'] and r['n'] == 2, f'contacts en bordure : pointillé, distance au survol, liste à vérifier, rien d’ajouté {r["txt"][-80:]}')
     pg.screenshot(path=os.path.join(OUT, 'research_fields_proc.png'), full_page=True)
-    # 2. développement : comorbidités à trois états
+    # 2. développement (v3.4.0) : plus de pastilles de comorbidités dans « Développement actuel », texte libre seul ; le champ reste dans le dossier
     pg.evaluate("SV.app.go({ stage: 'dossier', view: 'developpement' })"); pg.wait_for_timeout(1000)
-    pg.click('.devc-b[data-dk=asd]'); pg.wait_for_timeout(150)
-    pg.click('.devc-b[data-dk=spasms]'); pg.wait_for_timeout(150); pg.click('.devc-b[data-dk=spasms]'); pg.wait_for_timeout(150)
-    pg.click('.devc-b[data-dk=id]'); pg.wait_for_timeout(150); pg.select_option('.devc-sev', 'moderate'); pg.wait_for_timeout(150)
-    r = pg.evaluate("SV.app.dossier.patient.dev")
-    check(r == {'id': 'moderate', 'asd': 'yes', 'spasms': 'no', 'language': '', 'behavior': ''}, f'comorbidités : oui, non, non renseigné, sévérité {r}')
-    check(pg.evaluate("SV.Store.devText(SV.app.dossier.patient, true)") == 'DI moyenne, TSA', 'texte court des comorbidités')
+    r = pg.evaluate("() => ({ chips: document.querySelectorAll('.devc-b').length, txt: !!document.querySelector('[data-c=devNotes]'), scale: document.body.innerText.includes('seule une échelle standardisée'), dev: SV.app.dossier.patient.dev })")
+    check(r['chips'] == 0 and r['txt'] and not r['scale'] and isinstance(r['dev'], dict), f'développement actuel : texte libre, sans pastilles ni phrase sur les échelles {r}')
     # 3. synthèse : statut du parcours (suggestion, motif)
     pg.evaluate("SV.app.go({ stage: 'dossier', view: 'synthese' })"); pg.wait_for_timeout(1000)
     sug = pg.evaluate("(document.querySelector('.pw-sug') || {}).textContent || ''")

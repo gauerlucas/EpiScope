@@ -40,13 +40,17 @@
         const sec = ex.label, pf = { prefetch: () => this.presentSeegAsset(ex) }, PS = this.seegPlanSpecs(ex);
         // implantation prévue (sous le staff qui l'a décidée), puis réalisée et ses électrodes sur l'IRM
         const dec = d.decisions.find(x => { const e = this.decisionExploration(x); return e && e.id === ex.id; }), m0 = dec && S.byId(d.meetings, dec.meetingId), nReal = ex.electrodes.filter(e => e.real && e.real.contacts && e.real.contacts.length).length;
+        // v3.4.0 : staff précédent (celui qui a décidé la SEEG) : sa concordance, ses hypothèses et sa conclusion, avant l'implantation
+        if (m0 && m0.id !== m.id && this.prConcordance) add(`Staff du ${fmtDate(m0.date)}`, 'Résultat du staff précédent', el => { const sc0 = this.staffScope(m0); this.prConcordance(el, m0, sc0, this.consensus(sc0), { prev: true }); }, { short: 'Concordance, conclusion', key: 'prevconc:' + m0.id });
         if (PS.length) add(m0 && m0.id !== m.id ? `Staff du ${fmtDate(m0.date)}` : sec, 'Implantation prévue', (el, alive) => this.prSeegImpl(el, ex, alive, 'plan'), Object.assign({ kind: 'seeg', key: 'implplan:' + ex.id }, pf));
         if (nReal || (ex.electrodes.length && !PS.length)) add(sec, nReal ? 'Implantation réalisée' : 'Implantation', (el, alive) => this.prSeegImpl(el, ex, alive, 'real'), Object.assign({ kind: 'seeg', key: 'impl:' + ex.id }, pf));
         if (nReal && S.refImaging(d)) add(sec, 'Électrodes sur l’IRM', (el, alive) => this.prSeegImplSlices(el, ex, alive), Object.assign({ short: '· Électrodes sur l’IRM', sub: true, kind: 'img', key: 'implsl:' + ex.id }, pf));
         // intercritique : compte rendu et captures en galerie ; analyses intercritiques
         const G0 = galList.filter(g => g.explorationId === ex.id && !g.seizureId && !g.examId), gInter = G0.filter(g => !['stim', 'ictal', 'postictal'].includes(g.kind)), free = new Set(gal.map(g => g.id));
         const I0 = ex.inter || {};
-        if (INTER.some(([k]) => (I0[k] || '').trim()) || (I0.spikes || []).length || gInter.length) add(sec, 'Intercritique', (el, alive) => this.prSeegInter(el, ex, gInter, alive), { short: 'Intercritique', key: 'seegint:' + ex.id });
+        const hasMarks = this.interCats && this.interCats(ex).length;   // v3.4.0 : plots pointés, vue colorée par catégorie
+        if (INTER.some(([k]) => (I0[k] || '').trim()) || (I0.spikes || []).length || gInter.length || hasMarks) add(sec, 'Intercritique', (el, alive) => this.prSeegInter(el, ex, gInter, alive), Object.assign({ short: 'Intercritique', key: 'seegint:' + ex.id, group: 'ii:' + ex.id }, hasMarks ? pf : {}));
+        if (C.out && this.interMediaSlide) this.interMediaSlide(C.out, sec, ex, gInter);   // v3.4.0 : captures intercritiques en diaporama
         const QG = this.quantReportGroups ? this.quantReportGroups(ex, ex.quant || []) : [{ kind: 'other', sets: ex.quant || [] }];
         const qIds = k => QG.filter(g => g.kind === k).flatMap(g => g.sets.map(q => q.id)), qSz = sz => QG.filter(g => g.kind === 'ictal').flatMap(g => g.sets.filter(q => (q.seizureId || (g.rec && g.rec.seizureId) || '') === sz.id).map(q => q.id));
         if (qIds('inter').length) add(sec, 'Analyses intercritiques', (el, alive) => this.prQuantTabs(el, ex, alive, qIds('inter'), 'qi:' + ex.id), Object.assign({ short: 'Analyses intercritiques', kind: 'seeg', key: 'qinter:' + ex.id }, pf));
@@ -65,14 +69,14 @@
         G0.filter(g => g.kind === 'stim' && free.has(g.id)).forEach(g => galSlide(sec, g));
         if (ex.thermo.length) add(sec, 'Thermocoagulations', (el, alive) => this.prSeegThermo(el, ex, alive), Object.assign({ kind: 'seeg', key: 'thermo:' + ex.id }, pf));
         G0.filter(g => ['ictal', 'postictal'].includes(g.kind) && free.has(g.id)).forEach(g => galSlide(sec, g));
-        const Rp = ex.report || {}; if ((this.seegReportFields || []).some(([k]) => (Rp[k] || '').trim()) || (Rp.summary || '').trim()) add(sec, 'Synthèse SEEG', el => this.prSeegSynth(el, ex), { short: 'Synthèse', key: 'seegsyn:' + ex.id });
+        const Rp = ex.report || {}; if ((this.seegReportFields || []).some(([k]) => (Rp[k] || '').trim()) || (Rp.summary || '').trim() || szs.length || hasMarks) add(sec, 'Synthèse de l’électrophysiologie', el => this.prSeegSynth(el, ex), { short: 'Synthèse', key: 'seegsyn:' + ex.id });
       }
     },
 
     // ================================================================ vues et tables d'une SEEG
     /** vues et tables d'une SEEG : implantation, stimulations, thermocoagulations, analyses (espace de travail rejoué) */
     presentSeegAsset(ex) {
-      const sig = hash(JSON.stringify([ex.electrodes, ex.stims, ex.thermo, ex.quant.map(q => [q.id, q.name, q.values, q.cmap, q.min, q.max]), ex.elecNotes || {}, this.anatMode]));
+      const sig = hash(JSON.stringify([ex.electrodes, ex.stims, ex.thermo, ex.quant.map(q => [q.id, q.name, q.values, q.cmap, q.min, q.max]), ex.elecNotes || {}, ex.inter ? [ex.inter.lesional, ex.inter.groups] : null, this.anatMode]));
       return this.presentAsset('seeg:' + ex.id + ':' + sig, async () => {
         const orig = this.ctx ? Object.assign({}, this.ctx) : null, V3 = this.viewer;
         const restoreV = { layout: V3.layoutName, active: V3.active, cfgs: V3.cells.map(c => Object.assign({}, c.cfg, { hyps: c.cfg.hyps.slice() })) };
@@ -133,14 +137,16 @@
      *  (clic sur une électrode réelle : ses coupes sur l'IRM, diapositive suivante) */
     async prSeegImpl(el, ex, alive, which) {
       const nReal = ex.electrodes.filter(e => e.real).length, P0 = this._pres, sl = P0 ? P0.slides.findIndex(x => x.key === 'implsl:' + ex.id) : -1;
+      const mode2d = this.ui.prImpl2d === true && !!this.implant2dHtml;   // v3.4.0 : vues 3D ou schéma 2D (grille de Talairach, faces)
       const a = await this.seegSlide(el, ex, alive, a => {
         const P = which === 'plan' ? a.plan : null, impl = P ? P.impl : a.impl, rows = P ? P.rows : a.rows;
         if (which === 'plan' && !P) return '<div class="hint">Schéma prévu indisponible (électrodes non constructibles).</div>';
-        return `<div class="pr-chips"><span class="pr-chip">${rows.length} électrode${rows.length > 1 ? 's' : ''}</span>${P ? `<span class="pr-chip">projet d’implantation${(ex.projects || []).length && (ex.implantPlan ? ex.implantPlan.name : ex.project && ex.project.name) ? ' « ' + esc(ex.implantPlan ? ex.implantPlan.name : ex.project.name) + ' »' : ''} (cibles théoriques)</span>` : `<span class="pr-chip${nReal === ex.electrodes.length ? ' ok' : ''}">${nReal ? nReal + ' localisée' + (nReal > 1 ? 's' : '') + ' sur le scanner' : 'positions prévues (non localisées)'}</span>`}${!P && a.rows.some(r => !r.built) ? `<span class="pr-chip" title="Dossier › Imagerie : « Calculer l’anatomie »">${a.rows.filter(r => !r.built).length} sans position 3D : anatomie du patient à calculer</span>` : ''}${ex.start && !P ? `<span class="pr-chip">${esc(fmtDate(ex.start))}${ex.end ? ' → ' + esc(fmtDate(ex.end)) : ''}</span>` : ''}<span class="spacer"></span>${P ? this.reviewBtn('planif', 'Planification') : ''}</div>
-          <div class="pr-2c rev"><div class="pr-card pr-impl">${this.seegViewsHtml(impl) || '<div class="hint">Pas de vue (électrodes non construites).</div>'}${this.presentV3Bar()}</div>
-          <div class="pr-card">${this.elecListShort(rows, !P && sl >= 0)}${!P && sl >= 0 ? '<div class="muted small">clic sur une électrode : ses coupes sur l’IRM</div>' : ''}</div></div>`;
+        return `<div class="pr-chips">${this.implant2dHtml ? `<span class="seg pr-i2dseg" title="vues 3D, ou schéma classique : grille de Talairach, faces latérale et mésiale, insula"><button data-i2d="0" class="${mode2d ? '' : 'on'}">Vues 3D</button><button data-i2d="1" class="${mode2d ? 'on' : ''}">Schéma 2D</button></span>` : ''}<span class="pr-chip">${rows.length} électrode${rows.length > 1 ? 's' : ''}</span>${P ? `<span class="pr-chip">projet d’implantation${(ex.projects || []).length && (ex.implantPlan ? ex.implantPlan.name : ex.project && ex.project.name) ? ' « ' + esc(ex.implantPlan ? ex.implantPlan.name : ex.project.name) + ' »' : ''} (cibles théoriques)</span>` : `<span class="pr-chip${nReal === ex.electrodes.length ? ' ok' : ''}">${nReal ? nReal + ' localisée' + (nReal > 1 ? 's' : '') + ' sur le scanner' : 'positions prévues (non localisées)'}</span>`}${!P && a.rows.some(r => !r.built) ? `<span class="pr-chip" title="Dossier › Imagerie : « Calculer l’anatomie »">${a.rows.filter(r => !r.built).length} sans position 3D : anatomie du patient à calculer</span>` : ''}${ex.start && !P ? `<span class="pr-chip">${esc(fmtDate(ex.start))}${ex.end ? ' → ' + esc(fmtDate(ex.end)) : ''}</span>` : ''}<span class="spacer"></span>${P ? this.reviewBtn('planif', 'Planification') : ''}</div>
+          ${mode2d ? `<div class="pr-card pr-i2d">${['L', 'R'].map(sd => this.implant2dHtml(P ? P.els : a.els, sd)).join('') || '<div class="hint">Pas d’électrode construite.</div>'}</div>` : `<div class="pr-2c rev"><div class="pr-card pr-impl">${this.seegViewsHtml(impl) || '<div class="hint">Pas de vue (électrodes non construites).</div>'}${this.presentV3Bar()}</div>
+          <div class="pr-card">${this.elecListShort(rows, !P && sl >= 0)}${!P && sl >= 0 ? '<div class="muted small">clic sur une électrode : ses coupes sur l’IRM</div>' : ''}</div></div>`}`;
       });
       if (!a) return; this.bindReview(el, ex); const box = el.querySelector('.pr-impl'); if (box) this.presentZoomable(box);
+      el.querySelectorAll('[data-i2d]').forEach(b => b.onclick = () => { this.ui.prImpl2d = b.dataset.i2d === '1'; this.prSeegImpl(el, ex, alive, which); });
       const v3 = el.querySelector('[data-a=v3]'); if (v3) v3.onclick = () => this.openImplant3d(`${ex.label} · implantation ${which === 'plan' ? 'prévue' : 'réalisée'}`, which === 'plan' && a.plan ? a.plan.els : a.els);
       el.querySelectorAll('[data-eid]').forEach(tr => tr.onclick = () => { this._presElec = tr.dataset.eid; this.presentShow(sl); });
     },
@@ -155,12 +161,18 @@
       rows.forEach(r => r.onclick = () => pick(r.dataset.eid));
       const st = this.slvState(); if (this._presElec) { pick(this._presElec); this._presElec = null; } else if (st.elec) mark(st.elec.slice(2));
     },
-    prSeegInter(el, ex, G, alive) {
-      const I = ex.inter || {}, F = INTER.filter(([k]) => (I[k] || '').trim());
-      el.innerHTML = `<div class="pr-card exam">${F.length ? `<dl class="pr-dl">${F.map(([k, l]) => `<dt>${l}</dt><dd>${br(I[k])}</dd>`).join('')}</dl>` : '<div class="muted">Pas de compte rendu intercritique saisi.</div>'}</div>
-        ${(I.spikes || []).length ? `<div class="pr-card exam"><div class="pr-lbl">Grapho-éléments pathologiques</div><table class="pr-tab">${I.spikes.map(s => `<tr><td class="mono"><b>${esc(s.contacts)}</b></td><td>${esc(s.text)}</td><td class="muted">${esc(({ V: 'veille', S: 'sommeil', VS: 'veille et sommeil' })[s.vig] || '')}</td></tr>`).join('')}</table></div>` : ''}
-        ${G.length ? '<div class="pr-card"><div class="pr-lbl">Tracés intercritiques <span class="muted">clic : visionneuse</span></div><div class="pr-thumbs"></div></div>' : ''}`;
-      this.presentGallery(el.querySelector('.pr-thumbs'), G, alive);
+    /** intercritique d'une SEEG : plots pointés (vue colorée par catégorie, légende), compte rendu, captures (v3.4.0) */
+    async prSeegInter(el, ex, G, alive) {
+      const I = ex.inter || {}, F = INTER.filter(([k]) => (I[k] || '').trim()), cats = this.interCats ? this.interCats(ex) : [];
+      const text = `${F.length ? `<dl class="pr-dl">${F.map(([k, l]) => `<dt>${l}</dt><dd>${br(I[k])}</dd>`).join('')}</dl>` : (cats.length ? '' : '<div class="muted">Pas de compte rendu intercritique saisi.</div>')}
+        ${(I.spikes || []).filter(s => s.contacts || s.text).length ? `<div class="pr-lbl">Grapho-éléments pathologiques</div><table class="pr-tab">${I.spikes.filter(s => s.contacts || s.text).map(s => `<tr><td class="mono"><b>${esc(s.contacts)}</b></td><td>${esc(s.text)}</td><td class="muted">${esc(({ V: 'veille', S: 'sommeil', VS: 'veille et sommeil' })[s.vig] || '')}</td></tr>`).join('')}</table>` : ''}`;
+      const legend = cats.length ? `<table class="pr-tab pr-ivleg">${cats.map(c => `<tr><td><i class="dot" style="background:${c.color}"></i><b>${esc(c.label)}</b></td><td class="mono">${esc(S.contactRanges(c.contacts))}</td><td class="muted">${esc(c.text || '')}</td></tr>`).join('')}</table>` : '';
+      const thumbs = G.length ? '<div class="pr-card"><div class="pr-lbl">Captures intercritiques <span class="muted">clic : en diaporama (diapositive suivante)</span></div><div class="pr-thumbs"></div></div>' : '';
+      if (!cats.length) { el.innerHTML = `<div class="pr-card exam">${text}</div>${thumbs}`; this.presentGallery(el.querySelector('.pr-thumbs'), G, alive, k => this.presentGoMedia('iim:' + ex.id, k)); return; }
+      const a = await this.seegSlide(el, ex, alive, a => `<div class="pr-2c rev"><div class="pr-card pr-iv">${(a.G && a.G.inter && this.seegViewsHtml(a.G.inter.views)) || '<div class="hint">Pas de vue (électrodes non construites).</div>'}${this.presentV3Bar()}</div>
+        <div class="pr-card exam"><div class="pr-lbl">Plots pointés</div>${legend}${text}</div></div>${thumbs}`); if (!a) return;
+      this.presentGallery(el.querySelector('.pr-thumbs'), G, alive, k => this.presentGoMedia('iim:' + ex.id, k)); const box = el.querySelector('.pr-iv'); if (box) this.presentZoomable(box);
+      const v3 = el.querySelector('[data-a=v3]'); if (v3) v3.onclick = () => this.openSeeg3d(`${ex.label} · intercritique`, a.els, a.markers, 'inter', cats.map(c => `<span><i style="background:${c.color}"></i>${esc(c.label)}</span>`).join(''), { set: 'all' });
     },
     /** crises de la SEEG : totaux, frise de l'exploration (stimulations, thermocoagulations, traitement), plots de début */
     async prSeegSz(el, ex, alive) {
@@ -233,9 +245,13 @@
       const box = el.querySelector('.pr-tcv'); if (box) this.presentZoomable(box);
       const b = el.querySelector('[data-a=v3]'); if (b) b.onclick = () => this.openSeeg3d(`${ex.label} · thermocoagulations`, a.els, a.markers, 'thermo', [['done', 'réalisées'], ['validated', 'validées'], ['planned', 'planifiées']].map(([k, l]) => `<span><i style="background:rgb(${S.THERMO_COL[k].join(',')})"></i>${l}</span>`).join(''));
     },
+    /** synthèse SEEG (v3.4.0 : sous le bandeau des jours — crises, captures et tracés intercritiques —, synthèse intercritique
+     *  (plots pointés) puis zones du rapport SEEG) */
     prSeegSynth(el, ex) {
-      const Rp = ex.report || {}, F = (this.seegReportFields || []).filter(([k]) => (Rp[k] || '').trim());
-      el.innerHTML = `${Rp.summary ? `<div class="pr-card"><p class="pr-lead">${br(Rp.summary)}</p></div>` : ''}<div class="pr-card"><dl class="pr-dl zones">${F.map(([k, l]) => `<dt>${esc(l)}</dt><dd>${br(Rp[k])}</dd>`).join('')}</dl></div>`;
+      const d = this.dossier, Rp = ex.report || {}, F = (this.seegReportFields || []).filter(([k]) => (Rp[k] || '').trim()), szs = S.seizuresOfExploration(d, ex.id);
+      const Gi = (d.gallery || []).filter(g => g.explorationId === ex.id && !g.seizureId && !g.examId && !['ictal', 'postictal', 'stim'].includes(g.kind));
+      const head = `${szs.length ? this.presentSzCounts(ex, szs) : ''}${this.presentTimeline ? this.presentTimeline(ex, szs, { inter: this.interItems ? this.interItems(ex, Gi) : [] }) : ''}${this.prInterSynthHtml ? this.prInterSynthHtml(ex) : ''}`;
+      el.innerHTML = head + `${Rp.summary ? `<div class="pr-card"><p class="pr-lead">${br(Rp.summary)}</p></div>` : ''}${F.length ? `<div class="pr-card"><dl class="pr-dl zones">${F.map(([k, l]) => `<dt>${esc(l)}</dt><dd>${br(Rp[k])}</dd>`).join('')}</dl></div>` : ''}`;
     },
 
     // ================================================================ décisions

@@ -44,6 +44,8 @@ The [[Interictal]] tab holds the report: acquisition, background rhythm awake an
 
 The **Contact marking** card, at the top of the tab, works like the onset contacts of a seizure: choose a category — [[Lesional rhythm]] or a spike group ([[+ spike group]]) — then click the contacts; dragging adds (or removes) every contact passed over. A **spike group** gathers contacts with synchronous spikes, with its frequency (frequent, occasional, rare), vigilance, timing (day, hour, interictal recording) and a description; [[duplicate]] creates the same group for another time, more or less frequent depending on the day or on sleep. The **interictal quantifications** of the Analyses tab (spike rate, HFOs, SpikeNet2 detection…) are listed below: open a set to see or edit its values; [[→ group]] takes its strongest contacts (at least half of the maximum). The SEEG report suggests the electrical lesional zone and the irritative zone from this marking.
 
+In the grid, all categories are superimposed (a contact in several categories takes all their colours); *the chosen category only* colours the active category alone, and a category's eye hides it. The [[Analyses]] tab repeats this marking under the interictal quantifications, as a **visual analysis**: one row for all categories superimposed, then one per category; the eye shows it in 3D and in the slices. The SEEG report and the meeting's *Interictal* slide show the same view, one colour per category.
+
 ## SEEG seizures {#les-crises-seeg}
 
 An SEEG seizure is described as in phase 1 (semiology, timeline). The [[Electrical]] tab, first in the right-hand panel, marks **contact by contact**:

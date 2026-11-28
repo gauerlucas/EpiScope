@@ -413,7 +413,7 @@
     /** vues (faces latérale et médiale de chaque hémisphère implanté, puis supérieure) avec un réglage donné, fond blanc */
     /** réglage des vues SEEG (rapport et bouton de la vue) : cortex en verre neutre, sans structures profondes ni réseau,
      *  électrodes et étiquettes ; une seule information SEEG à la fois (patch) */
-    seegViewCfg(patch) { return Object.assign({ inflate: 0, opacity: 0.3, neutral: true, frontGlass: true, sub: false, subFilter: 'all', subOpacity: 0.95, subHemi: 'both', subFams: null, stimSet: 'all', electrodes: true, labels: true, fibers: false, nodes: false, sync: false, netLabels: false, borders: false, thermo: false, stims: false, ccep: false, quant: null, hyps: [] }, patch || {}); },
+    seegViewCfg(patch) { return Object.assign({ inflate: 0, opacity: 0.3, neutral: true, frontGlass: true, sub: false, subFilter: 'all', subOpacity: 0.95, subHemi: 'both', subFams: null, stimSet: 'all', electrodes: true, labels: true, fibers: false, nodes: false, sync: false, netLabels: false, borders: false, thermo: false, stims: false, ccep: false, quant: null, inter: null, hyps: [] }, patch || {}); },
     /** vues SEEG pour le rapport. Disposition : une colonne par hémisphère implanté (gauche puis droit), face latérale en haut,
      *  face mésiale en bas présentée en miroir (orientée comme la latérale du même hémisphère : on « pèle » le cortex du premier
      *  plan pour voir le fond), vue supérieure dans la dernière colonne sur les deux rangées.

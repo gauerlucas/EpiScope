@@ -144,6 +144,7 @@
     "fernandez1998": {"a": "Fernández C, Steel MFJ", "y": 1998, "t": "On Bayesian modeling of fat tails and skewness", "j": "J Am Stat Assoc", "v": "93(441)", "p": "359-371", "doi": "10.1080/01621459.1998.10474117"},
     "zubler2022": {"a": "Zubler JM, Wiggins LD, Macias MM, et al.", "y": 2022, "t": "Evidence-informed milestones for developmental surveillance tools", "j": "Pediatrics", "v": "149(3)", "p": "e2021052138", "doi": "10.1542/peds.2021-052138", "pmid": "35132439"},
     "cdcmilestones": {"a": "Centers for Disease Control and Prevention", "t": "Learn the Signs. Act Early. — Milestones (2 months to 5 years)", "j": "Web", "url": "https://www.cdc.gov/act-early/milestones/index.html"},
+    "cdc2000": {"a": "Kuczmarski RJ, Ogden CL, Guo SS, et al.", "y": 2002, "t": "2000 CDC Growth Charts for the United States: methods and development", "j": "Vital Health Stat 11", "v": "(246)", "p": "1-190", "pmid": "12043359", "url": "https://www.cdc.gov/growthcharts/cdc-data-files.htm"},
     "growthstandards": {"a": "ki-tools (Hafen R et al.)", "t": "growthstandards: growth standard coefficients and functions (WHO, INTERGROWTH-21st)", "j": "R package (MIT)", "url": "https://github.com/ki-tools/growthstandards"}
   };
   /** entrées : cat (section), n (outil ou concept), by (auteurs remerciés), w (ce que c'est, ce que ça permet), u (où dans EpiScope), r (références : clés de REFS) */
@@ -282,8 +283,8 @@
       w: 'Méthode anatomo-électro-clinique, nomenclature et règles d’implantation (orthogonales, voies obliques de l’insula, sécurité).',
       u: 'Schéma d’implantation sur gabarit, bibliothèque de trajectoires, planification, compte rendu SEEG.' },
     // ---------------------------------------------------------------- clinique
-    { cat: 'clin', n: 'Courbes de croissance de l’OMS (méthode LMS)', by: 'Groupe de l’étude multicentrique de l’OMS sur la référence de croissance (M. de Onis et coll.) ; T. J. Cole et P. J. Green ; ki-tools (growthstandards)', r: ['whomgrs2006', 'deonis2007', 'cole1992', 'growthstandards'],
-      w: 'Normes de poids, taille, IMC et périmètre crânien pour l’âge et le sexe (0–5 ans : standards 2006 ; 5–19 ans : référence 2007), exprimées par les paramètres L, M, S de Box-Cox : z-score et centile de chaque mesure.',
+    { cat: 'clin', n: 'Courbes de croissance de l’OMS (méthode LMS)', by: 'Groupe de l’étude multicentrique de l’OMS sur la référence de croissance (M. de Onis et coll.) ; T. J. Cole et P. J. Green ; ki-tools (growthstandards)', r: ['whomgrs2006', 'deonis2007', 'cdc2000', 'cole1992', 'growthstandards'],
+      w: 'Normes de poids, taille, IMC et périmètre crânien pour l’âge et le sexe (0–5 ans : standards 2006 ; 5–19 ans : référence 2007 ; poids de 10 à 20 ans : courbes du CDC 2000, domaine public), exprimées par les paramètres L, M, S de Box-Cox : z-score et centile de chaque mesure ; âge adulte : seuils de l’IMC de l’OMS.',
       u: 'Dossier › Développement et examen › Mesures : centiles, z-scores, courbes garçons / filles ; compte rendu.' },
     { cat: 'clin', n: 'INTERGROWTH-21st (mesures de naissance)', by: 'J. Villar, L. Cheikh Ismail, C. G. Victora, S. H. Kennedy et coll. ; C. Fernández et M. F. J. Steel (loi skew-t)', r: ['villar2014', 'villar2016', 'fernandez1998', 'growthstandards'],
       w: 'Normes internationales du poids, de la taille et du périmètre crânien de naissance selon l’âge gestationnel et le sexe (33+0 à 42+6 SA ; très grands prématurés de 24+0 à 32+6 SA).',

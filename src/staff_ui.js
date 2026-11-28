@@ -21,9 +21,11 @@
   const LV_SCORE = { '++': 2, '+': 1, '0': 0, '−': -1, '?': 0, '': 0 };
   const DEFAULT_COLS = [
     { key: 'semio', label: 'Sémiologie', auto: true, hint: 'consensus du modèle sur les crises prises en compte (régions d’origine candidates)' },
-    { key: 'eeg_ii', label: 'EEG intercritique', auto: true, hint: 'cartes 10-20 des explorations prises en compte (pointes, ondes lentes ; veille et sommeil)' },
+    { key: 'eeg_ii', label: 'EEG intercritique', auto: true, hint: 'cartes 10-20 des explorations prises en compte (pointes, ondes lentes ; veille et sommeil), sources des pointes' },
     { key: 'eeg_ic', label: 'EEG critique (scalp)', auto: true, hint: 'carte 10-20 « Début des crises » des explorations prises en compte' },
     { key: 'mri', label: 'IRM', auto: true, hint: 'lésions déclarées dans le dossier, bilans IRM localisés' }, { key: 'pet', label: 'TEP', auto: true, hint: 'bilans TEP localisés' }, { key: 'neuropsy', label: 'Neuropsychologie', auto: true, hint: 'bilans neuropsychologiques localisés' },
+    { key: 'seeg_ii', label: 'SEEG intercritique', auto: true, seeg: true, hint: 'plots pointés de l’onglet Intercritique : groupe de pointes fréquentes = argument fort ; autre groupe, rythme lésionnel = en faveur' },
+    { key: 'seeg_ic', label: 'SEEG critique', auto: true, seeg: true, hint: 'plots de début des crises SEEG prises en compte (onglet Électrique) : au début de la moitié des crises au moins = argument fort, sinon en faveur' },
     { key: 'seeg_q', label: 'SEEG : quantification', auto: true, seeg: true, hint: 'maximum normalisé des jeux de quantification (EI…) sur les plots du système' },
     { key: 'seeg_stim', label: 'SEEG : stimulations', auto: true, seeg: true, hint: 'réponse la plus forte : crise habituelle, crise, post-décharge, réponse clinique habituelle' },
   ];
@@ -103,6 +105,24 @@
         const map = ex.eeg && ex.eeg.map && ex.eeg.map[cat]; if (!map) continue;
         for (const [k, o] of Object.entries(S.eegMapSystems(map))) put(col, k, Math.min(w, o.v >= 2 ? 2 : 1), `${ex.label} : ${lab} (${o.els.join(', ')})`);
       }
+      // v3.4.0 : localisation des pointes intercritiques de scalp, si elle est faite — imagerie de source des pointes (résultats
+      // retenus : régions sLORETA ≥ 15 % de la source, ≥ 40 % = argument fort). SEEG, colonnes à part : pointage des plots
+      // (groupes de pointes fréquents = argument fort, sinon en faveur ; rythme lésionnel = en faveur) → SEEG intercritique ;
+      // plots de début des crises (au début de la moitié des crises au moins = argument fort, sinon en faveur) → SEEG critique
+      const At = this.atlas, byLab = new Map(); if (At) for (let r = 1; r <= Math.min(At.N - 1, 162); r++) byLab.set(At.label(r), r);
+      const rowOf = r => r >= 1 && r <= 162 && At ? At.system(r) + ':' + At.hemiOf[r] : null;
+      for (const ex of scope.explorations) {
+        const ES = this.esiKept ? this.esiKept(ex.esi || []).filter(x => x.kind === 'spike') : (ex.esi || []).filter(x => x.kind === 'spike');
+        for (const x of ES) for (const t of ((x.summary && x.summary.top) || [])) { const r = t.r || byLab.get(t.name), k = rowOf(r); if (!k || !(t.w >= 0.15)) continue; put('eeg_ii', k, t.w >= 0.4 ? 2 : 1, `${ex.label} : sources des pointes (${x.title || 'sLORETA'}) ${t.name} ${Math.round(100 * t.w)} %`); }
+        if (ex.kind !== 'seeg') continue; const els = this.builtElectrodes(ex); if (!els.length) continue;
+        const regOf = key => { const mm = String(key).match(/^(.*?)(\d+)$/), e = mm && SV.Seeg.findElec(els, mm[1]), c = e && e.contacts[+mm[2] - 1]; return c ? c.label : 0; };
+        const cats = S.normalizeInter(ex.inter);
+        for (const g of cats.groups) for (const key of g.contacts) { const k = rowOf(regOf(key)); if (k) put('seeg_ii', k, g.freq === 'frequent' ? 2 : 1, `${ex.label} : ${g.label} (${S.contactRanges(g.contacts)})`); }
+        for (const key of Object.keys(cats.lesional)) { const k = rowOf(regOf(key)); if (k) put('seeg_ii', k, 1, `${ex.label} : rythme lésionnel (${S.contactRanges(Object.keys(cats.lesional))})`); }
+        const off = new Set(m.scopeOff || []), szs = S.seizuresOfExploration(d, ex.id).filter(z => !off.has(z.id) && z.seeg && z.seeg.onset && Object.keys(z.seeg.onset).length);
+        const onRow = {}; for (const z of szs) { const seen = new Set(); for (const [key, role] of Object.entries(z.seeg.onset)) { if (role !== 'onset') continue; const k = rowOf(regOf(key)); if (!k || seen.has(k)) continue; seen.add(k); const o = onRow[k] || (onRow[k] = { n: 0, keys: new Set() }); o.n++; } for (const [key, role] of Object.entries(z.seeg.onset)) { const k = role === 'onset' && rowOf(regOf(key)); if (k) onRow[k].keys.add(key); } }
+        for (const [k, o] of Object.entries(onRow)) put('seeg_ic', k, o.n * 2 >= szs.length ? 2 : 1, `${ex.label} : début de ${o.n} crise${o.n > 1 ? 's' : ''} sur ${szs.length} (${S.contactRanges([...o.keys])})`);
+      }
       for (const [col, rows] of Object.entries(eeg)) for (const [k, c] of Object.entries(rows)) set(k, col, c.r >= 2 ? '++' : '+', c.txt.join(' ; '));
       // v2.2.0 : bilans localisés (Dossier › Bilans, champ « Localisation » ; côté = latéralisation du bilan), datés avant le staff,
       // hors bilans de suivi ; IRM : un bilan s'ajoute aux lésions déclarées (la valeur la plus forte l'emporte). Bilan sans
@@ -174,7 +194,7 @@
       box.querySelectorAll('[data-scsz]').forEach(c => c.onchange = () => { const off = new Set(m.scopeOff || []); if (c.checked) off.delete(c.dataset.scsz); else off.add(c.dataset.scsz); m.scopeOff = [...off]; this.touch('meeting', m.id, 'crises prises en compte'); this.renderStaff(); });
       box.querySelectorAll('[data-scope]').forEach(c => c.onchange = () => { m.scope = [...box.querySelectorAll('[data-scope]')].filter(x => x.checked).map(x => x.dataset.scope); this.touch('meeting', m.id); this.renderStaff(); });
       $('stAllRows').onchange = e => { this.ui.stAllRows = e.target.checked; this.renderConcordance(m); };
-      $('stAddCol').onclick = () => { const l = prompt('Nouvelle modalité (ex. MEG, TEMP ictale, IRMf, SEEG : activité intercritique) :'); if (!l) return; const cols = this.meetingColumns(m); cols.push({ key: 'c_' + Date.now().toString(36), label: l.trim() }); m.concordance.columns = cols; this.touch('meeting', m.id); this.renderConcordance(m); };
+      $('stAddCol').onclick = () => { const l = prompt('Nouvelle modalité (ex. MEG, TEMP ictale, IRMf) :'); if (!l) return; const cols = this.rawColumns(m); cols.push({ key: 'c_' + Date.now().toString(36), label: l.trim() }); m.concordance.columns = cols; this.touch('meeting', m.id); this.renderConcordance(m); };
       $('stHypNew').onclick = () => { const H = S.addHypothesis(d, { meetingId: m.id, title: 'Nouvelle hypothèse', side: cons.pL >= 0.5 ? 'L' : 'R', source: { kind: 'manual' } }); this.touch(); this.ui.openHyp = H.id; this.renderHypotheses(m); };
       $('stHypModel').onclick = e => this.modelHypothesisMenu(m, e.currentTarget);
       $('stDecNew').onclick = () => { S.addDecision(d, { meetingId: m.id, type: m.kind === 'post_phase1' ? 'seeg' : 'surgery', date: m.date, hypothesisIds: this.meetingHypotheses(m).filter(x => x.status !== 'refuted' && x.status !== 'abandoned').map(x => x.id) }); this.touch(); this.renderDecisions(m); };
@@ -219,9 +239,20 @@
     },
 
     // ---------------------------------------------------------------- concordance
-    meetingColumns(m) { const c = m.concordance.columns; if (c && c.length) return c; const seeg = this._scope && this._scope.explorations.some(e => e.kind === 'seeg'); return DEFAULT_COLS.filter(x => !x.seeg || seeg).map(x => Object.assign({}, x)); },
+    /** v3.4.0 : colonnes enregistrées (reprises d'un staff précédent, colonne ajoutée…) — un staff dont la portée comprend une
+     *  SEEG reçoit les colonnes SEEG par défaut qui leur manquent (avant les colonnes ajoutées à la main) ; une colonne SEEG
+     *  retirée à la main reste retirée (marquée off, elle n'est plus affichée) */
+    seegColumnsIn(cols, scope) {
+      const seeg = scope && scope.explorations.some(e => e.kind === 'seeg'); if (!seeg) return cols.slice();
+      const have = new Set(cols.map(x => x.key)), miss = DEFAULT_COLS.filter(x => x.seeg && !have.has(x.key)), out = cols.slice();
+      if (miss.length) { let at = out.findIndex(x => /^c_/.test(x.key)); if (at < 0) at = out.length; out.splice(at, 0, ...miss.map(x => Object.assign({}, x))); }
+      return out;
+    },
+    /** colonnes enregistrées du staff, colonnes retirées comprises (sinon colonnes par défaut) : base des ajouts et retraits */
+    rawColumns(m) { const c = m.concordance.columns; return c && c.length ? this.seegColumnsIn(c, this._scope) : this.meetingColumns(m); },
+    meetingColumns(m, scope) { scope = scope || this._scope; const c = m.concordance.columns; if (c && c.length) return this.seegColumnsIn(c, scope).filter(x => !x.off); const seeg = scope && scope.explorations.some(e => e.kind === 'seeg'); return DEFAULT_COLS.filter(x => !x.seeg || seeg).map(x => Object.assign({}, x)); },
     renderConcordance(m) {
-      const box = $('stConc'), cols = this.meetingColumns(m), auto = this.concordanceAuto(m, this._scope, this._cons), man = m.concordance.cells || (m.concordance.cells = {});
+      const box = $('stConc'); if (!box) return; const cols = this.meetingColumns(m), auto = this.concordanceAuto(m, this._scope, this._cons), man = m.concordance.cells || (m.concordance.cells = {});
       const cell = (row, col) => (man[row] && man[row][col.key] && man[row][col.key].v !== undefined) ? Object.assign({ manual: true }, man[row][col.key]) : (auto[row] && auto[row][col.key]) || null;
       const hypRows = new Set(); for (const H of this.meetingHypotheses(m)) for (const r of H.ez.concat(H.prop)) hypRows.add(this.atlas.system(r) + ':' + this.atlas.hemiOf[r]);
       const rows = []; for (const sys of SYSTEMS) for (const side of ['L', 'R']) {
@@ -230,13 +261,13 @@
         if (any || this.ui.stAllRows) rows.push({ key, sys, side, cells, score, hyp: hypRows.has(key) });
       }
       const maxS = Math.max(1, ...rows.map(r => r.score));
-      box.innerHTML = rows.length ? `<table class="conc"><thead><tr><th>Système</th>${cols.map((c, i) => `<th title="${esc(c.hint || 'saisie')}">${esc(c.label)}${(DEFAULT_COLS.find(x => x.key === c.key) || c).auto ? ' <i>auto</i>' : ''}${!DEFAULT_COLS.some(x => x.key === c.key) ? ` <b class="rmcol" data-i="${i}" title="retirer la colonne">✕</b>` : ''}</th>`).join('')}<th>Concordance</th></tr></thead><tbody>
-        ${rows.map(r => `<tr class="${r.hyp ? 'hyp-row' : ''}"><td class="sys">${esc(SYS_FR[r.sys])} <b>${r.side === 'L' ? 'G' : 'D'}</b></td>${r.cells.map((c, i) => `<td class="cc lv${c && c.v ? ' v' + ({ '++': 'pp', '+': 'p', '0': 'z', '−': 'm', '?': 'q' }[c.v]) : ''}${c && c.manual ? ' man' : c ? ' aut' : ''}" data-row="${r.key}" data-col="${cols[i].key}" title="${esc((c && c.note ? c.note : '') + (c && c.from ? ' (repris du staff du ' + fmtDate(c.from) + ')' : ''))}">${c && c.v ? esc(c.v) : ''}${c && c.note && c.manual ? '<sup>✎</sup>' : ''}</td>`).join('')}<td class="score"><span class="bar"><i style="width:${Math.max(0, r.score) / maxS * 100}%"></i></span> ${r.score > 0 ? '+' + r.score : r.score}</td></tr>`).join('')}
+      box.innerHTML = rows.length ? `<table class="conc"><thead><tr><th>Système</th>${cols.map((c, i) => `<th title="${esc(c.hint || 'saisie')}">${SV.Glyph ? SV.Glyph.icon(DEFAULT_COLS.some(x => x.key === c.key) ? c.key : 'custom', { size: 15 }) + ' ' : ''}${esc(c.label)}${(DEFAULT_COLS.find(x => x.key === c.key) || c).auto ? ' <i>auto</i>' : ''}${!DEFAULT_COLS.some(x => x.key === c.key) ? ` <b class="rmcol" data-i="${i}" title="retirer la colonne">✕</b>` : ''}</th>`).join('')}<th>Concordance</th></tr></thead><tbody>
+        ${rows.map(r => `<tr class="${r.hyp ? 'hyp-row' : ''}"><td class="sys">${SV.Glyph && this.atlas ? `<img class="st-glyph" src="${SV.Glyph.regions(this.atlas, this.regionsOf(r.sys, r.side), r.side, { color: r.side === 'L' ? '#3d7fd6' : '#e07b28' })}" alt="">` : ''}${esc(SYS_FR[r.sys])} <b class="st-side ${r.side === 'L' ? 'sL' : 'sR'}" title="${r.side === 'L' ? 'gauche' : 'droit'}">${r.side === 'L' ? 'G' : 'D'}</b></td>${r.cells.map((c, i) => `<td class="cc lv${c && c.v ? ' v' + ({ '++': 'pp', '+': 'p', '0': 'z', '−': 'm', '?': 'q' }[c.v]) : ''}${c && c.manual ? ' man' : c ? ' aut' : ''}" data-row="${r.key}" data-col="${cols[i].key}" title="${esc((c && c.note ? c.note : '') + (c && c.from ? ' (repris du staff du ' + fmtDate(c.from) + ')' : ''))}">${c && c.v ? esc(c.v) : ''}${c && c.note && c.manual ? '<sup>✎</sup>' : ''}</td>`).join('')}<td class="score"><span class="bar"><i style="width:${Math.max(0, r.score) / maxS * 100}%"></i></span> ${r.score > 0 ? '+' + r.score : r.score}</td></tr>`).join('')}
         </tbody></table><div class="hint">++ argument fort · + en faveur · 0 neutre · − contre · ? douteux. Cases <i>auto</i> calculées à partir des données du dossier (survol : détail) ; un clic permet de les corriger. Lignes surlignées : régions des hypothèses du staff.</div>`
         : '<div class="hint">Rien à afficher : saisissez des crises, des lésions, les cartes 10-20 de l’EEG, des bilans localisés, ou cochez « toutes les régions » pour remplir le tableau à la main.</div>';
       box.querySelectorAll('td.cc').forEach(td => td.onclick = e => this.concordanceCellMenu(m, td.dataset.row, td.dataset.col, cols, auto, e));
       this.renderNetworks(m);
-      box.querySelectorAll('.rmcol').forEach(b => b.onclick = e => { e.stopPropagation(); const c = cols.slice(); c.splice(+b.dataset.i, 1); m.concordance.columns = c; this.touch('meeting', m.id); this.renderConcordance(m); });
+      box.querySelectorAll('.rmcol').forEach(b => b.onclick = e => { e.stopPropagation(); const key = cols[+b.dataset.i].key, c = this.rawColumns(m), j = c.findIndex(x => x.key === key); if (j >= 0) { if (DEFAULT_COLS.some(x => x.seeg && x.key === key)) c[j] = Object.assign({}, c[j], { off: true }); else c.splice(j, 1); } m.concordance.columns = c; this.touch('meeting', m.id); this.renderConcordance(m); });
     },
     concordanceCellMenu(m, row, col, cols, auto, e, after) {
       const redraw = after || (() => this.renderConcordance(m));
@@ -261,7 +292,7 @@
     },
     /** v2.3.0 : cases du tableau de concordance (saisies comprises) → { 'système:côté': { cells: [{ col, label, v }] } } */
     concordanceRows(m, scope, cons) {
-      const cols = this.meetingColumns(m), auto = this.concordanceAuto(m, scope, cons), man = (m.concordance && m.concordance.cells) || {}, rows = {};
+      const cols = this.meetingColumns(m, scope), auto = this.concordanceAuto(m, scope, cons), man = (m.concordance && m.concordance.cells) || {}, rows = {};
       for (const sys of SYSTEMS) for (const side of ['L', 'R']) {
         const k = sys + ':' + side, cells = cols.map(c => { const x = man[k] && man[k][c.key] && man[k][c.key].v !== undefined ? man[k][c.key] : auto[k] && auto[k][c.key]; return x && x.v ? { col: c.key, label: c.label, v: x.v } : null; }).filter(Boolean);
         if (cells.length) rows[k] = { cells };
@@ -291,7 +322,7 @@
       const box = $('stNets'); if (!box) return; const cons = this._cons, L = this.staffNetworks(m, this._scope, cons);
       box.innerHTML = L.length ? `<div class="small muted" style="margin:8px 0 2px" title="trajectoires du modèle sur les crises, classées avec les autres colonnes du tableau de concordance (EEG, imagerie, neuropsychologie, SEEG…) ; survol : arguments">Hypothèses de réseau à discuter (sémiologie et concordance)</div>` + L.slice(0, 5).map(x => this.networkLine(x, cons)).join('') : '';
     },
-    modelHypothesisMenu(m, anchor) {
+    modelHypothesisMenu(m, anchor, after) {
       const cons = this._cons, d = this.dossier, L = this.staffNetworks(m, this._scope, cons);
       if (!L.length) { this.toast('Aucune crise ni donnée localisée dans le tableau de concordance'); return; }
       const items = [{ head: 'Hypothèses proposées (sémiologie et concordance)' }];
@@ -309,12 +340,13 @@
           const conf = x.top >= Math.ceil(cons.n / 2) && x.conc > 0 ? 'medium' : 'low';
           nh = S.addHypothesis(d, { meetingId: m.id, title: nm, side: H.hemi, ez: ez.length ? ez : [H.origin], prop, confidence: conf, argsFor: args.concat(conc), argsAgainst: against.concat(concAg), source: { kind: 'model', name: H.name, seizureId: x.sz.id, nSeizures: cons.n, nTop: x.top, semio: +x.semio.toFixed(3), conc: +x.conc.toFixed(3) } });
         }
-        this.touch(); this.ui.openHyp = nh.id; this.renderHypotheses(m); this.renderConcordance(m);
+        this.touch(); this.ui.openHyp = nh.id; this.renderHypotheses(m); this.renderConcordance(m); if (after) after(nh);
       } });
+      if (after) items.push({ sep: true }, { label: 'Hypothèse vide, à remplir', run: () => { const nh = S.addHypothesis(d, { meetingId: m.id, title: 'Nouvelle hypothèse' }); this.touch(); after(nh); } });
       const r = anchor.getBoundingClientRect(); this.popupMenu(items, Math.min(r.left, window.innerWidth - 520), r.bottom + 4);
     },
     renderHypotheses(m) {
-      const d = this.dossier, box = $('stHyps'), list = this.meetingHypotheses(m); box.innerHTML = '';
+      const d = this.dossier, box = $('stHyps'); if (!box) return; const list = this.meetingHypotheses(m); box.innerHTML = '';
       if (!list.length) box.innerHTML = '<div class="hint">Aucune hypothèse. « + depuis le modèle » propose les réseaux que suggèrent la sémiologie de toutes les crises et le reste du tableau de concordance (EEG, imagerie, neuropsychologie, SEEG) ; « + hypothèse » pour une hypothèse posée par l’équipe.</div>';
       list.forEach((H, idx) => {
         const lin = d.hypotheses.filter(x => x.lineage === H.lineage).sort((a, b) => a.version - b.version), open = this.ui.openHyp === H.id;
@@ -436,7 +468,7 @@
       if (cons.n) lines.push(`Latéralisation clinique : G ${Math.round(cons.pL * 100)} % / D ${100 - Math.round(cons.pL * 100)} %.`);
       if (d.lesions.length) lines.push('Lésions : ' + d.lesions.map(l => (l.label || V.lesionType[l.type]) + (l.regions.length ? ' (' + l.regions.map(L).join(', ') + ')' : '')).join(' ; '));
       const conc = this.concordanceAuto(m, scope, cons), man = m.concordance.cells || {};
-      const rows = []; for (const sys of SYSTEMS) for (const side of ['L', 'R']) { const k = sys + ':' + side, cols = this.meetingColumns(m).map(c => [c, (man[k] && man[k][c.key]) || (conc[k] && conc[k][c.key])]).filter(([, v]) => v && v.v && v.v !== '0'); if (cols.length) rows.push(`  ${SYS_FR[sys]} ${side === 'L' ? 'G' : 'D'} : ` + cols.map(([c, v]) => `${c.label} ${v.v}${v.note && v.note.length < 80 ? ' (' + v.note + ')' : ''}`).join(' ; ')); }
+      const rows = []; for (const sys of SYSTEMS) for (const side of ['L', 'R']) { const k = sys + ':' + side, cols = this.meetingColumns(m, scope).map(c => [c, (man[k] && man[k][c.key]) || (conc[k] && conc[k][c.key])]).filter(([, v]) => v && v.v && v.v !== '0'); if (cols.length) rows.push(`  ${SYS_FR[sys]} ${side === 'L' ? 'G' : 'D'} : ` + cols.map(([c, v]) => `${c.label} ${v.v}${v.note && v.note.length < 80 ? ' (' + v.note + ')' : ''}`).join(' ; ')); }
       if (rows.length) lines.push('Concordance :', ...rows);
       hyps.forEach((H, i) => lines.push(`H${i + 1} ${H.title} (v${H.version}, ${V.hypStatus[H.status]}, ${V.confidenceText[H.confidence] || ''}) — ZE : ${H.ez.map(L).join(', ') || '?'}${H.prop.length ? ' ; propagation : ' + H.prop.map(L).join(', ') : ''}${H.argsFor.filter(a => a.text).length ? ' ; pour : ' + H.argsFor.filter(a => a.text).map(a => a.text).join(' ; ') : ''}${H.argsAgainst.filter(a => a.text).length ? ' ; contre : ' + H.argsAgainst.filter(a => a.text).map(a => a.text).join(' ; ') : ''}`));
       dec.forEach(x => lines.push(`Décision : ${V.decision[x.type]}${x.text ? ' — ' + x.text : ''}${x.targets.length ? ' (cibles : ' + x.targets.map(L).join(', ') + ')' : ''} [${V.decisionStatus[x.status]}]`));

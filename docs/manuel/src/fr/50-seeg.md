@@ -45,6 +45,8 @@ L'onglet [[Intercritique]] rassemble le compte rendu : acquisition, rythme de fo
 
 La carte **Pointage des plots**, en tête de l'onglet, se remplit comme les plots de début d'une crise : choisissez une catégorie — [[Rythme lésionnel]] ou un groupe de pointes ([[+ groupe de pointes]]) — puis cliquez les plots ; un glisser ajoute (ou retire) tous les plots survolés. Un **groupe de pointes** réunit des plots aux pointes synchrones, avec sa fréquence (fréquentes, occasionnelles, rares), la vigilance, le moment (jour, heure, tracé intercritique) et une description ; [[dupliquer]] crée le même groupe pour un autre moment, plus ou moins fréquent selon le jour ou le sommeil. Les **quantifications intercritiques** de l'onglet Analyses (taux de pointes, HFO, détection SpikeNet2…) sont listées dessous : ouvrez un jeu pour voir ou modifier ses valeurs ; [[→ groupe]] reprend ses plots les plus forts (au moins la moitié du maximum). Le rapport SEEG propose la zone lésionnelle électrique et la zone irritative d'après ce pointage.
 
+Dans la grille, toutes les catégories sont superposées (un plot de plusieurs catégories prend leurs couleurs) ; *la catégorie choisie seule* ne colore que la catégorie active, et l'œil d'une catégorie la masque. L'onglet [[Analyses]] reprend ce pointage sous les quantifications intercritiques, en **analyse visuelle** : une ligne pour toutes les catégories superposées, puis une par catégorie ; l'œil l'affiche en 3D et dans les coupes. Le rapport SEEG et la page *Intercritique* du staff montrent la même vue, une couleur par catégorie.
+
 ## Les crises SEEG
 
 Une crise SEEG se décrit comme en phase 1 (sémiologie, frise). L'onglet [[Électrique]], en premier dans le panneau de droite, marque **plot par plot** :

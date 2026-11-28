@@ -43,7 +43,11 @@
   const ARC_A = [76, 201, 240], ARC_B = [164, 108, 255];   // faisceaux neutres : cyan → violet
   /** teintes des hypothèses H1…H4 (bleu, jaune, vert, rose) */
   const HYP_COLORS = [[78, 168, 255], [255, 210, 63], [123, 211, 137], [232, 121, 201]];
-  const INFL_DX = 32;                                        // écartement des hémisphères gonflés (mm)
+  // v3.3.1 : écartement des hémisphères gonflés calculé sur les surfaces (et non plus un décalage fixe de 32 mm) — la face
+  // médiale de chaque surface gonflée, centrée sur l'origine, est placée à INFL_GAP mm du plan médian (presque jointives) ; comme la piale
+  // est déjà de son côté, l'interpolation linéaire piale → gonflée garde chaque hémisphère de son côté à tout niveau
+  // (avant : les deux hémisphères se chevauchaient à mi-gonflement, vue de face)
+  const INFL_GAP = 1;
 
   // ---------- géométrie écran pour le placement des étiquettes (fractions de recouvrement, 0…1)
   /** part de la plus petite des deux boîtes recouverte par l'autre */
@@ -69,8 +73,8 @@
     aslL: { pos: [-255, 255, 252], hemi: 'both', fr: '3/4 ant.-sup. G', rot: [35, 135] }, aslR: { pos: [255, 255, 252], hemi: 'both', fr: '3/4 ant.-sup. D', rot: [35, -135] },
   };
   /** configuration d'affichage par défaut d'une cellule */
-  const CELL_DEFAULTS = { view: 'latL', hemi: 'both', inflate: 0, opacity: 1, sub: true, borders: false, fibers: true, nodes: true, sync: true, electrodes: true, elecHemi: 'both', labels: true, netLabels: true, hubLabels: false, thermo: true, stims: true, quant: null, ccep: false, neutral: false, tilt: 0, frontGlass: true, subFilter: 'all', stimSet: 'all', subOpacity: 0.95, subHemi: 'both', subFams: null, hyps: [], slices3d: false, clip: '', paint: null, title: '', viewFr: '', tcStatus: null, probe: true, zones: null, rois: true, onsetMarks: true };
-  const DISPLAY_KEYS = ['tcStatus', 'inflate', 'opacity', 'sub', 'borders', 'fibers', 'nodes', 'sync', 'electrodes', 'elecHemi', 'labels', 'netLabels', 'hubLabels', 'thermo', 'stims', 'quant', 'ccep', 'neutral', 'frontGlass', 'subFilter', 'stimSet', 'subOpacity', 'subHemi', 'subFams', 'hyps', 'slices3d', 'clip', 'paint', 'onsetMarks'];
+  const CELL_DEFAULTS = { view: 'latL', hemi: 'both', inflate: 0, opacity: 1, sub: true, borders: false, fibers: true, nodes: true, sync: true, electrodes: true, elecHemi: 'both', labels: true, netLabels: true, hubLabels: false, thermo: true, stims: true, quant: null, ccep: false, neutral: false, tilt: 0, frontGlass: true, subFilter: 'all', stimSet: 'all', subOpacity: 0.95, subHemi: 'both', subFams: null, hyps: [], slices3d: false, clip: '', paint: null, title: '', viewFr: '', tcStatus: null, probe: true, zones: null, rois: true, onsetMarks: true, inter: null };
+  const DISPLAY_KEYS = ['tcStatus', 'inflate', 'opacity', 'sub', 'borders', 'fibers', 'nodes', 'sync', 'electrodes', 'elecHemi', 'labels', 'netLabels', 'hubLabels', 'thermo', 'stims', 'quant', 'ccep', 'neutral', 'frontGlass', 'subFilter', 'stimSet', 'subOpacity', 'subHemi', 'subFams', 'hyps', 'slices3d', 'clip', 'paint', 'onsetMarks', 'inter'];
   const LAYOUTS = {
     single: { cols: 1, rows: 1, fr: '1 vue', cells: [{ view: 'latL' }] },
     duo: { cols: 2, rows: 1, fr: '2 vues', cells: [{ view: 'latL' }, { view: 'medL', hemi: 'L' }] },
@@ -156,8 +160,14 @@
     _prepareMapping() {
       this.map = {}; this.regDisp = new Array(this.N).fill(null);
       const sum = new Float64Array(this.N * 6), cnt = new Uint32Array(this.N);
+      this.inflDx = {};
       for (const h of ['lh', 'rh']) {
-        const H = this.atlas.hemis[h], P = H.pial, I = H.inflated, dx = h === 'lh' ? -INFL_DX : INFL_DX;
+        const I = this.atlas.hemis[h].inflated; let lo = Infinity, hi = -Infinity;
+        for (let i = 0; i < I.length; i += 3) { if (I[i] < lo) lo = I[i]; if (I[i] > hi) hi = I[i]; }
+        this.inflDx[h] = h === 'lh' ? -INFL_GAP - hi : INFL_GAP - lo;
+      }
+      for (const h of ['lh', 'rh']) {
+        const H = this.atlas.hemis[h], P = H.pial, I = H.inflated, dx = this.inflDx[h];
         const pmin = [1e9, 1e9, 1e9], pmax = [-1e9, -1e9, -1e9], imin = [1e9, 1e9, 1e9], imax = [-1e9, -1e9, -1e9];
         for (let v = 0; v < H.n; v++) {
           for (let k = 0; k < 3; k++) { const p = P[v * 3 + k], q = I[v * 3 + k]; if (p < pmin[k]) pmin[k] = p; if (p > pmax[k]) pmax[k] = p; if (q < imin[k]) imin[k] = q; if (q > imax[k]) imax[k] = q; }
@@ -166,7 +176,7 @@
         const cP = pmin.map((m, k) => (m + pmax[k]) / 2), cI = imin.map((m, k) => (m + imax[k]) / 2), S = pmin.map((m, k) => (imax[k] - imin[k]) / Math.max(1e-6, pmax[k] - m));
         this.map[h] = { cP, cI, S, dx, t: [cI[0] - cP[0] + dx, cI[1] - cP[1], cI[2] - cP[2]] };
       }
-      for (let r = 1; r < this.N; r++) if (cnt[r]) { const dx = this.atlas.hemiOf[r] === 'L' ? -INFL_DX : INFL_DX; this.regDisp[r] = [sum[r * 6 + 3] / cnt[r] - sum[r * 6] / cnt[r] + dx, sum[r * 6 + 4] / cnt[r] - sum[r * 6 + 1] / cnt[r], sum[r * 6 + 5] / cnt[r] - sum[r * 6 + 2] / cnt[r]]; }
+      for (let r = 1; r < this.N; r++) if (cnt[r]) { const dx = this.inflDx[this.atlas.hemiOf[r] === 'L' ? 'lh' : 'rh']; this.regDisp[r] = [sum[r * 6 + 3] / cnt[r] - sum[r * 6] / cnt[r] + dx, sum[r * 6 + 4] / cnt[r] - sum[r * 6 + 1] / cnt[r], sum[r * 6 + 5] / cnt[r] - sum[r * 6 + 2] / cnt[r]]; }
     }
     _hemiOfPoint(p, hemi) { return hemi ? (hemi === 'L' ? 'lh' : 'rh') : (p[0] < 0 ? 'lh' : 'rh'); }
     /** point profond : échelle globale (affine) de l'hémisphère, interpolée par le niveau a */
@@ -182,7 +192,7 @@
       return { h, v: bv, d2: bd };
     }
     mapSurface(p, a, nv) {
-      if (!a) return p.slice(); const H = this.atlas.hemis[nv.h], v = nv.v, dx = nv.h === 'lh' ? -INFL_DX : INFL_DX;
+      if (!a) return p.slice(); const H = this.atlas.hemis[nv.h], v = nv.v, dx = this.inflDx[nv.h];
       return [p[0] + a * (H.inflated[v * 3] - H.pial[v * 3] + dx), p[1] + a * (H.inflated[v * 3 + 1] - H.pial[v * 3 + 1]), p[2] + a * (H.inflated[v * 3 + 2] - H.pial[v * 3 + 2])];
     }
     /** centroïde d'une région transporté au niveau a : régions corticales par déplacement moyen de leurs sommets, profondes par l'affine */
@@ -204,7 +214,7 @@
     /** géométrie morphée pial → gonflé (a ∈ [0,1]) : positions, normales, limites ; mise en cache par niveau */
     _morph(h, a) {
       const key = h + ':' + lvlKey(a); let M = this._morphCache.get(key); if (M) return M;
-      const H = this.atlas.hemis[h], P = H.pial, I = H.inflated, dx = (h === 'lh' ? -INFL_DX : INFL_DX) * a, pos = new Float32Array(P.length);
+      const H = this.atlas.hemis[h], P = H.pial, I = H.inflated, dx = this.inflDx[h], pos = new Float32Array(P.length);
       for (let i = 0; i < P.length; i += 3) { pos[i] = P[i] * (1 - a) + (I[i] + dx) * a; pos[i + 1] = P[i + 1] * (1 - a) + I[i + 1] * a; pos[i + 2] = P[i + 2] * (1 - a) + I[i + 2] * a; }
       const nrm = vertexNormals(pos, H.faces, H.n), border = buildBorders(pos, H.faces, H.labels, nrm);
       M = { pos, nrm, border };
@@ -481,7 +491,7 @@
         // cortex transparent : les marqueurs profonds (dans l'hippocampe, l'amygdale…) restent visibles à travers les structures
         const through = cfg.opacity < 0.6;
         for (const m of this.markObjs) {
-          const d = m.userData.m, on = (ef === 'both' || m.userData.hemi === ef) && vis[m.userData.hemi] && (!this.elecFilter || this.elecFilter.has(m.userData.eid)) && (d.kind === 'thermo' ? !!cfg.thermo && (!d.status || !cfg.tcStatus || cfg.tcStatus.includes(d.status)) : d.kind === 'stim' ? !!cfg.stims && (d.set || 'all') === (cfg.stimSet === 'clin' ? 'func' : cfg.stimSet || 'all') : d.kind === 'quant' ? cfg.quant === d.set : d.kind === 'onset' ? cfg.onsetMarks !== false : true);
+          const d = m.userData.m, on = (ef === 'both' || m.userData.hemi === ef) && vis[m.userData.hemi] && (!this.elecFilter || this.elecFilter.has(m.userData.eid)) && (d.kind === 'thermo' ? !!cfg.thermo && (!d.status || !cfg.tcStatus || cfg.tcStatus.includes(d.status)) : d.kind === 'stim' ? !!cfg.stims && (d.set || 'all') === (cfg.stimSet === 'clin' ? 'func' : cfg.stimSet || 'all') : d.kind === 'quant' ? cfg.quant === d.set : d.kind === 'onset' ? cfg.onsetMarks !== false : d.kind === 'inter' ? cfg.inter === d.set : true);
           m.visible = on; m.renderOrder = cfg.frontGlass ? 30 : 7; if (m.material.depthTest !== !through) { m.material.depthTest = !through; m.material.needsUpdate = true; }
           if (m.userData.halo) { m.userData.halo.visible = on; m.userData.halo.renderOrder = cfg.frontGlass ? 29 : 6; if (m.userData.halo.material.depthTest !== !through) { m.userData.halo.material.depthTest = !through; m.userData.halo.material.needsUpdate = true; } }
         }

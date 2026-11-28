@@ -3,7 +3,7 @@
 import fs from 'fs'; import vm from 'vm'; import path from 'path';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 globalThis.window = globalThis;
-for (const f of ['src/core.js', 'src/stats.js', 'src/growth_data.js', 'src/growth.js']) vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f });
+for (const f of ['src/core.js', 'src/stats.js', 'src/growth_data.js', 'src/growth_cdc.js', 'src/growth.js']) vm.runInThisContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), { filename: f });
 const G = SV.Growth; let nOk = 0, nFail = 0; const ok = (c, m) => { console.log((c ? '  ok    ' : '  ÉCHEC  ') + m); c ? nOk++ : nFail++; };
 const r1 = v => Math.round(v * 10) / 10;
 // OMS taille pour l'âge (filles, garçons) : 50e, 1er, 99e centiles à 0, 7, 14, 21, 28, 974, 1461 jours
@@ -28,4 +28,12 @@ const P = { birthDate: '2025-01-01' }, c = G.correctedDays(P, { weeks: 32, days:
 ok(Math.abs(a - c - 56) < 1e-6, `âge corrigé d'un prématuré de 32 SA : ${G.fmtAge(a)} → ${G.fmtAge(c)}`);
 const svg = G.whoChart('wt', 'F', [{ d: 200, y: 7 }, { d: 400, y: 9 }]) + G.igChart('wt', 'M', 266, 3.1) + G.milestoneChart({ walk: { months: 13 } }, 15);
 ok(/<svg/.test(svg) && !/NaN/.test(svg), 'courbes OMS, INTERGROWTH et frise des acquisitions sans valeur manquante');
+// v3.4.0 : poids pour l'âge du CDC 2000 de 10 à 20 ans (médianes du fichier wtage.csv du CDC), raccord avec l'OMS
+const Y = 365.25, med = (sx, d) => G.whoValue('wt', sx, d, 0);
+ok(Math.abs(med('M', 20 * Y) - 70.6) < 0.1 && Math.abs(med('F', 20 * Y) - 58.2) < 0.1, `CDC poids : médiane à 20 ans ${med('M', 20 * Y).toFixed(1)} kg (garçons), ${med('F', 20 * Y).toFixed(1)} kg (filles)`);
+let jump = 0; for (const sx of ['M', 'F']) for (let d = 8.5 * Y; d < 10.5 * Y; d += 7) jump = Math.max(jump, Math.abs(med(sx, d + 7) - med(sx, d)));
+ok(jump < 0.25, `raccord OMS → CDC (9–10 ans) sans saut : variation hebdomadaire maximale de la médiane ${jump.toFixed(3)} kg`);
+ok(G.whoZ('wt', 'F', 15 * Y, 52) != null && G.whoZ('wt', 'F', 21 * Y, 52) == null && G.refEnd('wt', 'M') > 7300 && G.refEnd('ht', 'M') < 7000, 'z-score du poids jusqu’à 20 ans (CDC), pas au-delà ; taille : 19 ans');
+const ad = [['wt', [{ d: 300, y: 8 }, { d: 30 * Y, y: 72 }]], ['ht', [{ d: 30 * Y, y: 175 }]], ['bmi', [{ d: 30 * Y, y: 23.5 }]]].map(([k, pts]) => G.whoChart(k, 'M', pts, { dNow: 31 * Y, adultHt: 175 }));
+ok(ad.every(x => /adulte/.test(x) && !/NaN/.test(x) && /data-d0="0"/.test(x)) && /IMC 25/.test(ad[0]) && />30</.test(ad[2]), 'courbes de la naissance à 31 ans : âge adulte en pointillés (IMC 18,5 / 25 / 30, poids de ces IMC à 175 cm)');
 console.log(`\n${nOk} ok, ${nFail} échec(s)`); process.exit(nFail ? 1 : 0);

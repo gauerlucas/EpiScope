@@ -82,7 +82,7 @@
     },
     extraLayersHtml(st) {
       const L = this.extraLayerKinds(); if (!L.length) return ''; const on = new Set(st.extraLabs || []);
-      return `<div class="ipm-sec"><div class="ipm-h">Calques supplémentaires <span class="muted small">par-dessus la parcellation, plusieurs à la fois</span></div><div class="row xl-row">${L.map(x => `<label class="chip" title="${esc(x.t)}"><input type="checkbox" data-xl="${x.k}"${on.has(x.k) ? ' checked' : ''}> ${esc(x.l)}</label>`).join('')}</div>
+      return `<div class="ipm-sec"><div class="ipm-h">Calques supplémentaires <span class="muted small">par-dessus la parcellation, plusieurs à la fois</span></div><div class="row xlr-row">${L.map(x => `<label class="chip" title="${esc(x.t)}"><input type="checkbox" data-xl="${x.k}"${on.has(x.k) ? ' checked' : ''}> ${esc(x.l)}</label>`).join('')}</div>
         <div class="row"><span>opacité</span><input type="range" class="xlop" min="10" max="100" step="5" value="${Math.round((st.xlOpacity != null ? st.xlOpacity : 0.6) * 100)}"></div></div>`;
     },
     extraLayersBind(panel, st) {

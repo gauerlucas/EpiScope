@@ -36,12 +36,28 @@
   const fmtAge = days => { if (days == null || !isFinite(days)) return '—'; const m = days / MONTH; if (m < 1) return Math.round(days / 7) + ' sem.'; if (m < 24) return (Math.round(m * 2) / 2).toString().replace('.', ',') + ' mois'; const y = Math.floor(m / 12), mm = Math.floor(m - 12 * y); return y + ' an' + (y > 1 ? 's' : '') + (mm ? ' ' + mm + ' mois' : ''); };
 
   // ---------------------------------------------------------------- OMS (LMS)
-  const IND = { wt: { fr: 'poids', unit: 'kg', max: 3683 }, ht: { fr: 'taille', unit: 'cm', max: 6970 }, bmi: { fr: 'IMC', unit: 'kg/m²', max: 6970 }, hc: { fr: 'périmètre crânien', unit: 'cm', max: 1856 } };
-  function lms(ind, sex, d) {
-    const T = (DATA().who[ind] || {})[sex === 'F' ? 'F' : 'M']; if (!T || d == null || d < 0 || d > T.d[T.d.length - 1] + 0.5) return null;
+  const IND = { wt: { fr: 'poids', unit: 'kg', max: 7305 }, ht: { fr: 'taille', unit: 'cm', max: 6970 }, bmi: { fr: 'IMC', unit: 'kg/m²', max: 6970 }, hc: { fr: 'périmètre crânien', unit: 'cm', max: 1856 } };
+  /** coefficients LMS interpolés dans une table { d, L, M, S } (null hors de la table) */
+  function lmsAt(T, d) {
+    if (!T || d == null || d < 0 || d < T.d[0] - 0.5 || d > T.d[T.d.length - 1] + 0.5) return null;
     const A = T.d; let i = 0; while (i < A.length - 2 && A[i + 1] < d) i++; const f = Math.max(0, Math.min(1, (d - A[i]) / (A[i + 1] - A[i] || 1)));
     return { L: T.L[i] + f * (T.L[i + 1] - T.L[i]), M: T.M[i] + f * (T.M[i + 1] - T.M[i]), S: T.S[i] + f * (T.S[i + 1] - T.S[i]) };
   }
+  // v3.4.0 : poids pour l'âge — OMS jusqu'à 10 ans, CDC 2000 de 10 à 20 ans (src/growth_cdc.js), raccord linéaire des
+  // coefficients entre 9 et 10 ans (écart des médianes < 1 kg)
+  const CDC_FROM = 9 * 365.25, CDC_TO = 10 * 365.25;
+  const cdcWt = sex => { const C = DATA().cdc; return C && C.wt ? C.wt[sex === 'F' ? 'F' : 'M'] : null; };
+  function lms(ind, sex, d) {
+    const T = (DATA().who[ind] || {})[sex === 'F' ? 'F' : 'M']; if (!T || d == null || d < 0) return null;
+    const C = ind === 'wt' ? cdcWt(sex) : null;
+    if (C && d > CDC_TO) return lmsAt(C, d);
+    if (C && d > CDC_FROM) { const a = lmsAt(T, d), b = lmsAt(C, d); if (!a || !b) return a || b; const f = (d - CDC_FROM) / (CDC_TO - CDC_FROM); return { L: a.L + f * (b.L - a.L), M: a.M + f * (b.M - a.M), S: a.S + f * (b.S - a.S) }; }
+    return lmsAt(T, d);
+  }
+  /** dernier jour couvert par la référence de l'indicateur (poids : 20 ans avec le CDC) */
+  function refEnd(ind, sex) { const C = ind === 'wt' ? cdcWt(sex) : null; if (C) return C.d[C.d.length - 1]; const T = (DATA().who[ind] || {})[sex === 'F' ? 'F' : 'M']; return T ? T.d[T.d.length - 1] : 0; }
+  /** seuils de l'IMC de l'adulte (OMS) : maigreur, surpoids, obésité */
+  const ADULT_BMI = [18.5, 25, 30];
   const yOf = (P, z) => Math.abs(P.L) < 1e-9 ? P.M * Math.exp(P.S * z) : P.M * Math.pow(1 + P.L * P.S * z, 1 / P.L);
   /** z-score OMS ; poids et IMC : au-delà de ±3 DS, écart rapporté à la distance entre 2 et 3 DS (méthode de l'OMS) */
   function whoZ(ind, sex, d, y) {
@@ -140,27 +156,46 @@
   const fmt = (v, k) => (Math.round(v * Math.pow(10, k || 0)) / Math.pow(10, k || 0)).toString().replace('.', ',');
   /** courbe OMS d'un indicateur : centiles 3, 15, 50, 85, 97, points du patient [{ d (jours), y, id }] ; o { w, h, d0, d1 } ;
    *  géométrie portée par le SVG (data-x0, x1, y0, y1, d0, d1, lo, hi) pour placer un point au clic, data-id sur les points */
+  /** courbe d'un indicateur pour l'âge, de la naissance à l'âge du patient (v3.4.0) : bande P3–P97, centiles 3, 15, 50, 85, 97
+   *  (OMS ; poids après 10 ans : CDC) ; au-delà de la référence (taille, IMC : 19 ans ; poids : 20 ans), âge adulte en
+   *  pointillés — taille : centiles de fin de croissance prolongés ; IMC : seuils de l'adulte 18,5, 25, 30 ; poids : poids
+   *  de ces IMC à la taille adulte (o.adultHt, cm), sinon centiles de 20 ans prolongés.
+   *  o : { w, h, d0, d1, dNow (âge actuel), adultHt, interactive } ; périmètre crânien : référence jusqu'à 5 ans seulement */
   function whoChart(ind, sex, pts, o) {
     o = o || {}; const W = o.w || 520, H = o.h || 300, ml = 40, mr = 44, mt = 12, mb = 30, T = (DATA().who[ind] || {})[sex === 'F' ? 'F' : 'M'];
     if (!T) return '<div class="hint">Référence OMS indisponible.</div>';
-    const dmax = T.d[T.d.length - 1], ds = pts.filter(p => p.d != null && p.y > 0), lastD = Math.max(ds.length ? Math.max(...ds.map(p => p.d)) : 0, o.dNow > 0 ? o.dNow : 0);   // dNow : âge actuel (graphique cliquable)
-    const d1 = Math.min(dmax, o.d1 || (lastD <= 730 ? 730 : lastD <= 1826 ? 1826 : Math.min(dmax, Math.ceil((lastD + 365) / 365.25) * 365.25))), d0 = o.d0 != null ? o.d0 : (d1 > 1900 && ds.every(p => p.d > 1700) ? 1826 : 0);
-    const P = [0.03, 0.15, 0.5, 0.85, 0.97], ages = []; for (let i = 0; i <= 120; i++) ages.push(d0 + (d1 - d0) * i / 120);
+    const dEnd = refEnd(ind, sex), ds = pts.filter(p => p.d != null && p.y > 0), lastD = Math.max(ds.length ? Math.max(...ds.map(p => p.d)) : 0, o.dNow > 0 ? o.dNow : 0);
+    const want = lastD <= 730 ? 730 : lastD <= 1826 ? 1826 : Math.ceil((lastD + 120) / 365.25) * 365.25;
+    const d1 = o.d1 || (ind === 'hc' ? Math.min(dEnd, want) : want), d0 = o.d0 != null ? o.d0 : 0;
+    const dRef = Math.min(d1, dEnd), adult = d1 > dEnd + 1 && ind !== 'hc', P = [0.03, 0.15, 0.5, 0.85, 0.97], ages = []; for (let i = 0; i <= 160; i++) ages.push(d0 + (dRef - d0) * i / 160);
     const curves = P.map(p => ages.map(d => whoValue(ind, sex, d, probit(p))));
-    let lo = Infinity, hi = -Infinity; for (const c of curves) for (const v of c) if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } for (const p of ds) if (p.d >= d0 && p.d <= d1) { lo = Math.min(lo, p.y); hi = Math.max(hi, p.y); }
+    // âge adulte : lignes horizontales de dEnd à d1 (valeur, libellé, classe)
+    const hAd = o.adultHt > 100 ? o.adultHt / 100 : null, adultLines = !adult ? [] : ind === 'bmi' ? ADULT_BMI.map(v => [v, fmt(v, 1), 'thr'])
+      : ind === 'wt' && hAd ? ADULT_BMI.map(v => [v * hAd * hAd, 'IMC ' + fmt(v, 1), 'thr']) : curves.map((c, k) => [c[c.length - 1], 'P' + Math.round(P[k] * 100), k === 2 ? 'med' : '']);
+    let lo = Infinity, hi = -Infinity; for (const c of curves) for (const v of c) if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } for (const [v] of adultLines) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    for (const p of ds) if (p.d >= d0 && p.d <= d1) { lo = Math.min(lo, p.y); hi = Math.max(hi, p.y); }
     const pad = (hi - lo) * 0.06; lo -= pad; hi += pad;
     const X = d => ml + (d - d0) / (d1 - d0) * (W - ml - mr), Y = v => mt + (hi - v) / (hi - lo) * (H - mt - mb);
-    let s = `<svg class="gr-chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(IND[ind].fr)} pour l’âge (OMS)" data-ind="${ind}" data-x0="${ml}" data-x1="${W - mr}" data-y0="${mt}" data-y1="${H - mb}" data-d0="${d0}" data-d1="${d1}" data-lo="${lo}" data-hi="${hi}">`;
-    // axe des âges : mois avant 2 ans, années ensuite
-    const yearly = d1 - d0 > 800, step = yearly ? (d1 - d0 > 3000 ? 2 * 365.25 : 365.25) : 3 * MONTH;
+    const src = ind === 'wt' && dEnd > 3700 ? 'OMS, CDC après 10 ans' : 'OMS';
+    let s = `<svg class="gr-chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(IND[ind].fr)} pour l’âge (${src})" data-ind="${ind}" data-x0="${ml}" data-x1="${W - mr}" data-y0="${mt}" data-y1="${H - mb}" data-d0="${d0}" data-d1="${d1}" data-lo="${lo}" data-hi="${hi}">`;
+    // axe des âges : mois avant 2 ans, années ensuite (pas de 1, 2 ou 5 ans selon l'étendue)
+    const span = d1 - d0, yearly = span > 800, step = !yearly ? 3 * MONTH : span > 15 * 365.25 ? 5 * 365.25 : span > 3000 ? 2 * 365.25 : 365.25;
     for (let d = Math.ceil(d0 / step) * step; d <= d1 + 1; d += step) s += `<line x1="${X(d)}" x2="${X(d)}" y1="${mt}" y2="${H - mb}" class="gr-grid"/><text x="${X(d)}" y="${H - mb + 13}" class="gr-tick" text-anchor="middle">${yearly ? Math.round(d / 365.25) + ' a' : Math.round(d / MONTH) + ' m'}</text>`;
     const ys = Math.pow(10, Math.floor(Math.log10((hi - lo) / 4))), yst = [1, 2, 5, 10].map(k => k * ys).find(k => (hi - lo) / k <= 7) || 10 * ys;
     for (let v = Math.ceil(lo / yst) * yst; v <= hi; v += yst) s += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" class="gr-grid"/><text x="${ml - 4}" y="${Y(v) + 3}" class="gr-tick" text-anchor="end">${fmt(v, yst < 1 ? 1 : 0)}</text>`;
     s += `<path d="M${ages.map((d, i) => X(d) + ',' + Y(curves[0][i])).join('L')}L${ages.slice().reverse().map((d, i) => X(d) + ',' + Y(curves[4][ages.length - 1 - i])).join('L')}Z" class="gr-band"/>`;
-    curves.forEach((c, k) => { s += `<path d="M${ages.map((d, i) => X(d) + ',' + Y(c[i])).join('L')}" class="gr-c${k === 2 ? ' med' : ''}"/><text x="${W - mr + 3}" y="${Y(c[c.length - 1]) + 3}" class="gr-pl">P${Math.round(P[k] * 100)}</text>`; });
+    curves.forEach((c, k) => { s += `<path d="M${ages.map((d, i) => X(d) + ',' + Y(c[i])).join('L')}" class="gr-c${k === 2 ? ' med' : ''}"/>${adult ? '' : `<text x="${W - mr + 3}" y="${Y(c[c.length - 1]) + 3}" class="gr-pl">P${Math.round(P[k] * 100)}</text>`}`; });
+    if (adult) {
+      s += `<line x1="${X(dEnd)}" x2="${X(dEnd)}" y1="${mt}" y2="${H - mb}" class="gr-adl"/><text x="${X(dEnd) + 3}" y="${mt + 9}" class="gr-pl">adulte</text>`;
+      for (const [v, lab, cls] of adultLines) s += `<line x1="${X(dEnd)}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" class="gr-ad ${cls}"/><text x="${W - mr + 3}" y="${Y(v) + 3}" class="gr-pl">${esc(lab)}</text>`;
+    }
     const inR = ds.filter(p => p.d >= d0 && p.d <= d1).sort((a, b) => a.d - b.d);
     if (inR.length > 1) s += `<path d="M${inR.map(p => X(p.d) + ',' + Y(p.y)).join('L')}" class="gr-pts-l"/>`;
-    for (const p of inR) { const z = whoZ(ind, sex, p.d, p.y); s += `<circle cx="${X(p.d)}" cy="${Y(p.y)}" r="4" class="gr-pt${z != null && Math.abs(z) > 2 ? ' out' : ''}"${p.id ? ` data-id="${esc(p.id)}"` : ''}><title>${esc(fmtAge(p.d))} : ${fmt(p.y, 1)} ${IND[ind].unit}${z != null ? ` · z ${fmt(z, 2)} · P${fmt(100 * normCdf(z), 0)}` : ''}</title></circle>`; }
+    for (const p of inR) {
+      const z = whoZ(ind, sex, p.d, p.y), bmiAd = z == null && p.d > dEnd ? (ind === 'bmi' ? p.y : ind === 'wt' && hAd ? p.y / (hAd * hAd) : null) : null;
+      const out = z != null ? Math.abs(z) > 2 : bmiAd != null && (bmiAd < 18.5 || bmiAd >= 30);
+      s += `<circle cx="${X(p.d)}" cy="${Y(p.y)}" r="4" class="gr-pt${out ? ' out' : ''}"${p.id ? ` data-id="${esc(p.id)}"` : ''}><title>${esc(fmtAge(p.d))} : ${fmt(p.y, 1)} ${IND[ind].unit}${z != null ? ` · z ${fmt(z, 2)} · P${fmt(100 * normCdf(z), 0)}` : bmiAd != null && ind === 'wt' ? ` · IMC ${fmt(bmiAd, 1)}` : ''}</title></circle>`;
+    }
     if (o.interactive) s += `<g class="gr-cur" style="display:none"><line class="gr-curl" y1="${mt}" y2="${H - mb}"/><line class="gr-curh" x1="${ml}" x2="${W - mr}"/><circle class="gr-curp" r="3.5"/><text class="gr-curt"></text></g>`;
     s += `<text x="${ml}" y="${H - 3}" class="gr-ax">âge</text><text x="4" y="${mt + 2}" class="gr-ax">${esc(IND[ind].unit)}</text></svg>`;
     return s;
@@ -207,5 +242,5 @@
     return s + '</svg>';
   }
 
-  SV.Growth = { probit, normCdf, ageDays, birthTime, correctedDays, fmtAge, MONTH, IND, IGV, lms, whoZ, whoValue, igP, igValue, pST3, qST3, sizeClass, DOMAINS, MILESTONES, refAge, lateAge, judge, devAges, whoChart, igChart, milestoneChart };
+  SV.Growth = { probit, normCdf, ageDays, birthTime, correctedDays, fmtAge, MONTH, IND, IGV, lms, refEnd, ADULT_BMI, whoZ, whoValue, igP, igValue, pST3, qST3, sizeClass, DOMAINS, MILESTONES, refAge, lateAge, judge, devAges, whoChart, igChart, milestoneChart };
 });

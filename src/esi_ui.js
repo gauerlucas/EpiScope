@@ -472,7 +472,7 @@
     },
     /** résumé d'un résultat (après calcul) pour la liste et les comptes rendus */
     esiSummary(sol, H) {
-      const d = sol.dip; return { peak: sol.peak, top: sol.top.map(t => ({ name: t.name, w: t.w })), dipole: { region: d.region, gof: r3(d.gof), ci: d.ci.r.map(x => Math.round(x * 10) / 10), cortex: Math.round(d.cortex * 10) / 10, near: d.near ? { name: d.near.name, d: Math.round(d.near.d * 10) / 10 } : null, p: d.p.map(x => Math.round(x * 10) / 10), space: H.space },
+      const d = sol.dip; return { peak: sol.peak, top: sol.top.map(t => ({ name: t.name, w: t.w, r: t.r })), dipole: { region: d.region, gof: r3(d.gof), ci: d.ci.r.map(x => Math.round(x * 10) / 10), cortex: Math.round(d.cortex * 10) / 10, near: d.near ? { name: d.near.name, d: Math.round(d.near.d * 10) / 10 } : null, p: d.p.map(x => Math.round(x * 10) / 10), space: H.space },
         lcmv: sol.lcmv ? sol.lcmv.region : null, conc: sol.conc, white: sol.white, head: H.info };
     },
 

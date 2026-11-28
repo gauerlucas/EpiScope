@@ -34,6 +34,11 @@ with sync_playwright() as p:
     pg.evaluate("()=>SV.app.newSeizureIn(SV.app.dossier.explorations[0])"); pg.wait_for_timeout(1200)
     if pg.evaluate("!!document.querySelector('#szInfoDlg .z-ok')"): pg.click('#szInfoDlg .z-ok'); pg.wait_for_timeout(800)   # v1.0.1 : fiche de la crise (v5.5) avant la sémiologie
     print('mode viewer:', pg.evaluate('SV.app.viewer.mode'))
+    # v3.3.1 : gonflement — les deux hémisphères ne se chevauchent pas à mi-gonflement (écart croissant)
+    sep = pg.evaluate("""()=>{const V=SV.app.viewer, g=[]; for (let a=0.25;a<=1.0001;a+=0.25){const L=V._morph('lh',a).pos, R=V._morph('rh',a).pos; let lm=-1e9, rm=1e9; for(let i=0;i<L.length;i+=3) lm=Math.max(lm,L[i]); for(let i=0;i<R.length;i+=3) rm=Math.min(rm,R[i]); g.push(rm-lm);} return g;}""")
+    # (à 25 % les piales, jointives au plan médian, peuvent encore se toucher d'une fraction de mm ; ensuite écart positif, croissant, presque jointif au maximum)
+    assert sep[0] > -1 and all(x > 0 for x in sep[1:]) and sep[-1] < 4 and all(b >= a - 1e-6 for a, b in zip(sep, sep[1:])), 'hémisphères gonflés qui se chevauchent : %r' % sep
+    print('écart des hémisphères gonflés (25/50/75/100 %):', [round(x, 1) for x in sep])
     pg.screenshot(path=os.path.join(OUT, 'empty.png'))
     # charge un cas par l'API
     pg.evaluate('''(evs)=>{ evs.forEach((e,i)=>SV.app.state.events.push(Object.assign({id:i+1,note:''},e))); SV.app.nextId=evs.length+1; document.getElementById('caseName').value='Cas test TLE G'; SV.app.changed(); }''', CASE)

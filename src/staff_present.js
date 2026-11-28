@@ -222,8 +222,8 @@
       const D = this.devParts ? this.devParts(d) : null, H = this.historyParts(d, { skipAnt: D ? ['pregnancy', 'perinatal'] : [] });
       if (D) add('Patient', 'Grossesse et développement', el => this.prDev(el, D), { short: 'Développement', key: 'dev' });
       if (H.antPers || H.antMed || H.comorb || H.family || H.lat) add('Patient', 'Antécédents', el => this.prAntecedents(el, H), { key: 'history' });
-      if (H.life) add('Patient', 'Contexte et mode de vie', el => this.prDoc(el, H.life), { short: 'Mode de vie', key: 'life' });
-      if (H.hx || H.tt) add('Patient', 'Histoire de l’épilepsie', el => this.prDoc(el, H.hx + (H.tt ? `<h3>Traitements</h3>${H.tt}` : '')), { key: 'hx' });
+      if (H.life) add('Patient', 'Contexte et mode de vie', el => this.prLife(el, H), { short: 'Mode de vie', key: 'life' });
+      if (H.hx || H.tt) add('Patient', 'Histoire de l’épilepsie', el => this.prHx(el, H), { key: 'hx' });
       if (H.exam) add('Patient', 'Examen clinique', el => this.prDoc(el, H.exam), { short: 'Examen', key: 'exam' });
       // bilans : vidéo-EEG, neuropsychologie, imagerie (captures des comptes rendus en vignettes), bilans complémentaires
       const of = k => exams.filter(x => [].concat(k).includes(x.kind));
@@ -241,19 +241,21 @@
       // EEG de chaque exploration non invasive : intercritique (captures en galerie), chaque crise et ses médias, synthèse
       for (const ex of ex1) {
         const sec = 'EEG ' + ex.label, szs = scope.seizures.filter(x => x.ex === ex), inter = galList.filter(g => g.explorationId === ex.id && !g.seizureId && !g.examId);
-        const hasCr = ex.eeg && (P1_EEG.some(([k]) => ex.eeg[k]) || (SV.EegCR && SV.EegCR.crHTML(ex)));
-        if (hasCr || inter.length) add(sec, 'EEG intercritique', (el, alive) => this.prEegInter(el, ex, inter, alive), { short: 'EEG intercritique', key: 'eegint:' + ex.id });
+        const hasCr = ex.eeg && (SV.EegCR ? SV.EegCR.crHTML(ex, { part: 'inter' }) : ['background', 'interictal'].some(k => ex.eeg[k]));
+        // v3.4.0 : intercritique seul (sans les crises), bandeau des jours ; captures en diapositives successives (« Médias »)
+        if (hasCr || inter.length) add(sec, 'EEG intercritique', (el, alive) => this.prEegInter(el, ex, inter, alive), { short: 'EEG intercritique', key: 'eegint:' + ex.id, group: 'ii:' + ex.id });
+        this.interMediaSlide(out, sec, ex, inter);
         // v5.5 : imagerie de source des pointes juste après l'analyse visuelle de l'intercritique, avant les crises
         if ((ex.esi || []).some(r => r.kind === 'spike') && this.prEsi) add(sec, 'Pointes intercritiques : types et sources', (el, alive) => this.prEsi(el, ex, alive, 'spike'), { short: 'Sources intercritiques', key: 'esi:sp:' + ex.id });
         szs.forEach(({ sz }) => {
           add(sec, sz.label, (el, alive) => this.prSeizure(el, sz, ex, alive), { short: sz.label, hab: sz.habitual === 'yes', kind: 'sz', group: sz.id, key: 'sz:' + sz.id, prefetch: () => this.presentSeizureAsset(sz) });
           mediaSlide(sec, sz, gal.filter(g => g.seizureId === sz.id));
         });
-        if (szs.length) { const sc = { ids: [ex.id], seizures: szs, explorations: [ex] }; add(sec, 'Synthèse des crises', (el, alive) => this.prSzSynth(el, sc, alive), { short: 'Synthèse', kind: 'syn', key: 'syn:' + ex.id, prefetch: () => this.presentSynthAsset(this.consensus(sc)) }); }
+        if (szs.length || hasCr) { const sc = { ids: [ex.id], seizures: szs, explorations: [ex] }; add(sec, 'Synthèse de l’électrophysiologie', (el, alive) => this.prSzSynth(el, sc, alive), { short: 'Synthèse', kind: 'syn', key: 'syn:' + ex.id, prefetch: szs.length ? () => this.presentSynthAsset(this.consensus(sc)) : null }); }
         if ((ex.esi || []).some(r => r.kind !== 'spike') && this.prEsi) add(sec, 'Début des crises : sources', (el, alive) => this.prEsi(el, ex, alive, 'ictal'), { short: 'Sources critiques', key: 'esi:' + ex.id });
       }
       // SEEG, puis l'intervention (staff après une chirurgie) — present_seeg.js
-      if (this.presentSeegSlides) this.presentSeegSlides(m, scope, { add, gal, galList, galSlide, mediaSlide });
+      if (this.presentSeegSlides) this.presentSeegSlides(m, scope, { add, gal, galList, galSlide, mediaSlide, out });
       if (this.presentSurgerySlides) this.presentSurgerySlides(m, add);
       // discussion
       add('Discussion', 'Concordance anatomo-électro-clinique', el => this.prConcordance(el, m, scope, cons), { short: 'Concordance', key: 'concord' });
@@ -314,49 +316,96 @@
     },
     prDoc(el, html) { el.innerHTML = `<div class="pr-doc">${html}</div>`; },
     /** grossesse, naissance et développement sur une page : textes et tableaux à gauche, courbes (acquisitions, croissance) à droite */
+    /** v3.4.0 : grossesse et naissance, acquisitions résumées (un marqueur par étape renseignée, placée sur la fenêtre de
+     *  référence), âge de développement, évaluations ; courbes poids / taille / IMC en petit à droite (plus de tableau des mesures) */
     prDev(el, D) {
-      const right = (D.nMs ? `<figure class="ms"><figcaption>Acquisitions psychomotrices</figcaption>${D.ms}</figure>` : '') + D.charts.join('');
-      el.innerHTML = `<div class="pr-doc pr-dev${right ? '' : ' one'}"><div>${D.text.join('')}</div>${right ? `<div class="pr-devc">${right}</div>` : ''}</div>`;
+      const Z = D.slide; if (!Z) { el.innerHTML = `<div class="pr-doc">${D.text.join('')}</div>`; return; }
+      const CLS = { ok: ['dans la norme', 'ok'], early: ['précoce', 'ok'], mid: ['un peu tardif', 'mid'], late: ['tardif', 'late'], na: ['non encore acquis', 'na'] };
+      const bar = r => { if (r.lo == null && r.hi == null) return ''; const mx = Math.max(r.hi * 1.6, (r.x || 0) * 1.1, 6), pc = v => Math.max(0, Math.min(100, 100 * v / mx)); return `<span class="pr-msbar" title="${esc(r.ref)}"><i class="win" style="left:${r.lo != null ? pc(r.lo) : 0}%;width:${pc(r.hi) - (r.lo != null ? pc(r.lo) : 0)}%"></i>${r.x != null ? `<b class="pt ${(CLS[r.cls] || CLS.na)[1]}" style="left:${pc(r.x)}%"></b>` : ''}</span>`; };
+      const ms = Z.ms.length ? `<table class="pr-tab pr-ms">${Z.ms.map(r => `<tr><td><i class="pr-msdot ${(CLS[r.cls] || CLS.na)[1]}" title="${esc(r.txt)}"></i>${esc(r.fr)} <span class="muted">${esc(r.dom)}</span></td><td class="mono">${esc(r.val)}</td><td>${bar(r)}</td></tr>`).join('')}</table><div class="pr-mslg muted small"><i class="pr-msdot ok"></i>dans la fenêtre de référence <i class="pr-msdot mid"></i>un peu tardif <i class="pr-msdot late"></i>tardif ou non acquis (âge dépassé) <i class="pr-msdot na"></i>non encore acquis · barre : fenêtre de référence (OMS ou CDC)</div>` : '';
+      const ages = Z.devAges.length ? `<div class="pr-chips">${Z.devAges.map(a => `<span class="pr-chip">${esc(a.dom)} ≈ ${(+a.v).toLocaleString(SV.LOC, { maximumFractionDigits: 0 })} mois${a.pct != null ? ` <b>(${a.pct} %)</b>` : ''}</span>`).join('')}</div>` : '';
+      const left = `${Z.preg || Z.birth ? `<h3>Grossesse et naissance</h3>${Z.preg}${Z.birth}` : ''}${ms || ages || Z.evals || Z.notes ? `<h3>Développement psychomoteur</h3>${ages}${ms}${Z.evals}${Z.notes}` : ''}`;
+      const right = Z.charts.length ? `<div class="pr-devg">${Z.charts.join('')}</div>` : '';
+      el.innerHTML = `<div class="pr-doc pr-dev v34${right ? '' : ' one'}"><div>${left}</div>${right ? `<div class="pr-devc">${right}</div>` : ''}</div>`;
     },
     /** antécédents : personnels, médico-chirurgicaux, comorbidités, latéralité à gauche ; familiaux (arbre) à droite */
+    /** v3.4.0 : antécédents personnels en cartes lisibles (2/3 de la largeur), familiaux à droite (1/3) ; latéralité et
+     *  dominance en pictogrammes (main, œil, langage, test d'Edinburgh) */
     prAntecedents(el, H) {
-      const L = (H.antPers ? `<h3>Antécédents personnels</h3>${H.antPers}` : '') + (H.antMed ? `<h4>Antécédents médico-chirurgicaux notables</h4>${H.antMed}` : '') + (H.comorb ? `<h4>Comorbidités</h4>${H.comorb}` : '') + (H.lat ? `<h3>Latéralité et dominance</h3>${H.lat}` : '');
+      const card = (t, v) => v ? `<div class="pr-antc"><div class="pr-lbl">${t}</div>${v}</div>` : '';
+      const L = `<h3>Antécédents personnels</h3><div class="pr-antg">${card('Antécédents', H.antPers)}${card('Médico-chirurgicaux notables', H.antMed)}${card('Comorbidités', H.comorb)}</div>${H.latInfo ? `<h3>Latéralité et dominance</h3>${this.prLatHtml(H.latInfo)}` : H.lat ? `<h3>Latéralité et dominance</h3>${H.lat}` : ''}`;
       const R = H.family ? `<h3>Antécédents familiaux</h3>${H.famLine}${H.pedSvg ? `<div class="ped-rep">${H.pedSvg}</div>` : ''}${H.pedNotes}` : '';
-      el.innerHTML = `<div class="pr-doc pr-2c pr-ant">${L ? `<div>${L}</div>` : ''}${R ? `<div>${R}</div>` : ''}</div>`;
+      el.innerHTML = `<div class="pr-doc pr-ant v34${R ? '' : ' one'}"><div>${L}</div>${R ? `<div class="pr-antf">${R}</div>` : ''}</div>`;
+    },
+    /** pictogrammes de latéralité : main, Edinburgh (jauge −100 → +100), pointage, œil directeur, gaucherie familiale, langage */
+    prLatHtml(I) {
+      const side = v => v === 'R' || v === 'right' ? 'D' : v === 'L' || v === 'left' ? 'G' : v === 'ambi' || v === 'B' ? 'G/D' : '';
+      const tile = (ic, t, v, sub, cls) => `<div class="pr-lat ${cls || ''}"><span class="pr-latic">${ic}</span><div><div class="pr-latt">${esc(t)}</div><div class="pr-latv">${v}</div>${sub ? `<div class="muted small">${sub}</div>` : ''}</div></div>`;
+      const HAND = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5V4a1.5 1.5 0 0 1 3 0v8M14 11.5V5.5a1.5 1.5 0 0 1 3 0V14c0 4-2.5 7-6.5 7S5 18.5 4.5 16L3 12.5a1.5 1.5 0 0 1 2.6-1.4L8 14"/></svg>';
+      const EYE = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+      const LANG = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>';
+      const FAM = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="7" r="2.5"/><circle cx="16" cy="7" r="2.5"/><path d="M3.5 19v-3a4.5 4.5 0 0 1 9 0M11.5 19v-3a4.5 4.5 0 0 1 9 0"/></svg>';
+      const out = [];
+      if (I.hand || I.edinburgh != null) { const e = I.edinburgh; out.push(tile(HAND, 'Main', `<b class="pr-lats">${esc(I.handFr || '—')}</b>`, e != null ? `<span class="pr-edin" title="Edinburgh : −100 = gaucher franc, +100 = droitier franc"><i style="left:${50 + e / 2}%"></i></span> Edinburgh ${e > 0 ? '+' : ''}${e} %` : '', side(I.hand))); }
+      if (I.pointR != null || I.pointL != null) out.push(tile(HAND, 'Test de pointage', `<b>${I.pointR || 0}</b> droite · <b>${I.pointL || 0}</b> gauche`, ''));
+      if (I.eye) out.push(tile(EYE, 'Œil directeur', `<b class="pr-lats">${I.eye === 'R' ? 'droit' : 'gauche'}</b>`, ''));
+      if (I.lang) out.push(tile(LANG, 'Dominance du langage', `<b class="pr-lats">${esc(I.lang)}</b>`, esc(I.langHow || '')));
+      if (I.famLeft) out.push(tile(FAM, 'Gaucherie familiale', esc(I.famLeft), ''));
+      return `<div class="pr-latg" data-cm="patient:-:lat">${out.join('')}</div>`;
+    },
+    /** v3.4.0 : contexte et mode de vie — texte court en grand, en cartes, pour occuper la page sans la charger */
+    prLife(el, H) {
+      const tmp = document.createElement('div'); tmp.innerHTML = H.life; const items = [...tmp.querySelectorAll('li, p')].map(x => x.textContent.trim()).filter(Boolean);
+      const big = items.length && items.length <= 8 && items.every(t => t.length < 180);
+      el.innerHTML = big ? `<div class="pr-life" data-ed="clin:-:lifestyle">${items.map(t => `<div class="pr-lifec">${esc(t)}</div>`).join('')}</div>` : `<div class="pr-doc pr-lifedoc">${H.life}</div>`;
+    },
+    /** v3.4.0 : histoire de l'épilepsie — repères courts en tuiles, manifestations en paragraphes, fréquence et traitements à droite ;
+     *  chaque champ texte se modifie depuis le staff (mode Éditer) en plus du commentaire */
+    prHx(el, H) {
+      const X = H.hxInfo; if (!X) { el.innerHTML = `<div class="pr-doc">${H.hx}${H.tt ? `<h3>Traitements</h3>${H.tt}` : ''}</div>`; return; }
+      const ed = this.ui.presEdit && this._pres, tile = f => f.v || (ed && f.k) ? `<div class="pr-hxt"><div class="pr-lbl">${esc(f.l)}</div><div class="pr-hxv"${f.k ? ` data-ed="clin:-:${f.k}"` : ''}>${esc(f.v || '').replace(/\n/g, '<br>')}</div></div>` : '';
+      const para = f => f.v || (ed && f.k) ? `<div class="pr-hxp"><div class="pr-lbl">${esc(f.l)}</div><div${f.k ? ` data-ed="clin:-:${f.k}"` : ''}>${esc(f.v || '').replace(/\n/g, '<br>')}</div></div>` : '';
+      const tiles = X.short.map(tile).join(''), long = X.long.map(para).join('');
+      el.innerHTML = `<div class="pr-doc pr-hx v34"><div>${X.story || (ed ? `<p data-ed="patient:-:history"></p>` : '')}<div class="pr-hxg" data-cm="patient:-:hxtable">${tiles}</div>${long}</div><div class="pr-hxr">${X.freq ? `<h3>Fréquence des crises</h3>${X.freq}` : ''}${H.tt ? `<h3>Traitements</h3>${H.tt}` : ''}</div></div>`;
     },
 
     // ================================================================ crises
     /** v5.2 — frise de l'exploration (phase 1, SEEG) : jours, crises (couleur = type, plein = sommeil), stimulations,
      *  thermocoagulations, changements de traitement — pour voir le lien des crises avec le sevrage, les stimulations… */
-    presentTimeline(ex, szs) {
+    /** v3.4.0 : o.inter = [{ date, title, vigilance }] (captures, tracés intercritiques : une rangée « Intercritique ») ;
+     *  o.noSz : sans la rangée des crises (diapositive intercritique) */
+    presentTimeline(ex, szs, o) {
+      o = o || {}; if (o.noSz) szs = [];
       const d = this.dossier, day = 864e5, tOf = s => { if (!s) return NaN; const t = Date.parse(String(s).length <= 10 ? s + 'T12:00:00' : s); return t; };
       const types = ex.szTypes || [], TC = ['#4cc9f0', '#f2994a', '#b18cff', '#7bd389', '#ff5ad1', '#e8d44d'], col = sz => { const i = types.findIndex(t => t.id === sz.typeId); return i >= 0 ? TC[i % TC.length] : '#8aa0b8'; };
       let S0 = szs.map(sz => ({ sz, t: tOf(sz.datetime) })).filter(x => isFinite(x.t));
       let stims = (ex.stims || []).map(s => ({ t: tOf(s.t), sz: !!s.sz, ad: !!s.ad })).filter(x => isFinite(x.t)), th = (ex.thermo || []).filter(t => S.thermoStatusOf(t) === 'done').map(t => ({ t: tOf(t.date) })).filter(x => isFinite(x.t));
-      if (!S0.length && !stims.length && !th.length) return '';
+      let IN = (o.inter || []).map(x => ({ t: tOf(x.date), x })).filter(x => isFinite(x.t));
+      if (!S0.length && !stims.length && !th.length && !IN.length) return '';
       // période : dates de l'exploration (sinon celle des crises) ; un évènement daté hors de la période (date saisie par
       // défaut, à vérifier) n'étire pas la frise : il est seulement compté
       const dayOf = t => new Date(new Date(t).toDateString()).getTime(), sT = S0.map(x => x.t);
       let t0 = tOf(ex.start), t1 = tOf(ex.end);
-      if (!isFinite(t0)) t0 = sT.length ? Math.min(...sT) : Math.min(...stims.concat(th).map(x => x.t));
+      if (!isFinite(t0)) t0 = sT.length ? Math.min(...sT) : Math.min(...stims.concat(th, IN).map(x => x.t));
       if (!isFinite(t1)) t1 = sT.length ? Math.max(...sT, t0) : t0 + 14 * day;
       t0 = dayOf(t0) - (isFinite(tOf(ex.start)) ? 0 : day); t1 = dayOf(t1) + day; if (t1 - t0 > 90 * day) t1 = t0 + 90 * day;
-      const inP = x => x.t >= t0 && x.t <= t1, nOut = [S0, stims, th].reduce((n, L) => n + L.filter(x => !inP(x)).length, 0);
-      S0 = S0.filter(inP); stims = stims.filter(inP); th = th.filter(inP);
+      const inP = x => x.t >= t0 && x.t <= t1, nOut = [S0, stims, th, IN].reduce((n, L) => n + L.filter(x => !inP(x)).length, 0);
+      S0 = S0.filter(inP); stims = stims.filter(inP); th = th.filter(inP); IN = IN.filter(inP);
       const aed = (d.aedHistory || []).map(a => ({ t: tOf(a.date), a })).filter(inP);
-      const rows = [['Crises', 'sz'], stims.length ? ['Stimulations', 'st'] : null, th.length ? ['Thermocoag.', 'tc'] : null, aed.length ? ['Traitement', 'tt'] : null].filter(Boolean);
+      const rows = [o.noSz ? null : ['Crises', 'sz'], IN.length ? ['Intercritique', 'ii'] : null, stims.length ? ['Stimulations', 'st'] : null, th.length ? ['Thermocoag.', 'tc'] : null, aed.length ? ['Traitement', 'tt'] : null].filter(Boolean);
       const W = 1000, L = 112, R = 12, top = 22, rh = 26, Hh = top + rows.length * rh + 6, X = t => L + (W - L - R) * (t - t0) / Math.max(day, t1 - t0), Y = k => top + rows.findIndex(r => r[1] === k) * rh + rh / 2;
       let g = ''; const nD = Math.round((t1 - t0) / day), stp = nD > 24 ? 7 : nD > 12 ? 2 : 1;
       for (let k = 0; k <= nD; k++) { const x = X(t0 + k * day); g += `<line x1="${x}" x2="${x}" y1="${top - 4}" y2="${Hh - 4}" class="tl-g"/>`; if (k < nD && k % stp === 0) g += `<text x="${x + 3}" y="${top - 8}" class="tl-d">J${k + 1} · ${new Date(t0 + k * day + day / 2).toLocaleDateString(SV.LOC, { day: '2-digit', month: '2-digit' })}</text>`; }
       rows.forEach(([l, k]) => { g += `<text x="4" y="${Y(k) + 4}" class="tl-r">${l}</text>`; });
       for (const s of stims) g += `<line x1="${X(s.t)}" x2="${X(s.t)}" y1="${Y('st') - 7}" y2="${Y('st') + 7}" class="tl-st${s.sz ? ' sz' : s.ad ? ' ad' : ''}"/>`;
       for (const s of th) g += `<rect x="${X(s.t) - 3}" y="${Y('tc') - 6}" width="6" height="12" rx="2" class="tl-tc"/>`;
+      { const per = new Map(); for (const s of IN) { const k = dayOf(s.t), n = per.get(k) || 0; per.set(k, n + 1); const x = X(k + day * (0.25 + 0.12 * (n % 5))); g += `<rect x="${x - 4}" y="${Y('ii') - 7}" width="8" height="14" rx="2" class="tl-ii${s.x.vigilance === 'S' ? ' sl' : ''}"><title>${esc((s.x.title || 'intercritique') + ' · ' + new Date(s.t).toLocaleDateString(SV.LOC) + (s.x.vigilance ? ' · ' + (s.x.vigilance === 'S' ? 'sommeil' : 'veille') : ''))}</title></rect>`; } }
       for (const { t, a } of aed) g += `<path d="M${X(t)} ${Y('tt') + 7}V${Y('tt') - 8}l9 3.5-9 3.5" class="tl-tt"><title>${esc(S.fmtPartial(a.date) + ' : ' + a.text)}</title></path>`;
       let xPrev = -1e9; for (const { sz, t } of S0.sort((a, b) => a.t - b.t)) {   // crises rapprochées : côte à côte
         const c = col(sz), sl = sz.vigilance === 'sleep', n = (String(sz.label).match(/\d+/) || [''])[0], x = xPrev = Math.max(X(t), xPrev + 16);
         g += `<g class="tl-sz"><title>${esc(sz.label + ' · ' + fmtDT(sz.datetime) + (sz.vigilance ? ' · ' + V.vigilance[sz.vigilance] : '') + (sz.habitual === 'yes' ? ' · habituelle' : ''))}</title><circle cx="${x}" cy="${Y('sz')}" r="7" fill="${sl ? c : 'none'}" stroke="${c}" stroke-width="${sz.habitual === 'yes' ? 3 : 2}"/>${n ? `<text x="${x}" y="${Y('sz') - 10}" class="tl-n">${n}</text>` : ''}</g>`;
       }
-      const leg = `<span><i class="o"></i>veille</span><span><i class="f"></i>sommeil</span><span><i class="h"></i>habituelle (trait épais)</span>${types.length ? types.map((t, i) => `<span><i class="f" style="background:${TC[i % TC.length]};border-color:${TC[i % TC.length]}"></i>${esc(t.label)}</span>`).join('') : ''}${stims.length ? '<span><b class="st sz"></b>stimulation → crise</span><span><b class="st ad"></b>→ post-décharge</span>' : ''}${nOut ? `<span class="warn-t">${nOut} évènement${nOut > 1 ? 's' : ''} daté${nOut > 1 ? 's' : ''} hors de l’exploration (dates à vérifier)</span>` : ''}`;
+      const leg = `${o.noSz ? '' : '<span><i class="o"></i>veille</span><span><i class="f"></i>sommeil</span><span><i class="h"></i>habituelle (trait épais)</span>'}${IN.length ? '<span><b class="ii"></b>capture ou tracé intercritique (foncé : sommeil)</span>' : ''}${types.length && !o.noSz ? types.map((t, i) => `<span><i class="f" style="background:${TC[i % TC.length]};border-color:${TC[i % TC.length]}"></i>${esc(t.label)}</span>`).join('') : ''}${stims.length ? '<span><b class="st sz"></b>stimulation → crise</span><span><b class="st ad"></b>→ post-décharge</span>' : ''}${nOut ? `<span class="warn-t">${nOut} évènement${nOut > 1 ? 's' : ''} daté${nOut > 1 ? 's' : ''} hors de l’exploration (dates à vérifier)</span>` : ''}`;
       return `<div class="pr-tl"><svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="xMidYMid meet">${g}</svg><div class="pr-tl-leg">${leg}</div></div>`;
     },
     /** ligne des totaux : crises, veille, sommeil, habituelles, par type */
@@ -372,7 +421,10 @@
       const grp = scope.seizures.filter(({ sz }) => !ty || sz.typeId === ty), cons = this.consensus({ ids: scope.ids, seizures: grp, explorations: scope.explorations });
       const pL = Math.round(cons.pL * 100), top = []; for (let i = 1; i < A.N; i++) if (cons.region[i] >= 0.2) top.push(i); top.sort((a, b) => cons.region[b] - cons.region[a]);
       const mx = Math.max(1e-6, ...top.map(i => cons.region[i])), hab = grp.filter(x => x.sz.habitual === 'yes').length;
-      el.innerHTML = `${this.presentSzCounts(ex, all)}${this.presentTimeline(ex, all)}
+      // v3.4.0 : synthèse de l'électrophysiologie — bandeau des jours (crises et intercritique), synthèse intercritique, puis les crises
+      const Gi = (d.gallery || []).filter(g => g.explorationId === ex.id && !g.seizureId && !g.examId && !['ictal', 'postictal', 'stim'].includes(g.kind)), ii = this.prInterSynthHtml(ex);
+      if (!all.length) { el.innerHTML = `${this.presentTimeline(ex, [], { noSz: true, inter: this.interItems(ex, Gi) })}${ii || '<div class="hint">Ni crise ni synthèse intercritique.</div>'}`; return; }
+      el.innerHTML = `${this.presentSzCounts(ex, all)}${this.presentTimeline(ex, all, { inter: this.interItems(ex, Gi) })}${ii}
         ${types.length > 1 ? `<div class="seg pr-tabs pr-sytabs">${types.map(t => `<button data-ty="${t.id}" class="${t.id === ty ? 'on' : ''}">${esc(t.label)} (${scope.seizures.filter(x => x.sz.typeId === t.id).length})</button>`).join('')}</div>` : ''}
         <div class="pr-card pr-model"><div class="pr-2c"><div>
           <div class="pr-lbl">Latéralisation clinique <span class="muted">${cons.n} crise${cons.n > 1 ? 's' : ''}${types.length === 1 ? ' · ' + esc(types[0].label) : ''}${hab ? `, dont ${hab} habituelle${hab > 1 ? 's' : ''} (comptées double)` : ''}</span></div>
@@ -384,6 +436,15 @@
       el.querySelectorAll('[data-ty]').forEach(b => b.onclick = () => { ui[ex.id] = b.dataset.ty; this.prSzSynth(el, scope, alive); });
       el.querySelectorAll('[data-sz]').forEach(b => b.onclick = () => { const P = this._pres, i = P ? P.slides.findIndex(x => x.key === 'sz:' + b.dataset.sz) : -1; if (i >= 0) this.presentShow(i); });
       if (cons.n) this.presentSynthViews(el, cons, alive || (() => true)); else el.querySelector('.pr-synr').innerHTML = '<div class="hint">Aucune crise avec sémiologie.</div>';
+    },
+    /** v3.4.0 : synthèse intercritique d'une exploration (phase 1 : texte et cartes pointes / ondes lentes ; SEEG : plots pointés) */
+    prInterSynthHtml(ex) {
+      const E = ex.eeg || {}, txt = E.synthInter || E.interictal || '', C = SV.EegCR;
+      const maps = C && C.hasMap && E.map ? C.CATS.filter(([k]) => k !== 'ictal' && Object.values(E.map[k] || {}).some(v => v > 0)).map(([k, l]) => `<figure>${C.headSVG(E.map[k], k, { size: 96 })}<figcaption>${esc(l)}</figcaption></figure>`).join('') : '';
+      const cats = ex.kind === 'seeg' && this.interCats ? this.interCats(ex) : [];
+      const seeg = cats.length ? `<div class="pr-ivl">${cats.map(c => `<span class="pr-chip"><i class="dot" style="background:${c.color}"></i><b>${esc(c.label)}</b> <span class="mono">${esc(S.contactRanges(c.contacts))}</span>${c.text ? ' · ' + esc(c.text) : ''}</span>`).join('')}</div>` : '';
+      if (!txt && !maps && !seeg) return '';
+      return `<div class="pr-card pr-isyn"><div class="pr-lbl">Intercritique</div><div class="pr-isynb"><div>${txt ? `<p>${br(txt)}</p>` : ''}${seeg}</div>${maps ? `<div class="eeg-maps sm">${maps}</div>` : ''}</div></div>`;
     },
     /** vues de la synthèse : onglets « régions candidates » puis chaque hypothèse récurrente ; vue 3D de l'onglet affiché */
     async presentSynthViews(el, cons, alive) {
@@ -398,10 +459,27 @@
     presentZoomable(box) { box.querySelectorAll('img').forEach(im => { im.style.cursor = 'zoom-in'; im.onclick = () => this.presentZoomSrc(im.src, (im.closest('figure') && im.closest('figure').querySelector('figcaption') || {}).textContent || ''); }); },
     presentZoomSrc(src, cap) { if (!this._pres) return; const z = h('div', 'pr-zoom', `<img src="${src}"><div class="pr-zcap">${esc(cap || '')}</div>`); z.onclick = () => z.remove(); $('presentation').appendChild(z); },
     /** EEG intercritique d'une exploration : compte rendu sur toute la largeur, captures en galerie dessous */
+    /** v3.4.0 : EEG intercritique d'une phase 1 — bandeau des jours (captures, tracés), compte rendu intercritique seul (rythme
+     *  de fond, anomalies, activations, cartes pointes / ondes lentes, synthèse intercritique), vignettes des captures (clic :
+     *  la diapositive « Médias » à cette capture) */
     prEegInter(el, ex, G, alive) {
-      this.prEeg(el, [], ex.eeg ? [ex] : [], alive);
-      if (G.length) { const c = h('div', 'pr-card', `<div class="pr-lbl">Tracés intercritiques <span class="muted">clic : visionneuse</span></div><div class="pr-thumbs"></div>`); el.appendChild(c); this.presentGallery(c.querySelector('.pr-thumbs'), G, alive); }
+      const cr = SV.EegCR ? SV.EegCR.crHTML(ex, { size: 190, part: 'inter' }) : '';
+      el.innerHTML = `${this.presentTimeline(ex, [], { noSz: true, inter: this.interItems(ex, G) })}<div class="pr-cards"><div class="pr-card exam wide"><div class="pr-exh"><b>${esc(ex.label)}</b><span class="muted">${esc(fmtDate(ex.start))}${ex.end ? ' → ' + esc(fmtDate(ex.end)) : ''}${ex.center ? ' · ' + esc(ex.center) : ''}</span></div>${cr ? cr.replace('<dl class="eeg-dl">', '<dl class="pr-dl eeg-dl">') : '<div class="muted">Pas de compte rendu intercritique saisi.</div>'}</div></div>
+        ${G.length ? `<div class="pr-card"><div class="pr-lbl">Captures intercritiques <span class="muted">clic : en diaporama (diapositive suivante)</span></div><div class="pr-thumbs"></div></div>` : ''}`;
+      if (G.length) this.presentGallery(el.querySelector('.pr-thumbs'), G, alive, k => this.presentGoMedia('iim:' + ex.id, k));
     },
+    /** captures et tracés intercritiques d'une exploration pour le bandeau des jours */
+    interItems(ex, G) {
+      const out = (G || []).map(g => ({ date: g.date, title: g.title || 'capture', vigilance: g.vigilance }));
+      for (const r of ex.recordings || []) { if (this.ieegKind && this.ieegKind(r) !== 'inter') continue; const I = this.recInfo ? this.recInfo(r) : null; if (I && I.when) out.push({ date: I.when.toISOString(), title: r.title, vigilance: I.sleep && !I.wake ? 'S' : '' }); }
+      return out;
+    },
+    /** diapositive « Médias » des captures intercritiques (une capture à la fois, comme les médias d'une crise) */
+    interMediaSlide(out, sec, ex, G) {
+      const media = (G || []).slice(); if (!media.length) return;
+      const sl = { sec, title: `Captures intercritiques · ${ex.label}`, short: `· Médias (${media.length})`, kind: 'media', media, mi: 0, group: 'ii:' + ex.id, key: 'iim:' + ex.id }; sl.render = (el, alive) => this.prMedia(el, sl, alive); out.push(sl);
+    },
+    presentGoMedia(key, k) { const P = this._pres; if (!P) return; const i = P.slides.findIndex(x => x.key === key); if (i < 0) return; this.presentShow(i, { mi: k || 0 }); },
     /** frise de la crise (SVG, rendue hors écran à largeur fixe) */
     seizureFrise(sz) {
       if (!sz.events.length || !SV.Timeline) return '';
@@ -560,20 +638,44 @@
     },
 
     // ================================================================ discussion
-    prConcordance(el, m, scope, cons) {
-      const ST = SV.Staff || {}, SYS = ST.SYSTEMS || [], FR = ST.SYS_FR || {}, LS = ST.LV_SCORE || {};
-      this._scope = scope;
-      const cols = this.meetingColumns(m), auto = this.concordanceAuto(m, scope, cons), man = (m.concordance && m.concordance.cells) || {};
+    /** v3.4.0 — concordance lisible d'un coup d'œil : une bande par hémisphère (gauche, droit), une vignette de cerveau par ligne
+     *  (faces latérale et mésiale, région colorée), icônes de colonnes, cases sans texte (détail au survol, clic : modifier),
+     *  lignes les plus concordantes d'abord et tableau tenu dans la page (« toutes les régions » : le reste) ; hypothèses à
+     *  ajouter depuis la diapositive */
+    prConcordance(el, m, scope, cons, o) {
+      o = o || {}; const ST = SV.Staff || {}, SYS = ST.SYSTEMS || [], FR = ST.SYS_FR || {}, LS = ST.LV_SCORE || {}, DC = ST.DEFAULT_COLS || [];
+      if (!o.prev) { this._scope = scope; this._cons = cons; }
+      const cols = this.meetingColumns(m, scope), auto = this.concordanceAuto(m, scope, cons), man = (m.concordance && m.concordance.cells) || {};
       const cell = (row, c) => (man[row] && man[row][c.key] && man[row][c.key].v !== undefined) ? Object.assign({ manual: true }, man[row][c.key]) : (auto[row] && auto[row][c.key]) || null;
       const hypRows = new Set(); for (const H of this.meetingHypotheses(m)) for (const r of H.ez.concat(H.prop)) hypRows.add(this.atlas.system(r) + ':' + this.atlas.hemiOf[r]);
-      const rows = []; for (const sys of SYS) for (const side of ['L', 'R']) { const k = sys + ':' + side, cells = cols.map(c => cell(k, c)), score = cells.reduce((s, c) => s + (c ? LS[c.v] || 0 : 0), 0); if (cells.some(c => c && c.v && c.v !== '0') || hypRows.has(k) || this.ui.prConcAll) rows.push({ k, sys, side, cells, score, hyp: hypRows.has(k) }); }
-      rows.sort((a, b) => b.score - a.score); const mx = Math.max(1, ...rows.map(r => r.score));
-      el.innerHTML = rows.length ? `<div class="pr-card scroll"><table class="conc pr-conc"><thead><tr><th>Système</th>${cols.map(c => `<th>${esc(c.label)}</th>`).join('')}<th>Concordance</th></tr></thead><tbody>${rows.map(r => `<tr class="${r.hyp ? 'hyp-row' : ''}"><td class="sys">${esc(FR[r.sys] || r.sys)} <b>${r.side === 'L' ? 'G' : 'D'}</b></td>${r.cells.map((c, i) => `<td class="cc lv${c && c.v ? ' v' + LVC[c.v] : ''}" data-row="${r.k}" data-col="${cols[i].key}" title="clic : modifier">${c && c.v ? esc(c.v) : ''}${c && c.note ? `<div class="nt">${esc(c.note)}</div>` : ''}</td>`).join('')}<td class="score"><span class="bar"><i style="width:${Math.max(0, r.score) / mx * 100}%"></i></span> ${r.score > 0 ? '+' + r.score : r.score}</td></tr>`).join('')}</tbody></table>
-        <div class="hint">++ argument fort · + en faveur · 0 neutre · − contre · ? douteux · lignes en bleu : régions des hypothèses discutées · classées par concordance</div>${(() => { const N = this.staffNetworks ? this.staffNetworks(m, scope, cons).slice(0, 3) : []; return N.length ? `<div class="pr-lbl">Hypothèses de réseau à discuter <span class="muted">sémiologie et concordance</span></div>${N.map((x, k) => `<div class="pr-row" title="${esc([x.forC.length ? 'pour : ' + x.forC.join(' ; ') : '', x.againstC.length ? 'contre : ' + x.againstC.join(' ; ') : ''].filter(Boolean).join(' — '))}"><b>${k + 1}.</b> <b>${esc(x.name)}</b> ${x.hemi === 'L' ? 'gauche' : 'droit'} <span class="muted">· ${x.from === 'concordance' ? 'd’après la concordance' : `H1 dans ${x.top}/${cons.n}`} · sémiologie ${x.semio.toFixed(2)} · concordance ${(x.conc > 0 ? '+' : '') + x.conc.toFixed(2)}</span></div>`).join('')}` : ''; })()}</div>` : '<div class="pr-card"><div class="hint">Tableau de concordance vide : cochez « toutes les régions » pour le remplir ici, ou passez par « Préparer ».</div></div>';
-      // modifiable pendant le staff : clic sur une case (même fenêtre que « Préparer »), toutes les régions à la demande
-      const bar = h('div', 'pr-vact pr-concbar', `<span class="muted small">✎ clic sur une case pour la modifier pendant la discussion</span><label class="chip"><input type="checkbox" class="pr-call"${this.ui.prConcAll ? ' checked' : ''}> toutes les régions</label>`); el.appendChild(bar);
+      const all = []; for (const sys of SYS) for (const side of ['L', 'R']) { const k = sys + ':' + side, cells = cols.map(c => cell(k, c)), score = cells.reduce((s2, c) => s2 + (c ? LS[c.v] || 0 : 0), 0); if (cells.some(c => c && c.v && c.v !== '0') || hypRows.has(k) || this.ui.prConcAll) all.push({ k, sys, side, cells, score, hyp: hypRows.has(k) }); }
+      all.sort((a, b) => b.score - a.score); const mx = Math.max(1, ...all.map(r => r.score));
+      // tenir dans la page : au plus MAXR lignes (les plus concordantes, et toujours celles des hypothèses) sauf « toutes les régions »
+      const MAXR = this.ui.prConcAll ? 99 : 12, rows = all.filter((r, k) => k < MAXR || r.hyp), hidden = all.length - rows.length;
+      const SIDE = { L: ['Hémisphère gauche', 'G', 'pr-sideL'], R: ['Hémisphère droit', 'D', 'pr-sideR'] }, icon = c => SV.Glyph ? SV.Glyph.icon(DC.some(x => x.key === c.key) ? c.key : 'custom') : '';
+      const glyph = r => { const u = SV.Glyph && this.atlas ? SV.Glyph.regions(this.atlas, this.regionsOf ? this.regionsOf(r.sys, r.side) : [], r.side, { color: r.side === 'L' ? '#3d7fd6' : '#e07b28' }) : ''; return u ? `<img class="pr-glyph" src="${u}" alt="">` : ''; };
+      const cellHtml = (c, r, i) => `<td class="cc lv${c && c.v ? ' v' + LVC[c.v] : ''}${c && c.manual ? ' man' : ''}" data-row="${r.k}" data-col="${cols[i].key}" title="${esc(cols[i].label + (c && c.note ? ' — ' + c.note : '') + ' · clic : modifier')}">${c && c.v ? `<b>${esc(c.v)}</b>` : ''}</td>`;
+      const band = side => { const L = rows.filter(r => r.side === side); if (!L.length) return ''; const [t, b, cls] = SIDE[side]; return `<tr class="pr-band ${cls}"><td colspan="${cols.length + 2}"><span class="pr-sidebadge">${b}</span> ${t}</td></tr>` + L.map(r => `<tr class="${r.hyp ? 'hyp-row' : ''}"><td class="sys">${glyph(r)}<span class="pr-sysn">${esc(FR[r.sys] || r.sys)}</span> <span class="pr-sidebadge sm ${cls}" title="${esc(t)}">${b}</span></td>${r.cells.map((c, i) => cellHtml(c, r, i)).join('')}<td class="score"><span class="bar"><i style="width:${Math.max(0, r.score) / mx * 100}%"></i></span> ${r.score > 0 ? '+' + r.score : r.score}</td></tr>`).join(''); };
+      el.innerHTML = all.length ? `<div class="pr-card pr-concw"><table class="conc pr-conc v34"><thead><tr><th>Région</th>${cols.map(c => `<th title="${esc(c.label + (c.hint ? ' : ' + c.hint : ''))}">${icon(c)}<span>${esc(c.label)}</span></th>`).join('')}<th title="somme des arguments">${SV.Glyph ? SV.Glyph.icon('conc') : ''}<span>Concordance</span></th></tr></thead><tbody>${band('L')}${band('R')}</tbody></table>
+        <div class="hint">++ argument fort · + en faveur · 0 neutre · − contre · ? douteux · survol d’une case : détail · lignes surlignées : régions des hypothèses${hidden > 0 ? ` · ${hidden} autre${hidden > 1 ? 's' : ''} région${hidden > 1 ? 's' : ''} moins concordante${hidden > 1 ? 's' : ''} (« toutes les régions »)` : ''}</div></div>`
+        : '<div class="pr-card"><div class="hint">Tableau de concordance vide : cochez « toutes les régions » pour le remplir ici, ou passez par « Préparer ».</div></div>';
+      // v3.4.0 : staff précédent (avant l'implantation réalisée) — lecture seule, avec ses hypothèses et sa conclusion
+      if (o.prev) {
+        const H = this.meetingHypotheses(m).filter(x => x.meetingId === m.id || !['refuted', 'abandoned'].includes(x.status)), L = r => esc(this.atlas.label(r));
+        el.querySelectorAll('td.cc').forEach(td => td.setAttribute('title', (td.getAttribute('title') || '').replace(' · clic : modifier', '')));
+        el.insertAdjacentHTML('beforeend', `<div class="pr-2c pr-prev"><div class="pr-card"><div class="pr-lbl">Hypothèses du staff</div>${H.length ? H.map((x, k) => `<div class="pr-row"><b style="color:${SV.hypCss(k)}">H${k + 1}</b> <b>${esc(x.title)}</b> <span class="pr-chip">${esc(V.hypStatus[x.status])}</span> <span class="muted">ZE : ${x.ez.slice(0, 4).map(L).join(', ')}${x.ez.length > 4 ? '…' : ''}</span></div>`).join('') : '<div class="muted">—</div>'}</div><div class="pr-card"><div class="pr-lbl">Conclusion du staff</div>${m.conclusion ? `<p class="pr-lead">${br(m.conclusion)}</p>` : '<div class="muted">—</div>'}</div></div>`);
+        return;
+      }
+      // modifiable pendant le staff : clic sur une case ; hypothèses ajoutées d'ici (modèle et concordance, ou vide)
+      const bar = h('div', 'pr-vact pr-concbar', `<span class="muted small">✎ clic sur une case pour la modifier pendant la discussion</span><label class="chip"><input type="checkbox" class="pr-call"${this.ui.prConcAll ? ' checked' : ''}> toutes les régions</label><button class="pr-btn" data-a="hyp" title="hypothèses proposées d’après la sémiologie et la concordance, ou hypothèse vide">＋ Hypothèse ▾</button>`); el.appendChild(bar);
       const redo = () => this.prConcordance(el, m, scope, cons);
       bar.querySelector('.pr-call').onchange = e => { this.ui.prConcAll = e.target.checked; redo(); };
+      bar.querySelector('[data-a=hyp]').onclick = e => {
+        const go = nh => { this.touch('hypothesis', nh.id, nh.title); if (this.presentInvalidate) this.presentInvalidate(); this.presentRebuild({ key: 'hyp:' + nh.id }); };
+        const L = this.staffNetworks ? this.staffNetworks(m, scope, cons) : [];
+        if (L.length) this.modelHypothesisMenu(m, e.currentTarget, go);
+        else { const nh = S.addHypothesis(this.dossier, { meetingId: m.id, title: 'Nouvelle hypothèse' }); go(nh); }
+      };
       el.querySelectorAll('td.cc[data-row]').forEach(td => td.onclick = e => this.concordanceCellMenu(m, td.dataset.row, td.dataset.col, cols, auto, e, () => { this.presentInvalidate && this.presentInvalidate(); redo(); }));
     },
     /** champ modifié en place dans une diapositive (participants, conclusion) : Entrée (une ligne) ou « enregistrer » */
@@ -605,11 +707,42 @@
           <div class="pr-args"><div class="for"><div class="pr-lbl">Pour</div><ul>${args('argsFor') || '<li class="muted">—</li>'}</ul></div><div class="against"><div class="pr-lbl">Contre</div><ul>${args('argsAgainst') || '<li class="muted">—</li>'}</ul></div></div>
           ${H.notes || (this.ui.presEdit && this._pres) ? `<p data-ed="hypothesis:${esc(H.id)}:notes">${br(H.notes || '')}</p>` : ''}${lin.length > 1 ? `<div class="muted small">Historique : ${lin.map(x => `v${x.version} ${esc(V.hypStatus[x.status])}`).join(' → ')}</div>${this.hypDiff(lin[lin.length - 2], H)}` : ''}</div>
         <div class="pr-card pr-shots"><div class="pr-wait">vues 3D…</div></div></div></div>`;
+      this.prHypEditBar(el, H, i);   // v3.4.0 : hypothèse choisie, modifiée pendant le staff
       const box = el.querySelector('.pr-shots');
       if (!H.ez.length && !H.prop.length) { box.innerHTML = '<div class="hint">Zone épileptogène à préciser.</div>'; return; }
       const imgs = await this.presentHypAsset(H, i); if (!alive()) return;
       box.innerHTML = imgs && imgs.length ? imgs.map((u, k) => `<figure><img src="${u}"><figcaption>réseau · ${k ? 'face médiale' : 'face latérale'}</figcaption></figure>`).join('') + this.presentV3Bar() : '<div class="hint">Vues indisponibles.</div>';
       this.presentZoomable(box); const v3 = box.querySelector('[data-a=v3]'); if (v3) v3.onclick = () => this.openStaffHyp3d(H, i);
+    },
+    /** v3.4.0 — hypothèse modifiée pendant le staff : statut, confiance, côté, titre, régions (ZE, propagation), arguments.
+     *  Une hypothèse d'un staff antérieur est d'abord révisée dans ce staff (nouvelle version ; l'ancienne reste dans l'historique). */
+    prHypEditBar(el, H0, i) {
+      const P = this._pres, m = P && P.m, d = this.dossier; if (!m) return; const card = el.querySelector('.pr-hyp'); if (!card) return;
+      const mine = () => { if (H0.meetingId === m.id) return H0; const nv = S.addHypothesis(d, { supersedes: H0.id, meetingId: m.id, status: H0.status === 'proposed' ? 'proposed' : H0.status }); this.toast(`« ${nv.title} » révisée dans ce staff (version ${nv.version})`, 3000); return nv; };
+      const done = (H, what) => { this.touch('hypothesis', H.id, what || H.title); if (this.presentInvalidate) this.presentInvalidate(); this.presentRebuild({ key: 'hyp:' + H.id }); };
+      const bar = h('div', 'pr-vact pr-hypbar');
+      bar.innerHTML = `<span class="seg pr-hst" title="statut de l’hypothèse">${Object.entries(V.hypStatus).filter(([k]) => k !== 'revised').map(([k, l]) => `<button data-st="${k}" class="${H0.status === k ? 'on' : ''}">${esc(l)}</button>`).join('')}</span>
+        <select class="pr-hconf" title="confiance">${Object.entries(V.confidence).map(([k, l]) => `<option value="${k}"${H0.confidence === k ? ' selected' : ''}>confiance ${esc(l)}</option>`).join('')}</select>
+        <select class="pr-hside" title="côté">${[['', 'côté —'], ['L', 'gauche'], ['R', 'droit'], ['B', 'bilatéral']].map(([k, l]) => `<option value="${k}"${(H0.side || '') === k ? ' selected' : ''}>${l}</option>`).join('')}</select>
+        <button class="pr-btn" data-a="regs" title="choisir les régions de la zone épileptogène et de la propagation">✎ Régions</button><button class="pr-btn" data-a="args" title="arguments pour et contre, titre">✎ Titre et arguments</button>`;
+      card.insertBefore(bar, card.children[1] || null);
+      bar.querySelectorAll('[data-st]').forEach(b => b.onclick = () => { const H = mine(); H.status = b.dataset.st; done(H, 'statut'); });
+      bar.querySelector('.pr-hconf').onchange = e => { const H = mine(); H.confidence = e.target.value; done(H, 'confiance'); };
+      bar.querySelector('.pr-hside').onchange = e => { const H = mine(); H.side = e.target.value; done(H, 'côté'); };
+      bar.querySelector('[data-a=regs]').onclick = () => {
+        const H = mine(), host = card.querySelector('.pr-split .pr-card'); if (!host || !this.regionPicker) return;
+        host.innerHTML = '<div class="pr-lbl">Zone épileptogène</div><div class="pr-rpez"></div><div class="pr-lbl">Propagation, réseau</div><div class="pr-rpprop"></div><div class="btnrow"><button class="mini-btn primary" data-a="ok">terminé</button></div>';
+        host.querySelector('.pr-rpez').appendChild(this.regionPicker(H.ez, () => this.touch('hypothesis', H.id, H.title)));
+        host.querySelector('.pr-rpprop').appendChild(this.regionPicker(H.prop, () => this.touch('hypothesis', H.id, H.title)));
+        host.querySelector('[data-a=ok]').onclick = () => done(H, 'régions');
+      };
+      bar.querySelector('[data-a=args]').onclick = () => {
+        const H = mine(), host = card.querySelector('.pr-split .pr-card'); if (!host) return; const lines = k => H[k].map(a => a.text).filter(Boolean).join('\n');
+        host.innerHTML = `<label class="pr-lbl">Titre</label><input class="pr-inl-in pr-ht" value="${esc(H.title)}"><div class="pr-args"><div class="for"><div class="pr-lbl">Pour <span class="muted">une ligne par argument</span></div><textarea class="pr-inl-in pr-af" rows="6">${esc(lines('argsFor'))}</textarea></div><div class="against"><div class="pr-lbl">Contre</div><textarea class="pr-inl-in pr-aa" rows="6">${esc(lines('argsAgainst'))}</textarea></div></div><div class="btnrow"><button class="mini-btn primary" data-a="ok">enregistrer</button><button class="mini-btn" data-a="x">annuler</button></div>`;
+        const keep = (k, txt) => { const old = H[k], out = []; for (const t of txt.split('\n').map(x => x.trim()).filter(Boolean)) { const o = old.find(a => a.text === t); out.push(o || { text: t, ref: null }); } H[k] = out; };
+        host.querySelector('[data-a=ok]').onclick = () => { H.title = host.querySelector('.pr-ht').value.trim() || H.title; keep('argsFor', host.querySelector('.pr-af').value); keep('argsAgainst', host.querySelector('.pr-aa').value); done(H, 'arguments'); };
+        host.querySelector('[data-a=x]').onclick = () => this.presentRebuild({ key: 'hyp:' + H.id });
+      };
     },
     /** v5.1 — conclusion lisible en grand ; décisions du staff ajoutées sur place (comme dans « Préparer ») : chacune a sa
      *  diapositive, où « modifier » ouvre « Préparer » pour le schéma d'implantation ou l'intervention */

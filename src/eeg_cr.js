@@ -108,15 +108,19 @@
   /** compte rendu EEG complet en HTML (rapports, présentation) ; opts.size : taille des têtes */
   function crHTML(ex, opts) {
     opts = opts || {}; const E = normEeg(ex.eeg || (ex.eeg = {})), d = SV.app && SV.app.dossier, nSz = d ? S.seizuresOfExploration(d, ex.id).filter(z => z.events.length).length : null;
-    const rows = FIELDS.filter(([k]) => k !== 'conclusion' && E[k]).map(([k, l]) => `<dt>${l}</dt><dd>${br(E[k])}</dd>`), act = actText(E), evt = eventsText(E, ex.kind === 'phase1' ? nSz : null);
+    // v3.4.0 : opts.part = 'inter' (rythme de fond, anomalies intercritiques, activations, cartes pointes / ondes lentes,
+    // synthèse intercritique — sans les crises) ou 'synth' (synthèses intercritique et des crises, conclusion, toutes les cartes)
+    const part = opts.part || '', PK = { inter: ['background', 'interictal'], synth: [] }[part];
+    const rows = FIELDS.filter(([k]) => k !== 'conclusion' && E[k] && (!PK || PK.includes(k))).map(([k, l]) => `<dt>${l}</dt><dd>${br(E[k])}</dd>`), act = part === 'synth' ? [] : actText(E), evt = part ? [] : eventsText(E, ex.kind === 'phase1' ? nSz : null);
     if (act.length) rows.push(`<dt>Épreuves d’activation</dt><dd>${act.map(esc).join('<br>')}</dd>`);
     if (evt.length && (ex.kind === 'phase1' || (E.events.pnes !== '' || (E.events.other || []).length))) rows.push(`<dt>Événements enregistrés</dt><dd>${evt.map(esc).join('<br>')}</dd>`);
-    const maps = hasMap(E) ? `<div class="eeg-maps">${CATS.filter(([k]) => Object.values(E.map[k] || {}).some(v => v > 0)).map(([k, l]) => `<figure>${headSVG(E.map[k], k, { size: opts.size || 150 })}<figcaption><b>${l}</b><br><span>${esc(topoText(E.map[k]))}</span></figcaption></figure>`).join('')}</div>` : '';
-    if (E.synthInter) rows.push(`<dt>Synthèse intercritique</dt><dd>${br(E.synthInter)}</dd>`); if (E.synthIctal) rows.push(`<dt>Synthèse des crises</dt><dd>${br(E.synthIctal)}</dd>`);
-    if (!rows.length && !maps && !E.conclusion) return '';
+    const maps = hasMap(E) ? `<div class="eeg-maps">${CATS.filter(([k]) => (part !== 'inter' || k !== 'ictal') && Object.values(E.map[k] || {}).some(v => v > 0)).map(([k, l]) => `<figure>${headSVG(E.map[k], k, { size: opts.size || 150 })}<figcaption><b>${l}</b><br><span>${esc(topoText(E.map[k]))}</span></figcaption></figure>`).join('')}</div>` : '';
+    if (E.synthInter) rows.push(`<dt>Synthèse intercritique</dt><dd>${br(E.synthInter)}</dd>`); if (E.synthIctal && part !== 'inter') rows.push(`<dt>Synthèse des crises</dt><dd>${br(E.synthIctal)}</dd>`);
+    const concl = part === 'inter' ? '' : E.conclusion;
+    if (!rows.length && !maps && !concl) return '';
     // opts.afterInter (HTML : imagerie de source des pointes) après l'analyse visuelle de l'intercritique (anomalies, cartes)
     const k = opts.afterInter ? FIELDS.filter(([f]) => f !== 'conclusion' && E[f]).findIndex(([f]) => f === 'interictal') + 1 || Math.min(1, rows.length) : rows.length, dl = R => R.length ? `<dl class="eeg-dl">${R.join('')}</dl>` : '';
-    return `<div class="eeg-cr">${dl(rows.slice(0, k))}${opts.afterInter ? maps + opts.afterInter + dl(rows.slice(k)) : dl(rows.slice(k)) + maps}${E.conclusion ? `<p class="eeg-concl"><b>Conclusion</b> : ${br(E.conclusion)}</p>` : ''}</div>`;
+    return `<div class="eeg-cr">${dl(rows.slice(0, k))}${opts.afterInter ? maps + opts.afterInter + dl(rows.slice(k)) : dl(rows.slice(k)) + maps}${concl ? `<p class="eeg-concl"><b>Conclusion</b> : ${br(concl)}</p>` : ''}</div>`;
   }
   /** styles des têtes (rapports imprimables : couleurs fixes) */
   const PRINT_CSS = `.eeg-head .eh-skull{fill:#fff;stroke:#1d2330;stroke-width:.018}.eeg-head .eh-nose,.eeg-head .eh-ear{fill:none;stroke:#1d2330;stroke-width:.018}.eeg-head .eh-el circle{fill:#fff;stroke:#1d2330;stroke-width:.012}.eeg-head .eh-el text{font:600 .095px sans-serif;text-anchor:middle;fill:#1d2330}.eeg-maps{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0}.eeg-maps figure{margin:0;text-align:center;max-width:200px;font-size:11px}.eeg-dl dt{font-weight:600;margin-top:6px}.eeg-dl dd{margin:0 0 4px 0}`;
