@@ -30,7 +30,7 @@ Les pointes sont réunies en **groupes de même topographie** (au moins trois po
 
 ## Imagerie de source
 
-{refs: sloreta lcmv openmeeg parradiaz}
+{refs: sloreta lcmv openmeeg parradiaz jenkinson2005}
 
 La source est cherchée **à mi-montée** de la pointe moyennée (là où le générateur initial domine la propagation), avec trois méthodes complémentaires :
 
@@ -38,7 +38,7 @@ La source est cherchée **à mi-montée** de la pointe moyennée (là où le gé
 - **dipôle équivalent** : un seul générateur, avec sa qualité d'ajustement (GOF) et une ellipse de confiance ;
 - **faisceau LCMV** : filtre spatial à variance minimale.
 
-Le **modèle de tête** est un BEM à trois couches (scalp, crâne, cerveau) construit sur l'anatomie du patient quand elle existe, sinon sur le gabarit ; les électrodes de scalp sont posées sur la tête du patient. La concordance lobaire des méthodes est signalée : elle augmente la confiance.
+Le **modèle de tête** est un BEM à trois couches (scalp, crâne, cerveau) construit sur l'anatomie du patient quand elle existe, sinon sur le gabarit ; les électrodes de scalp sont posées sur la tête du patient. Par défaut, le crâne a l'épaisseur attendue pour l'âge, à partir du cerveau segmenté et du scalp lu sur le T1 (642 sommets par couche). En second temps, [[Modèle de tête…]] › *BEM fin, crâne détecté sur l'IRM* lit les tables interne et externe de l'os sur le T1 du patient, sans CT (tous les patients n'ont pas de SEEG) : le long de rayons partant du centre de la tête, entre le cerveau et le scalp, le profil d'intensité est découpé en LCR, os (tissu le plus sombre du T1) et parties molles, comme dans BET2 / betsurf (FSL), avec un a priori faible sur les épaisseurs ; sous le plan du centre de la tête (base du crâne, sinus), où le T1 ne sépare pas l'os de l'air, le modèle rejoint le modèle par défaut ; 1442 sommets par couche, environ une minute de calcul, gardé dans le dossier. EpiScope l'a vérifié contre le CT de patients : crâne externe et épaisseur de l'os plus proches du CT. L'incertitude sur la conductivité de l'os reste, elle, la principale source d'erreur des modèles de tête. La concordance lobaire des méthodes est signalée : elle augmente la confiance.
 
 !!! attention
     Avec 19 à 25 électrodes, la résolution spatiale est de l'ordre du lobe ou du sous-lobe. Un générateur profond ou étendu peut être mal localisé ; une source discordante avec le reste du dossier doit faire relire les pointes.

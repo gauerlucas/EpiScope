@@ -33,6 +33,13 @@ Chaque recalage se contrôle dans les coupes, image superposée au T1. S'il est 
 - [[repères…]] : pointez le centre du cerveau (et, si besoin, CA, CP, un point de la ligne médiane) sur la référence puis sur l'image ; EpiScope repart de cette position ;
 - [[ajuster]] : un cadre autour de la tête pour corriger à la main la position et l'échelle (utile chez l'enfant entre deux examens éloignés).
 
+### Recalage fin, en second temps
+
+Les recalages rapides suffisent pour l'affichage et l'orientation clinique. Quand deux IRM sont séparées de plusieurs années (croissance), ou pour obtenir des **coordonnées MNI « research-grade »** destinées à une étude de cohorte, EpiScope propose un recalage fin (elastix, intégré, sans logiciel externe) :
+
+- [[recalage fin…]] sur une image déjà recalée : une nouvelle image, recalée finement sur la référence, est ajoutée au dossier (l'image d'origine reste) ;
+- [[Recalage fin vers MNI (elastix)…]] dans la carte **Anatomie du patient** : 5 à 15 minutes selon l'ordinateur, l'application reste utilisable ; la carte indique ensuite « MNI fin (research-grade) » et la part du cerveau où la déformation se replie (à vérifier si elle dépasse 1 %). [[revenir au rapide]] rétablit la transformation précédente.
+
 ## L'anatomie du patient
 
 À partir du T1, EpiScope calcule :

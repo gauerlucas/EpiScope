@@ -58,7 +58,7 @@
         ${recs.length ? list || '<div class="hint">Aucun tracé ne répond aux filtres.</div>' : `<div class="hint">EDF / BDF, BrainVision (.vhdr + .eeg + .vmrk)${scalp ? ' : électrodes 10-20 reconnues par leur nom (Fp1… O2, T3/T7…)' : ', ou .eeg d’un dossier BIDS (channels.tsv, _ieeg.json)'}. Le fichier est rangé dans le dossier du patient ; rien ne quitte le poste. Une crise du dossier dont l’heure tombe dans le tracé lui est rattachée.</div>`}
         ${sorted.length ? '' : o.after || ''}
         ${orphans.length ? `<div class="rc-day">Autres résultats</div><div class="rc-post">${this.esiRowsHtml(orphans)}</div>` : ''}
-        ${scalp ? `<div class="hint small">Modèle de tête : ${this.esiHeadCfg().model === 'bem' ? 'BEM réaliste à 3 couches' : 'sphère à 3 couches'} sur ${this.patientAnat ? 'l’IRM du patient (vue 3D en « Patient »)' : 'la tête du gabarit'}. <a href="#" class="esi-hd">Modèle de tête…</a></div>` : ''}`;
+        ${scalp ? `<div class="hint small">Modèle de tête : ${({ bem: 'BEM réaliste à 3 couches', bemfine: 'BEM fin à 3 couches (crâne lu sur l’IRM)', sphere: 'sphère à 3 couches' })[this.esiHeadCfg().model]} sur ${this.patientAnat ? 'l’IRM du patient (vue 3D en « Patient »)' : 'la tête du gabarit'}. <a href="#" class="esi-hd">Modèle de tête…</a></div>` : ''}`;
       box.insertBefore(card, box.firstChild);
       this.recCardsBind(card, ex, o);
     },

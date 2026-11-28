@@ -126,6 +126,10 @@
     },
     /** lecture d'un volume en un point de l'espace de la vue (M : vue → voxel) → test(valeur), null hors du volume */
     esiSampler(vol, M, test) { const [nx, ny, nz] = vol.dims, D = vol.data; return p => { const x = p[0], y = p[1], z = p[2], i = Math.round(M[0] * x + M[1] * y + M[2] * z + M[3]), j = Math.round(M[4] * x + M[5] * y + M[6] * z + M[7]), k = Math.round(M[8] * x + M[9] * y + M[10] * z + M[11]); return i < 0 || j < 0 || k < 0 || i >= nx || j >= ny || k >= nz ? null : test(D[i + nx * (j + ny * k)]); }; },
+    /** intensité interpolée (trilinéaire) d'un volume au point p (espace de la vue), 0 hors du champ — profils du modèle de tête fin */
+    esiSamplerLin(vol, M) { const [nx, ny, nz] = vol.dims, D = vol.data; return p => { const x = M[0] * p[0] + M[1] * p[1] + M[2] * p[2] + M[3], y = M[4] * p[0] + M[5] * p[1] + M[6] * p[2] + M[7], z = M[8] * p[0] + M[9] * p[1] + M[10] * p[2] + M[11], i = Math.floor(x), j = Math.floor(y), k = Math.floor(z);
+      if (i < 0 || j < 0 || k < 0 || i >= nx - 1 || j >= ny - 1 || k >= nz - 1) return 0; const a = x - i, b = y - j, c = z - k; let v = 0;
+      for (let dk = 0; dk < 2; dk++) for (let dj = 0; dj < 2; dj++) for (let di = 0; di < 2; di++) v += (di ? a : 1 - a) * (dj ? b : 1 - b) * (dk ? c : 1 - c) * D[(i + di) + nx * ((j + dj) + ny * (k + dk))]; return v; }; },
     /** électrodes de scalp sur le T1 du patient (modèle sphérique) : rayon depuis le centre de la tête, premier tissu rencontré */
     async esiProjectScalp(P) {
       const Ap = this.patientAnat, d = this.dossier, ref = d && ST.refImaging(d); if (!Ap || !ref) return { P, n: 0 };
@@ -139,7 +143,7 @@
     esiAtlasSpace() { const At = this.viewer && this.viewer.atlas; return At && At.patient ? 'patient' : 'template'; },
 
     // ================================================================ modèle de tête du scalp : BEM réaliste (défaut) ou sphère
-    esiHeadCfg() { const s = this.dossier && this.dossier.settings && this.dossier.settings.esiHead; return { model: s && s.model === 'sphere' ? 'sphere' : 'bem', age: s && s.age != null && s.age !== '' && isFinite(+s.age) ? +s.age : null }; },
+    esiHeadCfg() { const s = this.dossier && this.dossier.settings && this.dossier.settings.esiHead; return { model: s && (s.model === 'sphere' || s.model === 'bemfine') ? s.model : 'bem', age: s && s.age != null && s.age !== '' && isFinite(+s.age) ? +s.age : null }; },
     /** âge retenu pour les conductivités et les épaisseurs : réglé, à l'IRM (anatomie du patient), à l'EEG, sinon adulte */
     esiAge(space) {
       const d = this.dossier, cfg = this.esiHeadCfg(); if (cfg.age != null) return { age: cfg.age, how: 'réglé' };
@@ -158,17 +162,20 @@
     /** surfaces BEM de l'anatomie affichée — patient : scalp du T1 et masque de sa segmentation ; gabarit : électrodes standard
      *  (posées sur la tête MNI) et masque VEP — épaisseurs et conductivités selon l'âge ; en cache par anatomie et âge */
     async esiHeadGeom(space) {
-      const At = this.viewer.atlas, ag = this.esiAge(space), P = SV.BEM.ageParams(ag.age), key = space + '|' + (ag.age == null ? 'adulte' : ag.age.toFixed(2)), C = this._esiGeom || (this._esiGeom = new Map());
+      const fine = space === 'patient' && this.esiHeadCfg().model === 'bemfine';
+      const At = this.viewer.atlas, ag = this.esiAge(space), P = SV.BEM.ageParams(ag.age), key = space + '|' + (ag.age == null ? 'adulte' : ag.age.toFixed(2)) + (fine ? '|fin' : ''), C = this._esiGeom || (this._esiGeom = new Map());
       const hit = C.get(key); if (hit && hit.atlas === At) return hit;
-      let mask, Mv, scalpAt = null, scalpPts = null;
+      let mask, Mv, scalpAt = null, scalpPts = null, t1At = null;
       if (space === 'patient') {
         const Ap = this.patientAnat, ref = ST.refImaging(this.dossier); if (!Ap || !Ap.segVol || !ref) throw new Error('segmentation du T1 absente (recalculer l’anatomie du patient)');
         mask = Ap.segVol; Mv = M4.mul(M4.inv(mask.affine), Ap.fromDisplay);
-        const vol = await this.imagingVolume(ref), thr = this.esiAirThr(vol); scalpAt = this.esiSampler(vol, M4.mul(M4.inv(vol.affine), Ap.fromDisplay), v => v > thr);
+        const vol = await this.imagingVolume(ref), thr = this.esiAirThr(vol), Mt = M4.mul(M4.inv(vol.affine), Ap.fromDisplay); scalpAt = this.esiSampler(vol, Mt, v => v > thr); if (fine) t1At = this.esiSamplerLin(vol, Mt);
       } else { mask = this.tplVepVol(); if (!mask) throw new Error('atlas du gabarit absent'); Mv = M4.inv(mask.affine); scalpPts = Object.entries(E.STD).filter(([k]) => !/^(A1|A2|T3|T4|T5|T6)$/.test(k)).map(([, p]) => p); }
       const inB = this.esiSampler(mask, Mv, v => v > 0), cut = this.esiCut(mask, M4.inv(Mv));
-      const H = SV.BEM.headSurfaces({ c: cut.c, zCut: cut.z, P, brainAt: p => inB(p) === true, scalpAt, scalpPts });
-      const geom = Object.assign(H, { atlas: At, space, key, P, age: ag, c: cut.c, model: null }); C.set(key, geom); return geom;
+      const o = { c: cut.c, zCut: cut.z, P, brainAt: p => inB(p) === true, scalpAt, scalpPts };
+      // v3.5.0 — modèle fin (deuxième temps, patient) : crâne interne / externe lus sur les profils du T1, 1442 sommets par couche
+      const H = fine ? SV.BEM.headSurfacesTissue(Object.assign(o, { t1At, nu: 12 })) : SV.BEM.headSurfaces(o);
+      const geom = Object.assign(H, { atlas: At, space, key, P, age: ag, c: cut.c, model: null, fine }); C.set(key, geom); return geom;
     },
     /** électrodes posées sur le scalp du modèle : standard (gabarit), recalées (patient) ou déplacées à la main (enregistrées
      *  par exploration : monde du T1 pour le patient, gabarit sinon) → { P (vue), moved: [noms] } */
@@ -194,14 +201,14 @@
       const key = 'B|' + geom.key + '|' + known.map((n, i) => n + ep.P[i].map(x => Math.round(x)).join(',')).join(';'); if (C.has(key) && C.get(key).atlas === At) return C.get(key);
       const src = this.esiSources(At, 10000, false), ck = `${key}|${src.n}|${ESI_DMIN}|${geom.space === 'patient' ? ((this.patientAnat.info || {}).date || '') : 'gabarit'}|v1`;
       let r = await this.esiLeadLoad(ck);   // déjà calculé pour cette tête et ces électrodes (dossier du patient) : relu
-      if (!r) { const job = this.jobStart ? this.jobStart(geom.model ? 'Modèle de tête : électrodes' : 'Modèle de tête réaliste (BEM 3 couches)') : null;
+      if (!r) { const job = this.jobStart ? this.jobStart(geom.model ? 'Modèle de tête : électrodes' : geom.fine ? 'Modèle de tête fin (crâne lu sur l’IRM, BEM 3 couches, quelques minutes)' : 'Modèle de tête réaliste (BEM 3 couches)') : null;
         try { r = await this.esiBemLead(geom, ep.P, src, p => job && job.progress(p)); } catch (e) { if (job) job.fail(e.message); throw e; }
         if (job) job.done('Modèle de tête prêt (gardé dans le dossier)'); this.esiLeadSave(ck, r); }
       const m = known.length, L = E.avgRefCols(r.L, m, 3 * src.n), R = SV.BEM.allVerts({ n: r.n, surfs: geom.surfs }), Tr = { T: r.T, m }, P = geom.P, st = geom.stats, ag = geom.age;
       const H = { kind: 'scalp', model: 'bem', space: geom.space, atlas: At, names: known, P: ep.P, moved: ep.moved, c: geom.c, geom, m, n: src.n, src, L, op: null,
         gainAt: p => { const g = SV.BEM.gainAt(Tr, R, r.n, this.esiKeepIn(geom, p, ESI_DMIN)); for (let q = 0; q < 3; q++) { let a = 0; for (let i = 0; i < m; i++) a += g[i * 3 + q]; a /= m; for (let i = 0; i < m; i++) g[i * 3 + q] -= a; } return g; },
         inside: p => { const u = sub(p, geom.c), rr = len(u); if (rr < 8) return false; const t = SV.BEM.rayHit(geom.surfs[2], geom.c, [u[0] / rr, u[1] / rr, u[2] / rr]); return t != null && rr < t - 1; },
-        info: `BEM à 3 couches (scalp, crâne externe, crâne interne, 642 sommets chacune) ; os ${nf(st.skull, 1)} mm, scalp ${nf(st.scalp, 1)} mm, rapport cerveau / os ${Math.round(P.bscr)} (${ag.age == null ? ag.how : `${nf(ag.age, ag.age < 3 ? 1 : 0)} an${ag.age >= 2 ? 's' : ''} ${ag.how}`}) ; ${m} électrodes ${geom.space === 'patient' ? 'sur le scalp du patient' : 'standard (tête MNI)'}${ep.moved.length ? ` dont ${ep.moved.length} replacée${ep.moved.length > 1 ? 's' : ''} à la main` : ''} ; ${src.n} sources corticales` };
+        info: `BEM à 3 couches${geom.fine ? ' fin' : ''} (scalp, crâne externe, crâne interne, ${geom.G.np} sommets chacune${geom.fine ? ' ; crâne lu sur le T1' : ''}) ; os ${geom.fine ? 'mesuré ' : ''}${nf(st.skull, 1)} mm, scalp ${nf(st.scalp, 1)} mm, rapport cerveau / os ${Math.round(P.bscr)} (${ag.age == null ? ag.how : `${nf(ag.age, ag.age < 3 ? 1 : 0)} an${ag.age >= 2 ? 's' : ''} ${ag.how}`}) ; ${m} électrodes ${geom.space === 'patient' ? 'sur le scalp du patient' : 'standard (tête MNI)'}${ep.moved.length ? ` dont ${ep.moved.length} replacée${ep.moved.length > 1 ? 's' : ''} à la main` : ''} ; ${src.n} sources corticales` };
       C.set(key, H); return H;
     },
     /** gain BEM gardé dans le dossier (derivatives/esi/) : même anatomie, âge, électrodes et sources → relu au lieu d'être
@@ -434,6 +441,7 @@
       const ageTxt = a => a.age == null ? a.how : `${nf(a.age, a.age < 3 ? 1 : 0)} an${a.age >= 2 ? 's' : ''} (${a.how})`;
       box.innerHTML = `<div class="modal-card esi-head-dlg"><div class="modal-head"><span>Modèle de tête de l’imagerie de source</span><button class="close">✕</button></div>
         <label class="esi-opt"><input type="radio" name="esiM" value="bem"${cfg.model === 'bem' ? ' checked' : ''}> <b>BEM réaliste à 3 couches</b> <span class="muted">scalp, crâne externe et interne construits sur ${space === 'patient' ? 'l’IRM du patient' : 'la tête du gabarit MNI'} (comme Brainstorm / OpenMEEG)</span></label>
+        <label class="esi-opt${space === 'patient' ? '' : ' muted'}"><input type="radio" name="esiM" value="bemfine"${cfg.model === 'bemfine' ? ' checked' : ''}${space === 'patient' ? '' : ' disabled'}> <b>BEM fin, crâne détecté sur l’IRM</b> <span class="muted">deuxième temps, pour l’IRM du patient : les tables interne et externe de l’os sont lues sur les profils d’intensité du T1 (sans CT), 1442 sommets par couche ; calcul de quelques minutes, gardé dans le dossier${space === 'patient' ? '' : ' — vue 3D en « Patient » nécessaire'}</span></label>
         <label class="esi-opt"><input type="radio" name="esiM" value="sphere"${cfg.model === 'sphere' ? ' checked' : ''}> <b>Sphère à 3 couches</b> <span class="muted">ajustée aux électrodes, plus rapide, moins juste en temporal basal et frontal</span></label>
         <div class="ctrl-row"><label>âge <input type="number" class="esi-age" min="0" max="100" step="0.1" value="${cfg.age == null ? '' : cfg.age}" placeholder="${auto.age == null ? 'adulte' : nf(auto.age, 1)}" style="width:70px"> ans</label><span class="muted small">vide : ${esc(ageTxt(cfg.age == null ? auto : this.esiAge(space)))}</span></div>
         <div class="esi-ptabw">${tab(cfg.age != null ? cfg.age : auto.age)}</div>

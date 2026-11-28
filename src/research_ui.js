@@ -46,6 +46,7 @@
       const db = this.db, signLabel = id => { const s = db && db.signById && db.signById.get(id); return s ? s.label_fr : ''; }, atlasLabel = i => this.atlas && this.atlas.labelEn ? this.atlas.labelEn(i) : i;
       for (const id of ids) {
         const d = await L.load(id); const sub = SV.BIDS.subOf(d); prog(`${sub} : préparation…`);
+        if (this.fineMniLoad && d.anatomy && d.anatomy.mni && d.anatomy.mni.method === 'elastix') { try { await this.fineMniLoad(d); } catch (e) { rep.notes.push(`${sub} : recalage MNI fin illisible (${e.message}), coordonnées MNI par la méthode précédente`); } }
         if (!S.subjectLabel(d)) { rep.refused.push({ sub: sub, file: 'pas de code neutre' }); continue; }
         if (shifts[sub] == null) { shifts[sub] = R.newShift(); newShift = true; }
         // régions des plots : électrodes rangées dans la bibliothèque clinique (colonne region_vep)

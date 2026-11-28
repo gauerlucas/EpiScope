@@ -88,15 +88,17 @@
     // ============================================================ transformation vers MNI (gabarit MNI 2009b, v3.0.0)
     mniLine(an) {
       const M0 = an.mni, d = this.dossier, rc = this.regionStatusCounts(), ageT = this.ageTemplateFor ? this.ageTemplateFor() : null;
+      if (M0 && M0.method === 'elastix') return `<div class="mni-l">${this.mniFineLine ? this.mniFineLine(an) : ''}${rc.ok + rc.missing + rc.stale ? `<div class="muted small">régions des plots figées : ${rc.ok} électrode${rc.ok > 1 ? 's' : ''}</div>` : ''}</div>`;
       const meth = !M0 ? 'affine 12 ddl (centres de structures)' : M0.method === 'affine' ? `affine 12 ddl — ${esc(M0.why || '')}` : `non linéaire (spline régularisée sur ${M0.n} repères${M0.template ? `, via le gabarit « ${esc(M0.template.name)} »` : ''}) : erreur de prédiction des repères exclus ${String(M0.loo.tps).replace('.', ',')} mm contre ${String(M0.loo.affine).replace('.', ',')} mm pour l’affine`;
       const youth = an.segmentation && an.segmentation.age != null && an.segmentation.age < 2 ? '<div class="note warn">Moins de 2 ans au T1 : myélinisation immature, segmentation et coordonnées MNI à interpréter avec prudence.</div>' : '';
-      return `<div class="mni-l"><div class="muted" title="coordonnées MNI 2009b (MNI152NLin2009bAsym) des exports (électrodes, résultats), de la cohorte et des requêtes ; l’affichage 3D « gabarit » reste affine">vers MNI 2009b : ${meth}</div>${youth}
+      return `<div class="mni-l"><div class="muted" title="coordonnées MNI 2009b (MNI152NLin2009bAsym) des exports (électrodes, résultats), de la cohorte et des requêtes ; l’affichage 3D « gabarit » reste affine">vers MNI 2009b : ${meth}</div>${youth}${this.mniFineLine ? this.mniFineLine(an) : ''}
         <div class="btnrow"><button class="mini-btn mni-go" title="spline de plaque mince 3D régularisée sur les centres des structures segmentées, λ choisi par validation croisée « un exclu » ; gardée seulement si elle prédit mieux que l’affine">${M0 && M0.method !== 'affine' ? 'Recalculer la transformation non linéaire' : 'Transformation non linéaire vers MNI 2009b'}</button><button class="mini-btn mni-age" title="gabarits d’enfants NIHPD intégrés (4,5–18,5 ans) et gabarits ajoutés à la bibliothèque : patient → gabarit de l’âge le plus proche → MNI 2009b">Gabarits adaptés à l’âge${ageT ? ' (' + esc(ageT.name) + ')' : ''}…</button></div>
         ${rc.ok + rc.missing + rc.stale ? `<div class="muted small">régions des plots figées : ${rc.ok} électrode${rc.ok > 1 ? 's' : ''}${rc.missing ? ` · ${rc.missing} à étiqueter` : ''}${rc.stale ? ` · ${rc.stale} étiquetée${rc.stale > 1 ? 's' : ''} avec une anatomie antérieure` : ''}${rc.missing || rc.stale ? ' <button class="mini-btn mni-lab">Réétiqueter les plots</button>' : ''}</div>` : ''}</div>`;
     },
     mniBind(box) {
       const q = s => box.querySelector(s);
       if (q('.mni-go')) q('.mni-go').onclick = () => this.mniCompute();
+      if (this.mniFineBind) this.mniFineBind(box);
       if (q('.mni-age')) q('.mni-age').onclick = () => this.ageTemplatesDialog();
       if (q('.mni-lab')) q('.mni-lab').onclick = () => { let n = 0; for (const ex of this.dossier.explorations) n += this.stampRegions(ex, { stale: true }); this.touch(); this.toast(`Régions VEP figées pour ${n} électrode${n > 1 ? 's' : ''} (anatomie du ${fmtD(this.dossier.anatomy.date)})`, 4000); this.renderImaging && this.renderImaging(); };
     },

@@ -364,6 +364,7 @@
           const mesh = SV.Mesh.unpack(surf), vepVol = await SV.Nifti.read(vep), segVol = seg ? await SV.Nifti.read(seg) : null, mdl = asset('model21_104class');
           this.patientAnat = this.buildPatientAnat(d, { mesh, vepVol, segVol, meta: { names: mdl ? mdl.labels : null, colors: mdl ? mdl.colors : null } });
           if (this.fixElectrodeSides) this.fixElectrodeSides(d);
+          if (this.fineMniLoad && an.mni && an.mni.method === 'elastix') await this.fineMniLoad(d).catch(e => { console.warn('recalage fin', e); this.toast('Recalage fin vers MNI illisible : coordonnées MNI rapides utilisées. ' + e.message, 6000); });
         } catch (e) { console.warn('anatomie du patient', e); this.toast('Anatomie du patient illisible : ' + e.message, 5000); }
       }
       this.updateAnatSwitch();

@@ -49,6 +49,16 @@ function compare(radii, sig, depthR) {
   const flat = [...Array(H.G.np).keys()].filter(i => H.G.rr[3 * i + 2] < -0.9).every(i => H.surfs[0].rr[3 * i + 2] > -75);
   ok(Math.abs(mean(up.map(i => H.r.is[i])) - 72.5) < 1.2 && Math.abs(mean(up.map(i => H.r.sc[i])) - 90) < 1.5 && Math.abs(H.stats.skull - P.skull) < 0.6 && nest && flat, `surfaces : crâne interne ${mean(up.map(i => H.r.is[i])).toFixed(1)} mm, scalp ${mean(up.map(i => H.r.sc[i])).toFixed(1)} mm, os ${H.stats.skull.toFixed(1)} mm, emboîtées, cou plan`);
   const E2 = B.onSurface(H.surfs[0], [0, 0, 0], [[10, 20, 60], [-50, 0, 10]]); ok(E2.every(p => Math.abs(nrm(p) - 90) < 1.5), 'électrodes posées sur le scalp dans leur direction'); }
+// 6 bis. v3.5.0 — modèle fin : crâne lu sur un T1 synthétique (cerveau 70 mm, LCR sombre, os très sombre avec diploé clair,
+// scalp, air ; épaisseur de l'os variable selon la direction, 4 à 9 mm) : tables interne et externe retrouvées, mieux que
+// l'épaisseur fixe du modèle générique
+{ const P = B.ageParams(null), th = u => 6.5 + 2.5 * u[0], ri = 72.5, ro = u => ri + th(u), rsc = u => ro(u) + 6;
+  let s7 = 11; const nz = () => ((s7 = (s7 * 16807) % 2147483647) / 2147483647 - 0.5) * 6;
+  const t1At = p => { const r = nrm(p), u = p.map(x => x / (r || 1)), o = ro(u); if (r < 70) return 120 + nz(); if (r < ri) return 55 + nz(); if (r < o) { const f = (r - ri) / (o - ri); return (f > 0.35 && f < 0.65 ? 70 : 12) + nz(); } if (r < rsc(u)) return 105 + nz(); return 2 + Math.abs(nz()) / 3; };
+  const H = B.headSurfacesTissue({ c: [0, 0, 0], zCut: -40, P, brainAt: p => nrm(p) < 70, scalpAt: p => t1At(p) > 20, t1At, nu: 12 });
+  const up = [...Array(H.G.np).keys()].filter(i => H.G.rr[3 * i + 2] > 0.3), u = i => [H.G.rr[3 * i], H.G.rr[3 * i + 1], H.G.rr[3 * i + 2]], mae = f => up.reduce((s, i) => s + Math.abs(f(i)), 0) / up.length;
+  const eI = mae(i => H.r.is[i] - ri), eO = mae(i => H.r.os[i] - ro(u(i))), eG = mae(i => H.generic.r.os[i] - ro(u(i))), nest = [...Array(H.G.np).keys()].every(i => H.r.is[i] + 0.9 < H.r.os[i] && H.r.os[i] + 0.9 < H.r.sc[i]);
+  ok(H.G.np === 1442 && eI < 0.8 && eO < 0.8 && eO < eG / 2 && nest, `modèle fin (crâne lu sur le T1) : écart moyen crâne interne ${eI.toFixed(2)} mm, externe ${eO.toFixed(2)} mm (générique : ${eG.toFixed(2)} mm), 1442 sommets par couche`); }
 // 7. paramètres selon l'âge
 { const a = [0, 1, 5, 30].map(x => B.ageParams(x)); ok(a[0].bscr === 4 && Math.abs(a[1].bscr - 11) < 1e-9 && a[3].bscr === 50 && a.every((x, i) => !i || (x.skull > a[i - 1].skull && x.bscr > a[i - 1].bscr)), `âge : rapport cerveau/os ${a.map(x => Math.round(x.bscr)).join(' → ')}, os ${a.map(x => x.skull.toFixed(1)).join(' → ')} mm (0, 1, 5 ans, adulte)`); }
 console.log(`test_bem : ${n} vérifications OK`);

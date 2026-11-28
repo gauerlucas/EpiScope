@@ -30,7 +30,7 @@ Spikes are gathered into **clusters of similar topography** (at least three spik
 
 ## Source imaging {#imagerie-de-source}
 
-{refs: sloreta lcmv openmeeg parradiaz}
+{refs: sloreta lcmv openmeeg parradiaz jenkinson2005}
 
 The source is sought at the **mid-rise** of the averaged spike (where the initial generator dominates propagation), with three complementary methods:
 
@@ -38,7 +38,7 @@ The source is sought at the **mid-rise** of the averaged spike (where the initia
 - **equivalent dipole**: a single generator, with its goodness of fit (GOF) and a confidence ellipse;
 - **LCMV beamformer**: a minimum-variance spatial filter.
 
-The **head model** is a three-layer BEM (scalp, skull, brain) built on the patient's anatomy when available, otherwise on the template; scalp electrodes are placed on the patient's head. Lobar concordance of the methods is flagged: it increases confidence.
+The **head model** is a three-layer BEM (scalp, skull, brain) built on the patient's anatomy when available, otherwise on the template; scalp electrodes are placed on the patient's head. By default the skull has the thickness expected for the age, from the segmented brain and the scalp read on the T1 (642 vertices per layer). As a second step, [[Head model…]] › *Fine BEM, skull detected on the MRI* reads the inner and outer tables of the bone on the patient's T1, without CT (not every patient has SEEG): along rays from the centre of the head, between the brain and the scalp, the intensity profile is split into CSF, bone (the darkest tissue on T1) and soft tissue, as in BET2 / betsurf (FSL), with a weak prior on thicknesses; below the plane of the head centre (skull base, sinuses), where T1 does not separate bone from air, the model joins the default model; 1442 vertices per layer, about a minute of computation, kept in the record. EpiScope checked it against patients' CT: outer skull and bone thickness closer to the CT. Uncertainty on bone conductivity remains the main source of error of head models. Lobar concordance of the methods is flagged: it increases confidence.
 
 !!! attention
     With 19 to 25 electrodes, spatial resolution is at the lobar or sub-lobar level. A deep or extended generator may be mislocalised; a source that disagrees with the rest of the record should prompt a review of the spikes.

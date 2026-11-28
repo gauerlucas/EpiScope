@@ -32,6 +32,13 @@ Each registration is checked on the slices, with the image overlaid on the T1. I
 - [[landmarks…]]: point to the centre of the brain (and, if needed, AC, PC, a midline point) on the reference then on the image; EpiScope restarts from that position;
 - [[adjust]]: a box around the head to correct position and scale by hand (useful in children between two distant scans).
 
+### Fine registration, as a second step {#recalage-fin-en-second-temps}
+
+The fast registrations are enough for display and clinical orientation. When two MRIs are several years apart (growth), or to obtain **"research-grade" MNI coordinates** for a cohort study, EpiScope offers a fine registration (elastix, built in, no external software):
+
+- [[fine registration…]] on an image already registered: a new image, finely registered to the reference, is added to the record (the original image remains);
+- [[Fine registration to MNI (elastix)…]] in the **Patient anatomy** card: 5 to 15 minutes depending on the computer, the application remains usable; the card then shows "fine MNI (research-grade)" and the share of the brain where the deformation folds (to be checked above 1 %). [[back to fast]] restores the previous transformation.
+
 ## The patient's anatomy {#lanatomie-du-patient}
 
 From the T1, EpiScope computes:

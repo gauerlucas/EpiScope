@@ -89,6 +89,71 @@
     const stats = { rScalp: mean(up.map(i => sc[i])), skull: mean(up.map(i => ro[i] - ri[i])), scalp: mean(up.map(i => sc[i] - ro[i])), csf: P.csf, zCut: o.zCut };
     return { G, r: { sc, os: ro, is: ri }, surfs: [radialSurface(G, c, sc), radialSurface(G, c, ro), radialSurface(G, c, ri)], stats };
   }
+  /** v3.5.0 — modèle de tête fin : crâne lu sur le T1 du patient au lieu d'une épaisseur fixée par l'âge (pas besoin de CT : tous
+   *  les patients n'ont pas de SEEG). Méthode des profils d'intensité, dans l'esprit de BET2 / betsurf (Jenkinson, Pechaud & Smith,
+   *  OHBM 2005 : crânes interne et externe estimés sur le T1 le long de normales à la surface du cerveau, comparés au CT) : sur le T1
+   *  l'os compact est le tissu le plus sombre entre le cerveau et le scalp. Le long de chaque rayon (pas 0,5 mm), entre l'enveloppe
+   *  du cerveau et le scalp (limite de l'air, comme headSurfaces), le profil est découpé en trois segments d'intensité constante
+   *  (LCR, os, parties molles), l'os étant le plus sombre des trois : découpe exacte (toutes les paires de limites essayées), critère
+   *  indépendant de l'échelle des intensités T·log(SCE/T), a priori faibles sur les épaisseurs (os : valeur de l'âge, écart-type 40 %,
+   *  au moins 1,5 mm ; LCR : valeur de l'âge, écart-type 3 mm). Le crâne externe (os sombre / scalp, contraste franc) est gardé ;
+   *  le crâne interne est repris à crâne externe fixé avec un a priori serré sur le LCR (0,7 mm), LCR et table interne étant tous
+   *  deux sombres sur le T1. Os ≥ 1 mm, parties molles ≥ 1 mm ; médiane par sommet, lissage léger ; sous le plan du centre (base
+   *  du crâne, sinus, rochers), où le T1 ne sépare pas l'os de l'air, raccord progressif au modèle générique.
+   *  Vérifié contre le CT de patients (bilan hors dépôt) : crâne externe et épaisseur de l'os plus proches du CT que le modèle
+   *  générique, crâne interne équivalent.
+   *  o = { c, zCut, P (ageParams), nu (12 par défaut : 1442 sommets par couche), brainAt(p), scalpAt(p), t1At(p) → intensité du T1 }
+   *  → même forme que headSurfaces + stats (épaisseurs mesurées) + generic (le modèle générique, pour comparaison). */
+  function headSurfacesTissue(o) {
+    const P = o.P || ageParams(null), c = o.c, nu = o.nu || 12, h = 0.5;
+    const Hg = headSurfaces(Object.assign({}, o, { nu })), G = Hg.G, D = geoSphere(24), cell = new Int32Array(D.np);
+    for (let d = 0; d < D.np; d++) { let b = -2, bi = 0; for (let i = 0; i < G.np; i++) { const s = D.rr[3 * d] * G.rr[3 * i] + D.rr[3 * d + 1] * G.rr[3 * i + 1] + D.rr[3 * d + 2] * G.rr[3 * i + 2]; if (s > b) { b = s; bi = i; } } cell[d] = bi; }
+    const at = (u, t) => [c[0] + u[0] * t, c[1] + u[1] * t, c[2] + u[2] * t];
+    const sdB = Math.max(1.5, 0.4 * P.skull), sdC = 3, sdC2 = 0.7, mB = Math.round(1 / h), mS = Math.round(1 / h), maxB = Math.round((3 * P.skull + 4) / h);
+    const rb = new Float64Array(D.np), ri = new Float64Array(D.np).fill(NaN), ro = new Float64Array(D.np).fill(NaN);
+    for (let d = 0; d < D.np; d++) {
+      const u = [D.rr[3 * d], D.rr[3 * d + 1], D.rr[3 * d + 2]], tCut = u[2] < -1e-6 ? (o.zCut - c[2]) / u[2] : Infinity;
+      for (let t = 0; t < Math.min(150, tCut); t += h) if (o.brainAt(at(u, t))) rb[d] = t;
+      if (rb[d] === 0) continue;
+      const t0 = rb[d] + h / 2, T = Math.floor((Hg.r.sc[cell[d]] - t0) / h); if (T < mB + mS + 2) continue;
+      // profil d'intensité du T1 : trois segments constants par morceaux (LCR, os, parties molles), l'os étant le plus sombre ;
+      // critère indépendant de l'échelle des intensités : T·log(SCE / T) + a priori faibles sur les épaisseurs
+      const S1 = new Float64Array(T + 1), S2 = new Float64Array(T + 1);
+      for (let s = 0; s < T; s++) { const v = o.t1At(at(u, t0 + (s + 0.5) * h)); S1[s + 1] = S1[s] + v; S2[s + 1] = S2[s] + v * v; }
+      const sse = (i, j) => { const n = j - i; if (n <= 0) return 0; const m = (S1[j] - S1[i]) / n; return Math.max(0, S2[j] - S2[i] - n * m * m); }, mean = (i, j) => (S1[j] - S1[i]) / Math.max(1, j - i);
+      const floor = 1e-6 * (S2[T] / T + 1);
+      let bv = Infinity, ba = 0, bb = 0;
+      for (let a = 0; a + mB + mS <= T; a++) {
+        const pc = ((a * h - P.csf) / sdC) ** 2, mc = a ? mean(0, a) : Infinity;
+        for (let b = a + mB; b <= Math.min(T - mS, a + maxB); b++) {
+          const mb = mean(a, b); if (mb >= mc || mb >= mean(b, T)) continue;
+          const v = T * Math.log((sse(0, a) + sse(a, b) + sse(b, T)) / T + floor) + pc + (((b - a) * h - P.skull) / sdB) ** 2;
+          if (v < bv) { bv = v; ba = a; bb = b; }
+        }
+      }
+      if (!isFinite(bv)) continue;
+      // second temps : crâne externe gardé (contraste os sombre / scalp, fiable), crâne interne repris avec un a priori plus serré sur
+      // le LCR (LCR et table interne sont tous deux sombres sur le T1), sans a priori d'épaisseur de l'os
+      { let b2 = Infinity; const mt = mean(bb, T);
+        for (let a = 0; a <= bb - mB; a++) { const mb = mean(a, bb), mc = a ? mean(0, a) : Infinity; if (mb >= mc || mb >= mt) continue;
+          const v = T * Math.log((sse(0, a) + sse(a, bb) + sse(bb, T)) / T + floor) + ((a * h - P.csf) / sdC2) ** 2; if (v < b2) { b2 = v; ba = a; } } }
+      ri[d] = t0 + ba * h; ro[d] = t0 + bb * h;
+    }
+    const brain = new Float64Array(G.np), C2 = () => Array.from({ length: G.np }, () => []), ci = C2(), co = C2();
+    for (let d = 0; d < D.np; d++) { const g = cell[d]; brain[g] = Math.max(brain[g], rb[d]); if (isFinite(ri[d])) { ci[g].push(ri[d]); co[g].push(ro[d]); } }
+    const med = a => { if (!a.length) return NaN; a.sort((x, y) => x - y); return a[a.length >> 1]; };
+    // mesures → sommets ; sous le plan du centre, raccord progressif au modèle générique (z < 0 : générique entier à z < −0,3)
+    const wT = i => { const z = G.rr[3 * i + 2]; return z >= 0 ? 1 : z <= -0.3 ? 0 : 1 + z / 0.3; };
+    let fi = Float64Array.from(ci, med), th = Float64Array.from(co, (a, i) => med(a) - fi[i]);
+    fi = fi.map((x, i) => { const w = isFinite(x) ? wT(i) : 0; return w * (isFinite(x) ? x : 0) + (1 - w) * Hg.r.is[i]; });
+    th = th.map((x, i) => { const g = Hg.r.os[i] - Hg.r.is[i], w = isFinite(x) ? wT(i) : 0; return w * (isFinite(x) ? x : 0) + (1 - w) * g; });
+    fi = smoothOn(G, fi, 2, 0.5).map((x, i) => Math.max(x, brain[i] + 0.5));
+    th = smoothOn(G, th, 2, 0.5).map(x => Math.max(1, x));
+    const sc = Hg.r.sc.map((x, i) => Math.max(x, fi[i] + th[i] + 1)), fo = fi.map((x, i) => x + th[i]);
+    const mean = a => a.reduce((s, x) => s + x, 0) / a.length, up = [...Array(G.np).keys()].filter(i => G.rr[3 * i + 2] > 0.2);
+    const stats = { rScalp: mean(up.map(i => sc[i])), skull: mean(up.map(i => fo[i] - fi[i])), scalp: mean(up.map(i => sc[i] - fo[i])), csf: mean(up.map(i => fi[i] - brain[i])), zCut: o.zCut, method: 'tissue' };
+    return { G, r: { sc, os: fo, is: fi, rb: brain }, surfs: [radialSurface(G, c, sc), radialSurface(G, c, fo), radialSurface(G, c, fi)], stats, generic: Hg };
+  }
   /** intersection du rayon c + t·u (t > 0) avec une surface → t (ou null) */
   function rayHit(S, c, u) {
     let best = null; const t = S.tris, r = S.rr;
@@ -279,5 +344,5 @@
     return { L, T: Tr.T, m: Tr.m, n: B.n, moved: K.moved };
   }
 
-  SV.BEM = { geoSphere, radialSurface, smoothOn, ageParams, headSurfaces, rayHit, onSurface, linPotCoeff, luFactor, luSolve, luSolveT, solve, closestOnTri, projectOn, elecTransfer, allVerts, gainAt, leadfield, keepInside, build, relead };
+  SV.BEM = { geoSphere, radialSurface, smoothOn, ageParams, headSurfaces, headSurfacesTissue, rayHit, onSurface, linPotCoeff, luFactor, luSolve, luSolveT, solve, closestOnTri, projectOn, elecTransfer, allVerts, gainAt, leadfield, keepInside, build, relead };
 });

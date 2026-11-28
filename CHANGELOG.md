@@ -2,6 +2,17 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [3.5.0] — 2026-11-28
+
+Recalage fin intégré (elastix, sans logiciel externe) et modèle de tête fin dont le crâne est lu sur l'IRM, tous deux proposés en second temps : les recalages et le modèle de tête rapides restent ceux par défaut.
+
+### Ajouté
+
+- **Recalage fin elastix embarqué** (`src/imaging/elastix.js`, `src/imaging/elastix_wasm.js`, `assets/elastix.json` ; `tools/make_elastix.mjs` depuis `@itk-wasm/elastix`, Apache 2.0) : elastix (Klein et al. 2010) compilé en WebAssembly, exécuté dans un worker, sans réseau. Cartes d'ITKElastix (affine puis B-spline cubique, information mutuelle de Mattes, pénalité de flexion), grille et pénalité réglées sur des patients (recouvrement des régions comparable à ANTs SyN, sans repliement ; bilan hors dépôt). Déterminant jacobien publié à chaque calcul ; transformations relues par EpiScope (composition, B-spline, LPS → RAS, inverse) — test `test_elastix.mjs`.
+- **MNI fin (« research-grade »)** dans la carte *Anatomie du patient* : « Recalage fin vers MNI (elastix)… » (5 à 15 minutes) ; transformation dans `derivatives/anat/…_mode-elastix_xfm.json.gz`, utilisée par les coordonnées MNI des exports de recherche (`_coordsystem.json` décrit la méthode), de la cohorte et des requêtes (`S.toMNI`, `S.mniGrade`) ; la transformation rapide est gardée (`an.mni.previous`) et peut être rétablie. La carte distingue « MNI rapide (approximatif) » et « MNI fin ».
+- **Recalage fin entre deux images du patient** (bouton « recalage fin… » d'une image recalée) : affine puis B-spline à grille large (20 mm) sur la référence, les deux images masquées par le cerveau segmenté de la référence ; pour deux IRM séparées de plusieurs années (croissance) — après une chirurgie, le rigide reste la règle pour situer la cavité ; ajoute une nouvelle image (`derived.kind 'finereg'`), l'image d'origine est gardée.
+- **Modèle de tête fin, crâne détecté sur l'IRM** (Imagerie de source › Modèle de tête… › « BEM fin ») : tables interne et externe de l'os lues sur les profils d'intensité du T1 du patient, sans CT (`SV.BEM.headSurfacesTissue`, esprit de BET2 / betsurf) — découpe exacte de chaque rayon en LCR, os, parties molles, a priori faibles sur les épaisseurs, raccord au modèle générique sous le plan du centre ; 1442 sommets par couche. Vérifié contre le CT de patients (bilan hors dépôt) ; test synthétique dans `test_bem.mjs`.
+
 ## [3.4.1] — 2026-11-28
 
 Schéma d'implantation 2D redessiné sur la planche vierge de l'équipe.
