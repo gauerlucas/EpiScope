@@ -6,6 +6,7 @@
    recomposées ; EEG intercritique sans les crises, bandeau des jours, captures en diaporama ; synthèse de
    l'électrophysiologie ; staff précédent avant l'implantation ; schéma d'implantation 2D (grille de Talairach, faces).
    python3 tools/tests/test_v34_ui.py   (après python3 tools/build.py)"""
+import re
 import os, sys, json
 from playwright.sync_api import sync_playwright
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -102,8 +103,22 @@ with sync_playwright() as p:
     check(r['prev'] and r['concl'] and not r['bar'], f'staff précédent : concordance, hypothèses et conclusion, en lecture seule {r}')
     show(IMPL, 6000)
     pg.click('#presentation [data-i2d="1"]'); pg.wait_for_timeout(2500)
-    r = pg.evaluate("() => ({ hemi: document.querySelectorAll('#presentation .i2d-hemi').length, tal: document.querySelectorAll('#presentation .i2d.tal .tg-v').length, ent: document.querySelectorAll('#presentation .i2d.tal .ie-e').length, cols: [...document.querySelectorAll('#presentation .i2d.tal .tg-t')].map(t => t.textContent).join(''), faces: document.querySelectorAll('#presentation .i2d-faces figure').length, mes: document.querySelectorAll('#presentation .i2d.med .ie-c').length, list: document.querySelectorAll('#presentation .i2d-e').length })")
-    check(r['hemi'] == 2 and r['tal'] == 6 and r['list'] >= 9 and r['ent'] >= 9 and r['cols'].startswith('ABCDEFGHI123456789101112') and r['faces'] == 6 and r['mes'] > 0, f'schéma 2D : grille de Talairach (CA-CP, VCA, VCP), entrées, faces latérale / mésiale / insula, un hémisphère par côté implanté {r}')
+    r = pg.evaluate("""() => { const q = s => document.querySelectorAll('#presentation ' + s);
+      // planche dessinée (chemins vectoriels) calée sur le gabarit : marqueurs dans la silhouette du dessin, sans quadrillage ni CA-CP
+      const box = (fig, k) => { const svg = document.querySelectorAll('#presentation .i2d.' + fig + ' svg')[k || 0]; const bg = svg && svg.querySelector('.i2d-bg'); return bg ? { svg, b: bg.getBBox() } : null; };
+      const inside = (fig, sel) => { const B = box(fig); if (!B) return null; const b = B.b, pts = [...B.svg.querySelectorAll(sel)].map(c => [+c.getAttribute('cx'), +c.getAttribute('cy')]);
+        return { n: pts.length, out: pts.filter(([x, y]) => x < b.x - 2 || x > b.x + b.width + 2 || y < b.y - 2 || y > b.y + b.height + 2).length }; };
+      const lab = (() => { const B = box('inf'); if (!B) return null; const r = B.b.x + B.b.width; return [...B.svg.querySelectorAll('.ie-n')].map(t => +t.getAttribute('x') > r).filter(v => !v).length; })();
+      const hs = [...q('.i2d-hemi')], vh = window.innerHeight;
+      return { bi: q('.pr-i2d.bi').length, hemi: hs.length, titles: hs.map(h => h.querySelector('.i2d-h').innerText.split(/\s+/).slice(0, 3).join(' ')), visible: hs.every(h => h.getBoundingClientRect().bottom <= vh),
+        grid: q('.tg-v, .tg-l, .tg-t, .tg-ac').length, bg: q('.i2d .i2d-bg').length, mir: q('.i2d svg > g[transform]').length, cap: q('.i2d figcaption').length, listTxt: [...q('.i2d-e')].map(e => e.textContent), dg: [...q('.i2d.tal .i2d-dg')].filter(p => (p.getAttribute('d') || '').length > 100).length, deepImg: q('.i2d.tal .i2d-deep').length, strokes: [...q('.i2d.tal .i2d-bl, .i2d.tal .i2d-gl')].filter(p => (p.getAttribute('d') || '').length > 500).length,
+        ent: q('.i2d.tal .ie-e').length, fillL: (() => { const e = document.querySelector('#presentation .i2d-hemi.sL .ie-e'); return !!e && getComputedStyle(e).fill.replace(/\\s/g, '') === 'rgb(142,27,27)'; })(), fillR: (() => { const e = document.querySelector('#presentation .i2d-hemi.sR .ie-e'); return !!e && getComputedStyle(e).fill.replace(/\\s/g, '') === 'rgb(23,63,140)'; })(), faces: q('.i2d-faces figure').length, mes: q('.i2d.med .ie-e').length, mesDots: q('.i2d.med .ie-c').length, insM: q('.i2d.ins .ie-e').length, inf: q('.i2d.inf .ie-c').length, infLabIn: lab, list: q('.i2d-e').length,
+        tal: inside('tal', '.ie-c'), med: inside('med', '.ie-e') }; }""")
+    print('planche', r)
+    ok_in = all(t and t['n'] > 0 and t['out'] == 0 for t in (r['tal'], r['med']))
+    check(r['bi'] == 1 and r['hemi'] == 2 and r['titles'][0].endswith('GAUCHE') and r['titles'][1].endswith('DROIT') and r['visible'], f'implantation bilatérale : deux hémisphères l’un au-dessus de l’autre sur la même page, titrés GAUCHE / DROIT {r["titles"]} visibles={r["visible"]}')
+    check(r['grid'] == 0 and r['bg'] == 10 and r['mir'] == 5 and r['cap'] == 0 and r['dg'] == 2 and all(' : ' in t and '—' not in t and not t.endswith((' G', ' D')) and not re.search(r'\b\d+$', t.split(' : ')[0]) for t in r['listTxt']) and r['fillL'] and r['fillR'] and r['deepImg'] == 4 and r['strokes'] == 4 and r['ent'] >= 9 and r['list'] >= 9 and r['faces'] == 8 and ok_in, f'schéma 2D sur la planche dessinée : projection latérale sur la planche de Talairach recalée (en gris insula, gyrus droit, repères mésiaux ; amygdale / hippocampe), sans légende sous les vues, liste « nom : cible profonde – cible externe », marqueurs pleins rouge foncé à gauche, bleu foncé à droite, faces latérale / mésiale / insula / inférieure, droit en miroir, sans quadrillage ni CA-CP {dict((k, v) for k, v in r.items() if k not in ("tal", "med", "titles", "listTxt"))}')
+    check(r['mes'] > 0 and r['mesDots'] == 0 and r['insM'] > 0 and r['inf'] > 0 and r['infLabIn'] == 0, f'faces mésiale et insula : un cercle nommé par électrode ; face inférieure : étiquettes hors du cortex {r["mes"]}, {r["insM"]}, {r["infLabIn"]}')
     pg.screenshot(path=os.path.join(OUT, 'v34_pr_impl2d.png'))
     pg.click('#presentation [data-i2d="0"]'); pg.wait_for_timeout(1500)
     show('seegint:' + ids['ex2'], 6000); r = pg.evaluate("() => ({ views: document.querySelectorAll('#presentation .pr-iv img').length, leg: document.querySelectorAll('#presentation .pr-ivleg tr').length })")

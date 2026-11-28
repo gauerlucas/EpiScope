@@ -2,6 +2,22 @@
 
 EpiScope suit la numérotation sémantique (`MAJEUR.MINEUR.CORRECTIF`) : **1.0.x** pour les corrections, **1.x.0** pour les nouvelles fonctions, **2.0.0** si un changement oblige à migrer les dossiers ou casse une habitude de travail. Une version publiée n'est jamais modifiée : une correction donne une nouvelle version.
 
+## [3.4.1] — 2026-11-28
+
+Schéma d'implantation 2D redessiné sur la planche vierge de l'équipe.
+
+### Modifié
+
+- **Schéma d'implantation 2D** (diaporama du staff, « Schéma 2D ») : plus de quadrillage de Talairach ni de lignes CA-CP ; le fond est la planche vierge d'implantation de l'équipe (dessin au trait libre — faces latérale et mésiale, insula, face inférieure), vectorisée (`tools/make_implant_sheet.py` → `src/implant_sheet.js`) et calée sur le gabarit MNI par ses repères (pôles frontal et occipital, vertex, bas du lobe temporal ; limites de l'insula ; ligne médiane et bord latéral de la face inférieure) ; hémisphère droit en miroir.
+- **Projection latérale sur la planche de Talairach** : la planche de Talairach (grille proportionnelle) est vectorisée — grille, lignes CA-CP / VCA / VCP et ventricules retirés, traits coupés par la grille recousus — puis recalée sur le gabarit : correspondance proportionnelle Talairach → MNI par morceaux (pôle frontal, VCA, VCP, pôle occipital ; vertex, plan CA-CP, bas du lobe temporal), puis spline de plaque mince ajustée sur le contour, plus rond, de la face latérale (CA et CP fixes). Les traits sont rendus en lignes continues d'épaisseur constante (squelette des traits, lissé), comme les autres dessins : sillons de la face latérale en noir ; en gris, insula avec ses sillons (deux petits traits entre les trois gyri courts antérieurs, sillon central de l'insula, un trait entre les deux gyri longs postérieurs), gyrus droit (base du lobe frontal, plus médiale et plus basse) et repères de la face mésiale ; silhouettes vectorielles de l'amygdale et de l'hippocampe du gabarit (projection sagittale) en bleu ; entrées et plots par-dessus. Crédit ajouté.
+- **Sans légende sous les vues** ; la liste des électrodes donne le nom, la cible profonde et la cible externe (région du plot le plus superficiel), sans le nombre de plots : « NA : amygdale – T2 antérieur ».
+- **Marqueurs pleins**, rouge foncé à gauche et bleu foncé à droite (entrées, plots, étiquettes, pastille de l'hémisphère) ; faces mésiale (en miroir) et insula : un marqueur nommé par électrode au centre de ses plots sur la face.
+- **Implantation bilatérale** : les deux hémisphères l'un au-dessus de l'autre sur la même page, en présentation compacte, titrés « Hémisphère GAUCHE » et « Hémisphère DROIT » avec leur pastille G / D.
+
+### Ajouté
+
+- **Face inférieure** dans le schéma 2D : toutes les électrodes vues d'en bas ; trajectoire prolongée hors du cortex, marqueur et étiquette au-delà du bord latéral, étiquettes espacées.
+
 ## [3.4.0] — 2026-11-27
 
 Staff recomposé page par page (une idée par diapositive, sans défilement) et intercritique pointé visible partout : analyse visuelle dans les vues 3D et les coupes, le rapport SEEG et le diaporama ; concordance lisible d'un coup d'œil, avec des colonnes SEEG intercritique et critique ; hypothèses choisies et modifiées pendant le staff ; courbes de croissance de la naissance à l'âge adulte ; schéma d'implantation 2D classique.

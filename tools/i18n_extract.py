@@ -106,7 +106,7 @@ def segments(text):
 def extract():
     keys = {}
     files = sorted(glob.glob(D('src', '*.js')) + glob.glob(D('src', 'imaging', '*.js')))
-    SKIP_FILES = {'legal.js', 'i18n.js'}   # textes rédigés dans les deux langues (classe notr) ; le moteur de traduction lui-même
+    SKIP_FILES = {'legal.js', 'i18n.js', 'implant_sheet.js'}   # textes rédigés dans les deux langues (classe notr) ; le moteur de traduction lui-même ; chemins SVG générés
     for f in files:
         if os.path.basename(f) in SKIP_FILES: continue
         rel = os.path.relpath(f, ROOT)

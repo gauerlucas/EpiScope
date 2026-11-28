@@ -282,6 +282,12 @@
     { cat: 'seeg', n: 'Stéréo-électroencéphalographie', by: 'J. Talairach et J. Bancaud ; J. Isnard et coll. (recommandations françaises) ; F. Cardinale et coll. ; A. Afif et coll.', r: ['talairach', 'isnard2018', 'cardinale2013', 'cardinale2016', 'cardinale2019', 'afif2008'],
       w: 'Méthode anatomo-électro-clinique, nomenclature et règles d’implantation (orthogonales, voies obliques de l’insula, sécurité).',
       u: 'Schéma d’implantation sur gabarit, bibliothèque de trajectoires, planification, compte rendu SEEG.' },
+    { cat: 'seeg', n: 'Planche vierge d’implantation (dessin au trait)', by: 'Équipe de l’auteur (dessin libre, vectorisé par potrace)', r: [],
+      w: 'Faces latérale et mésiale, insula et face inférieure d’un hémisphère, dessinées à la main.',
+      u: 'Fond du schéma d’implantation 2D, calé sur le gabarit MNI par ses repères ; hémisphère droit en miroir.' },
+    { cat: 'seeg', n: 'Planche de Talairach (grille proportionnelle, projection latérale)', by: 'Fond de l’équipe de l’auteur d’après Talairach et Tournoux, vectorisé par potrace', r: ['Talairach J, Tournoux P. Co-planar stereotaxic atlas of the human brain. Stuttgart : Thieme, 1988.'],
+      w: 'Contour, sillons de la face latérale, insula et repères de la face mésiale sur la grille proportionnelle (CA-CP, VCA, VCP).',
+      u: 'Projection latérale du schéma d’implantation 2D : grille et lignes retirées, traits recalés sur le gabarit MNI (correspondance proportionnelle Talairach → MNI, puis spline de plaque mince sur le contour de la face latérale).' },
     // ---------------------------------------------------------------- clinique
     { cat: 'clin', n: 'Courbes de croissance de l’OMS (méthode LMS)', by: 'Groupe de l’étude multicentrique de l’OMS sur la référence de croissance (M. de Onis et coll.) ; T. J. Cole et P. J. Green ; ki-tools (growthstandards)', r: ['whomgrs2006', 'deonis2007', 'cdc2000', 'cole1992', 'growthstandards'],
       w: 'Normes de poids, taille, IMC et périmètre crânien pour l’âge et le sexe (0–5 ans : standards 2006 ; 5–19 ans : référence 2007 ; poids de 10 à 20 ans : courbes du CDC 2000, domaine public), exprimées par les paramètres L, M, S de Box-Cox : z-score et centile de chaque mesure ; âge adulte : seuils de l’IMC de l’OMS.',
